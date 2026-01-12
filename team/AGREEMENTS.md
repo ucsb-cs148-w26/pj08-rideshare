@@ -1,8 +1,8 @@
 ## Team Members
 - Ruben  
-- Tanvi  
-- Anna  
 - Moiez  
+- Anna  
+- Tanvi  
 - Hien  
 - Wyatt  
 
