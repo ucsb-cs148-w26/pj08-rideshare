@@ -1,0 +1,3 @@
+## Kenisha
+
+Hi! My name is Kenisha and I’m a 4th year computer science student. For this project, we’re creating a carpooling app made specifically for UCSB students, where verified users can connect with others heading to similar destinations. Drivers will be able to post their trips, and riders can search for matching routes and request to join. I really like this idea because it addresses a real need on campus, makes transportation more affordable, and encourages a stronger sense of community. 
