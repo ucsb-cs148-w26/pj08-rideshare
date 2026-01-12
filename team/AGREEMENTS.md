@@ -6,7 +6,7 @@
 - Hien  
 - Wyatt
 - Joel
-- Kinesha  
+- Kenisha  
 
 ## Team Attendance & Contribution Agreement
 
