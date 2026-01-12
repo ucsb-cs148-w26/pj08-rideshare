@@ -1,0 +1,3 @@
+Hello everyone! My name is Hien Huynh I am a 4th year computer science major.
+
+Our app is a UCSB-focused rideshare platform that connects students who need rides with drivers already heading in the same direction. Students can find affordable carpool options by filtering rides based on destination and price, allowing them to get dropped off if they are on the way or within close vicinity of the driver’s route. By encouraging shared rides within the UCSB community, the app lowers transportation costs while reducing traffic and carbon emissions.
