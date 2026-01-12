@@ -1,0 +1,1 @@
+My name is Tanvi Ladha and I'm a third year CS major. This project will be a ride-share app that helps connect UCSB students who need rides with drivers in the area. This allows students to find carpools and other students to earn money while helping their peers. It can help students get to local events, go grocery shopping, or even just make a short commute with a buddy. 
