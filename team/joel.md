@@ -1,0 +1,3 @@
+Hi my name is Joel and I am a fourth-year computer science major.
+
+Our project is to make a carpooling app for UCSB students. The idea is that students can use this platform to easily connect with other verified UCSB students who are traveling to similar destinations and would like to carpool. The app would allow drivers to create rides by entering their departing location and destination, while riders can browse for compatible trips and request to join. The app aims to reduce transportation costs, and promote a more community driven way of getting around.
