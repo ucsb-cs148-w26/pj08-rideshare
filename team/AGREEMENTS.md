@@ -4,7 +4,9 @@
 - Anna  
 - Tanvi  
 - Hien  
-- Wyatt  
+- Wyatt
+- Joel
+- Kinesha  
 
 ## Team Attendance & Contribution Agreement
 
