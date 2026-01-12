@@ -1,0 +1,1 @@
+Hi my name is Ruben and I am a 4th year CS major. Our idea is to create a carpooling app that would give student access to ridesharing network.
