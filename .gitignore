@@ -1,18 +1,57 @@
-# dependencies
-node_modules/
-
-# Expo / React Native
-.expo/
-dist/
-web-build/
-
-# logs
+# --- General ---
+.DS_Store
+.env
+.env.*
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# macOS
-.DS_Store
+# --- Node.js ---
+node_modules/
+dist/
+build/
+coverage/
 
-# env
-.env
+# --- React Native ---
+.expo/
+.expo-shared/
+.web-build/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# --- iOS ---
+ios/Pods/
+ios/build/
+ios/DerivedData/
+ios/*.xcworkspace
+!ios/*.xcworkspace/contents.xcworkspacedata
+ios/*.xcuserstate
+ios/*.xcuserdata/
+
+# --- Xcode ---
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# --- Firebase ---
+.firebase/
+firebase-debug.log
+.firebaserc
+
+# --- Secrets / Config ---
+*.key
+*.pem
+*.p12
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# --- Temporary / Cache ---
+.cache/
+.tmp/
+tmp/
