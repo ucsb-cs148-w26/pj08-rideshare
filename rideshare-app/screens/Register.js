@@ -45,8 +45,14 @@ export default function Register({ onBack }) {
     if (!phoneDigits) e.phone = "Phone number is required.";
     else if (phoneDigits.length < 10) e.phone = "Enter a valid phone number.";
 
-    if (!email.trim()) e.email = "Email is required.";
-    else if (!emailLooksValid(email)) e.email = "Enter a valid email.";
+    if (!email.trim()) {
+      e.email = "Email is required.";
+    } else if (!emailLooksValid(email)) {
+      e.email = "Enter a valid email.";
+    } else if (!email.toLowerCase().endsWith("@ucsb.edu")) {
+      e.email = "Use your @ucsb.edu email.";
+    }
+
 
 
     vehicles.forEach((v, idx) => {
@@ -301,7 +307,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#febc11",
     textAlign: "center",
-    marginTop: 8,
+    marginTop: 30,
   },
   subheader: {
     color: "#0ba89a",
