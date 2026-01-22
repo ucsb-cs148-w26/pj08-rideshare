@@ -1,7 +1,17 @@
+import { useState } from "react";
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 
+import Register from "./screens/Register";
+
+
 export default function App() {
+  const [screen, setScreen] = useState("login");
+
+  if (screen === "register") {
+    return <Register onBack={() => setScreen("login")} />;
+  }
+
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
@@ -58,9 +68,13 @@ export default function App() {
 
           <View style={styles.registerSection}>
             <Text style={styles.registerText}>Don't have an account?</Text>
-            <TouchableOpacity style={styles.registerButton}>
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => setScreen("register")}
+            >
               <Text style={styles.registerButtonText}>Register</Text>
             </TouchableOpacity>
+
           </View>
         </View>
       </ScrollView>
