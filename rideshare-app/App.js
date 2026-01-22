@@ -4,7 +4,6 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, KeyboardAvoidingVi
 
 import Register from "./screens/Register";
 
-
 export default function App() {
   const [screen, setScreen] = useState("login");
 
