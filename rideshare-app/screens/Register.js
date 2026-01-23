@@ -134,7 +134,7 @@ export default function Register({ onBack }) {
         payload.password
       );
 
-      alert("Account created ✅ Now go log in.");
+      alert("Account created! Now go log in.");
       onBack(); // go back to login screen
     } catch (err) {
       alert(err?.message ?? "Sign up failed");
