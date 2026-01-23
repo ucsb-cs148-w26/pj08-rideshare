@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
-
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../src/firebase";
 
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, } from "react-native";
 
@@ -108,21 +109,8 @@ export default function Register({ onBack }) {
     setVehicles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = () => {
-    const requiredKeys = ["name", "bio", "payHandle", "phone", "email", "password", "confirmPassword"];
-    const vehicleKeys = vehicles.flatMap((_, idx) => [
-      `vehicle_${idx}_make`,
-      `vehicle_${idx}_model`,
-      `vehicle_${idx}_plate`,
-    ]);
-
-    const newTouched = {};
-    [...requiredKeys, ...vehicleKeys].forEach((k) => (newTouched[k] = true));
-    setTouched((t) => ({ ...t, ...newTouched }));
-
-    if (!isValid) return;
-
-    // TEMPORARY BEFORE FIREBASE
+  //
+  const handleSubmit = async () => {
     const payload = {
       name: name.trim(),
       bio: bio.trim(),
@@ -136,14 +124,24 @@ export default function Register({ onBack }) {
           model: v.model.trim(),
           plate: v.plate.trim(),
         }))
-
-        // keep only vehicles that have at least one field filled
         .filter((v) => v.make || v.model || v.plate),
     };
 
-    console.log("REGISTER PAYLOAD:", payload);
-    alert("Registration looks valid! Firebase hookup next.");
+    try {
+      await createUserWithEmailAndPassword(
+        auth,
+        payload.email,
+        payload.password
+      );
+
+      alert("Account created ✅ Now go log in.");
+      onBack(); // go back to login screen
+    } catch (err) {
+      alert(err?.message ?? "Sign up failed");
+    }
   };
+
+  //
 
   return (
     <ScrollView
