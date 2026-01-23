@@ -27,10 +27,16 @@ export default function Register({ onBack }) {
   const [payHandle, setPayHandle] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [vehicles, setVehicles] = useState([{ make: "", model: "", plate: "" }]);
 
   const [touched, setTouched] = useState({});
+
+  const passwordHasMinLength = password.trim().length >= 8;
+  const passwordHasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  const passwordHasUppercase = /[A-Z]/.test(password);
 
   const errors = useMemo(() => {
     const e = {};
@@ -53,6 +59,22 @@ export default function Register({ onBack }) {
       e.email = "Use your @ucsb.edu email.";
     }
 
+    if (!password.trim()) {
+      e.password = "Password is required.";
+    } else if (!passwordHasMinLength) {
+      e.password = "Password must be at least 7 characters.";
+    } else if (!passwordHasSpecial) {
+      e.password = "Password must include at least one special character.";
+    } else if (!passwordHasUppercase) {
+      e.password = "Password must include at least one uppercase letter.";
+    }
+
+    if (!confirmPassword.trim()) {
+      e.confirmPassword = "Please confirm your password.";
+    } else if (confirmPassword !== password) {
+      e.confirmPassword = "Passwords do not match.";
+    }
+
 
 
     vehicles.forEach((v, idx) => {
@@ -65,7 +87,7 @@ export default function Register({ onBack }) {
     });
 
     return e;
-  }, [name, bio, payHandle, phone, email, vehicles]);
+  }, [name, bio, payHandle, phone, email, password, confirmPassword, passwordHasMinLength, passwordHasSpecial, passwordHasUppercase, vehicles]);
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -87,7 +109,7 @@ export default function Register({ onBack }) {
   };
 
   const handleSubmit = () => {
-    const requiredKeys = ["name", "bio", "payHandle", "phone", "email"];
+    const requiredKeys = ["name", "bio", "payHandle", "phone", "email", "password", "confirmPassword"];
     const vehicleKeys = vehicles.flatMap((_, idx) => [
       `vehicle_${idx}_make`,
       `vehicle_${idx}_model`,
@@ -107,6 +129,7 @@ export default function Register({ onBack }) {
       payHandle: payHandle.trim(),
       phone: digitsOnly(phone),
       email: email.trim().toLowerCase(),
+      password: password,
       vehicles: vehicles
         .map((v) => ({
           make: v.make.trim(),
@@ -203,6 +226,98 @@ export default function Register({ onBack }) {
           keyboardType="email-address"
         />
         {showError("email") ? <Text style={styles.error}>{errors.email}</Text> : null}
+
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={[styles.input, showError("password") && styles.inputError]}
+          value={password}
+          onChangeText={setPassword}
+          onBlur={() => markTouched("password")}
+          placeholder="Create a password"
+          placeholderTextColor="#999"
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <View style={styles.passwordChecklist}>
+          <View style={styles.checklistItem}>
+            <Text
+              style={
+                passwordHasMinLength
+                  ? [styles.checklistIcon, styles.checklistIconOk]
+                  : [styles.checklistIcon, styles.checklistIconError]
+              }
+            >
+              {passwordHasMinLength ? "✓" : "✗"}
+            </Text>
+            <Text
+              style={
+                passwordHasMinLength
+                  ? [styles.checklistText, styles.checklistTextOk]
+                  : [styles.checklistText, styles.checklistTextError]
+              }
+            >
+              At least 8 characters
+            </Text>
+          </View>
+          <View style={styles.checklistItem}>
+            <Text
+              style={
+                passwordHasSpecial
+                  ? [styles.checklistIcon, styles.checklistIconOk]
+                  : [styles.checklistIcon, styles.checklistIconError]
+              }
+            >
+              {passwordHasSpecial ? "✓" : "✗"}
+            </Text>
+            <Text
+              style={
+                passwordHasSpecial
+                  ? [styles.checklistText, styles.checklistTextOk]
+                  : [styles.checklistText, styles.checklistTextError]
+              }
+            >
+              At least 1 special character
+            </Text>
+          </View>
+          <View style={styles.checklistItem}>
+            <Text
+              style={
+                passwordHasUppercase
+                  ? [styles.checklistIcon, styles.checklistIconOk]
+                  : [styles.checklistIcon, styles.checklistIconError]
+              }
+            >
+              {passwordHasUppercase ? "✓" : "✗"}
+            </Text>
+            <Text
+              style={
+                passwordHasUppercase
+                  ? [styles.checklistText, styles.checklistTextOk]
+                  : [styles.checklistText, styles.checklistTextError]
+              }
+            >
+              At least 1 uppercase letter
+            </Text>
+          </View>
+        </View>
+        {showError("password") ? (
+          <Text style={styles.error}>{errors.password}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Confirm Password</Text>
+        <TextInput
+          style={[styles.input, showError("confirmPassword") && styles.inputError]}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          onBlur={() => markTouched("confirmPassword")}
+          placeholder="Re-enter your password"
+          placeholderTextColor="#999"
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        {showError("confirmPassword") ? (
+          <Text style={styles.error}>{errors.confirmPassword}</Text>
+        ) : null}
 
         {/* Vehicles Section */}
         <Text style={[styles.sectionTitle, { marginTop: 18 }]}>
@@ -375,6 +490,40 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 6,
     marginLeft: 2,
+  },
+
+  passwordChecklist: {
+    marginTop: 6,
+    marginBottom: 6,
+    gap: 6,
+  },
+  checklistItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checklistIcon: {
+    width: 18,
+    fontSize: 13,
+    fontWeight: "900",
+    marginRight: 6,
+    textAlign: "center",
+  },
+  checklistText: {
+    fontSize: 12,
+  },
+  checklistIconOk: {
+    color: "#0ba89a",
+  },
+  checklistIconError: {
+    color: "#d11a2a",
+  },
+  checklistTextOk: {
+    color: "#0ba89a",
+    fontWeight: "700",
+  },
+  checklistTextError: {
+    color: "#d11a2a",
+    fontWeight: "700",
   },
 
   vehicleCard: {
