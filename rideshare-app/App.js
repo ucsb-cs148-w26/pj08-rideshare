@@ -16,7 +16,11 @@ import {
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./src/firebase";
 
+import { colors } from './ui/styles/colors';
+import { commonStyles } from './ui/styles/commonStyles';
+
 import Register from "./screens/Register";
+
 
 function HomeScreen({ user }) {
   const [loggingOut, setLoggingOut] = useState(false);
@@ -37,14 +41,14 @@ function HomeScreen({ user }) {
       <Text style={styles.homeSubtitle}>Logged in as: {user.email}</Text>
       
       <TouchableOpacity 
-        style={styles.logoutButton} 
+        style={commonStyles.primaryButton} 
         onPress={handleLogout}
         disabled={loggingOut}
       >
         {loggingOut ? (
-          <ActivityIndicator color="#003660" />
+          <ActivityIndicator color="colors.primary" />
         ) : (
-          <Text style={styles.logoutButtonText}>Log Out</Text>
+          <Text style={commonStyles.primaryButtonText}>Log Out</Text>
         )}
       </TouchableOpacity>
       <StatusBar style="light" />
@@ -130,8 +134,8 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#febc11" />
+      <View style={[commonStyles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="colors.secondary" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -147,7 +151,7 @@ export default function App() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={commonStyles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
@@ -168,20 +172,20 @@ export default function App() {
         </View>
 
         {/* Login Form Section */}
-        <View style={styles.formSection}>
+        <View style={commonStyles.formSection}>
           {/* Error Message */}
           {error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={commonStyles.errorContainer}>
+              <Text style={commonStyles.errorText}>{error}</Text>
             </View>
           ) : null}
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
+            <Text style={commonStyles.inputLabel}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={commonStyles.input}
               placeholder="Enter your email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textLight}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -194,11 +198,11 @@ export default function App() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={commonStyles.inputLabel}>Password</Text>
             <TextInput
-              style={styles.input}
+              style={commonStyles.input}
               placeholder="Enter your password"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textLight}
               secureTextEntry
               autoCapitalize="none"
               value={password}
@@ -220,25 +224,25 @@ export default function App() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            style={[commonStyles.primaryButton, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#003660" />
+              <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.loginButtonText}>Log In</Text>
+              <Text style={commonStyles.primaryButtonText}>Log In</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.registerSection}>
             <Text style={styles.registerText}>Don't have an account?</Text>
             <TouchableOpacity
-              style={styles.registerButton}
+              style={commonStyles.secondaryButton}
               onPress={() => setScreen("register")}
               disabled={loading}
             >
-              <Text style={styles.registerButtonText}>Register</Text>
+              <Text style={commonStyles.secondaryButtonText}>Register</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -248,17 +252,14 @@ export default function App() {
   );
 }
 
+// Login page specific styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#003660',
-  },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#febc11',
+    color: colors.secondary,
     marginTop: 12,
     fontSize: 16,
   },
@@ -283,53 +284,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#febc11',
+    color: colors.secondary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#0ba89a',
+    color: colors.accent,
     fontStyle: 'italic',
-  },
-  formSection: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  errorContainer: {
-    backgroundColor: '#ffe6e6',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ffcccc',
-  },
-  errorText: {
-    color: '#d11a2a',
-    fontSize: 14,
-    textAlign: 'center',
   },
   inputContainer: {
     marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#003660',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
@@ -340,52 +304,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  loginButton: {
-    backgroundColor: '#febc11',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#febc11',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  loginButtonDisabled: {
+  buttonDisabled: {
     opacity: 0.7,
-  },
-  loginButtonText: {
-    color: '#003660',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   registerSection: {
     alignItems: 'center',
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: colors.border,
   },
   registerText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 14,
     marginBottom: 12,
   },
-  registerButton: {
-    backgroundColor: '#0ba89a',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-  },
-  registerButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Home screen styles
+  
   homeContainer: {
     flex: 1,
-    backgroundColor: '#003660',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -393,25 +329,14 @@ const styles = StyleSheet.create({
   homeTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#febc11',
+    color: colors.secondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   homeSubtitle: {
     fontSize: 16,
-    color: 'white',
+    color: colors.white,
     textAlign: 'center',
     marginBottom: 40,
-  },
-  logoutButton: {
-    backgroundColor: '#febc11',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-  },
-  logoutButtonText: {
-    color: '#003660',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
