@@ -21,7 +21,6 @@ import { commonStyles } from './ui/styles/commonStyles';
 
 import Register from "./screens/Register";
 
-
 function HomeScreen({ user }) {
   const [loggingOut, setLoggingOut] = useState(false);
 
