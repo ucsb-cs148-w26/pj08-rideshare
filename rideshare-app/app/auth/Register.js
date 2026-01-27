@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { Picker } from "@react-native-picker/picker";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../src/firebase";
+import { auth } from "../../src/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../src/firebase";
+import { db } from "../../src/firebase";
 
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, } from "react-native";
 
