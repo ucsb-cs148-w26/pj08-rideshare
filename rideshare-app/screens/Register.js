@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../src/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../src/firebase";
 
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, } from "react-native";
 
@@ -128,11 +130,21 @@ export default function Register({ onBack }) {
     };
 
     try {
-      await createUserWithEmailAndPassword(
+      const cred = await createUserWithEmailAndPassword(
         auth,
         payload.email,
         payload.password
       );
+
+      await setDoc(doc(db, "users", cred.user.uid), {
+        name: payload.name,
+        bio: payload.bio,
+        payHandle: payload.payHandle,
+        phone: payload.phone,
+        email: payload.email,
+        vehicles: payload.vehicles,
+        createdAt: serverTimestamp(),
+      });
 
       alert("Account created! Now go log in.");
       onBack(); // go back to login screen
