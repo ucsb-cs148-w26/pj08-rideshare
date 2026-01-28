@@ -24,11 +24,30 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function HostPage() {
   const router = useRouter();
+  const tagOptions = [
+    "Groceries/Shopping",
+    "Downtown",
+    "Going Home/Far",
+    "SBA",
+    "LAX",
+    "Amtrak Station",
+    "Other",
+  ];
+  const tagColors = {
+    "Downtown": "#e11d48",
+    "Groceries/Shopping": "#f97316",
+    "SBA": "#efdf70",
+    "LAX": "#10b981",
+    "Amtrak Station": "#0ea5e9",
+    "Going Home/Far": "#6366f1",
+    "Other": "#ff1493",
+  };
   const [price, setPrice] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromAddress, setFromAddress] = useState("");
   const [rideDate, setRideDate] = useState(null);
   const [seats, setSeats] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [driverNotes, setDriverNotes] = useState("");
   const [vehicle, setVehicle] = useState("");
@@ -36,6 +55,7 @@ export default function HostPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+  const [showTagPicker, setShowTagPicker] = useState(false);
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -124,7 +144,7 @@ export default function HostPage() {
   };
 
   const handleSubmit = async () => {
-    if (!price || !toAddress || !fromAddress || !rideDate || !seats) {
+    if (!price || !toAddress || !fromAddress || !rideDate || !seats || !selectedTag) {
       Alert.alert("Missing info", "Please fill out all required fields.");
       return;
     }
@@ -145,6 +165,7 @@ export default function HostPage() {
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
         seats: seats.trim(),
+        tag: selectedTag,
         contactInfo: contactInfo.trim(),
         driverNotes: driverNotes.trim(),
         vehicle: vehicle.trim(),
@@ -163,6 +184,7 @@ export default function HostPage() {
       setFromAddress("");
       setRideDate("");
       setSeats("");
+      setSelectedTag("");
       setContactInfo("");
       setDriverNotes("");
       setVehicle("");
@@ -318,6 +340,56 @@ export default function HostPage() {
       </View>
 
       <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Tags</Text>
+        <TouchableOpacity onPress={() => setShowTagPicker(true)}>
+          <TextInput
+            style={styles.input}
+            placeholder="Select a tag"
+            value={selectedTag}
+            editable={false}
+            pointerEvents="none"
+          />
+        </TouchableOpacity>
+      </View>
+
+      {showTagPicker && (
+        <Modal transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.tagModalCard}>
+              <Text style={styles.tagModalTitle}>Popular tags</Text>
+              <ScrollView style={styles.tagList}>
+                {tagOptions.map((tag) => (
+                  <Pressable
+                    key={tag}
+                    style={styles.tagOption}
+                    onPress={() => {
+                      setSelectedTag(tag);
+                      setShowTagPicker(false);
+                    }}
+                  >
+                    <View style={styles.tagOptionRow}>
+                      <View
+                        style={[
+                          styles.tagDot,
+                          { backgroundColor: tagColors[tag] || "#9ca3af" },
+                        ]}
+                      />
+                      <Text style={styles.tagOptionText}>{tag}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <Pressable
+                onPress={() => setShowTagPicker(false)}
+                style={styles.tagCloseButton}
+              >
+                <Text style={styles.tagCloseText}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      )}
+      <View style={styles.fieldGroup}>
         <Text style={styles.label}>Contact Information</Text>
         <TextInput
           style={styles.input}
@@ -382,7 +454,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   firstFieldGroup: {
-    marginTop: 30,
+    marginTop: 14,
   },
   label: {
     fontSize: 14,
@@ -451,6 +523,50 @@ const styles = StyleSheet.create({
     paddingLeft: 35,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  tagModalCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: "70%",
+  },
+  tagModalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
+    marginBottom: 12,
+  },
+  tagList: {
+    maxHeight: 280,
+  },
+  tagOption: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  tagOptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tagDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  tagOptionText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  tagCloseButton: {
+    alignSelf: "flex-end",
+    paddingTop: 12,
+  },
+  tagCloseText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
   },
   modalActions: {
     flexDirection: "row",
