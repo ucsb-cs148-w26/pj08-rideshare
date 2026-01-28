@@ -18,6 +18,7 @@ import {
   doc,
   serverTimestamp,
   writeBatch,
+  getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -136,6 +137,11 @@ export default function HostPage() {
       setIsSaving(true);
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      const ownerName = userSnap.exists()
+        ? (userSnap.data().name ?? "Unknown Driver")
+        : "Unknown Driver";
+
       const ridePayload = {
         price: price.trim(),
         toAddress: toAddress.trim(),
@@ -144,6 +150,7 @@ export default function HostPage() {
         seats: seats.trim(),
         ownerId: user.uid,
         ownerEmail: user.email || "",
+        ownerName: ownerName,
         createdAt: serverTimestamp(),
       };
 
@@ -155,7 +162,7 @@ export default function HostPage() {
       setPrice("");
       setToAddress("");
       setFromAddress("");
-      setRideDate("");
+      setRideDate(null);
       setSeats("");
       router.replace("/(tabs)/home");
     } catch (error) {

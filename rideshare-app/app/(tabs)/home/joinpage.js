@@ -27,50 +27,74 @@ export default function JoinPage() {
     fetchRides();
   }, []);
 
-  const fetchRides = async () => {
-    try {
-      setLoading(true);
-      const ridesQuery = query(
-        collection(db, 'rides'),
-        orderBy('createdAt', 'desc')
-      );
+  // const fetchRides = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const ridesQuery = query(
+  //       collection(db, 'rides'),
+  //       orderBy('createdAt', 'desc')
+  //     );
       
-      const querySnapshot = await getDocs(ridesQuery);
-      const ridesData = [];
+  //     const querySnapshot = await getDocs(ridesQuery);
+  //     const ridesData = [];
       
-      // Fetch each ride with driver name
-      for (const rideDoc of querySnapshot.docs) {
-        const ride = { id: rideDoc.id, ...rideDoc.data() };
+  //     // Fetch each ride with driver name
+  //     for (const rideDoc of querySnapshot.docs) {
+  //       const ride = { id: rideDoc.id, ...rideDoc.data() };
         
-        // Don't show user's own rides
-        if (ride.ownerId !== user?.uid) {
-          // Fetch driver's name from users collection
-          try {
-            const userDocRef = doc(db, 'users', ride.ownerId);
-            const userDoc = await getDoc(userDocRef);
+  //       // Don't show user's own rides
+  //       if (ride.ownerId !== user?.uid) {
+  //         // Fetch driver's name from users collection
+  //         try {
+  //           const userDocRef = doc(db, 'users', ride.ownerId);
+  //           const userDoc = await getDoc(userDocRef);
             
-            if (userDoc.exists()) {
-              ride.ownerName = userDoc.data().name || 'Unknown Driver';
-            } else {
-              ride.ownerName = 'Unknown Driver';
-            }
-          } catch (error) {
-            console.error('Error fetching driver name:', error);
-            ride.ownerName = 'Unknown Driver';
-          }
+  //           if (userDoc.exists()) {
+  //             ride.ownerName = userDoc.data().name || 'Unknown Driver';
+  //           } else {
+  //             ride.ownerName = 'Unknown Driver';
+  //           }
+  //         } catch (error) {
+  //           console.error('Error fetching driver name:', error);
+  //           ride.ownerName = 'Unknown Driver';
+  //         }
           
-          ridesData.push(ride);
-        }
-      }
+  //         ridesData.push(ride);
+  //       }
+  //     }
       
-      setRides(ridesData);
-    } catch (error) {
-      console.error('Error fetching rides:', error);
-      Alert.alert('Error', 'Failed to load available rides. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  //     setRides(ridesData);
+  //   } catch (error) {
+  //     console.error('Error fetching rides:', error);
+  //     Alert.alert('Error', 'Failed to load available rides. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+    const fetchRides = async () => {
+      try {
+        setLoading(true);
+
+        const ridesQuery = query(
+          collection(db, 'rides'),
+          orderBy('createdAt', 'desc')
+        );
+
+        const querySnapshot = await getDocs(ridesQuery);
+
+        const ridesData = querySnapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((ride) => ride.ownerId !== user?.uid);
+
+        setRides(ridesData);
+      } catch (error) {
+        console.error('Error fetching rides:', error);
+        Alert.alert('Error', 'Failed to load available rides. Please try again.');
+      } finally {
+        setLoading(false);
+      }
   };
+
+
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
