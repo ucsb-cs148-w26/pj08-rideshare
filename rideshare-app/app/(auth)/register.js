@@ -4,7 +4,16 @@ import { auth } from "../../src/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../src/firebase";
 
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+
+import { router } from "expo-router";
 
 const emailLooksValid = (email) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -22,7 +31,7 @@ const formatPhone = (value) => {
 };
 
 
-export default function Register({ onBack }) {
+export default function Register() {
   // Required fields
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -33,7 +42,6 @@ export default function Register({ onBack }) {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [vehicles, setVehicles] = useState([{ make: "", model: "", plate: "" }]);
-
   const [touched, setTouched] = useState({});
 
   const passwordHasMinLength = password.trim().length >= 8;
@@ -77,8 +85,6 @@ export default function Register({ onBack }) {
       e.confirmPassword = "Passwords do not match.";
     }
 
-
-
     vehicles.forEach((v, idx) => {
       const anyFilled = v.make.trim() || v.model.trim() || v.plate.trim();
       if (anyFilled) {
@@ -110,7 +116,6 @@ export default function Register({ onBack }) {
     setVehicles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  //
   const handleSubmit = async () => {
     const payload = {
       name: name.trim(),
@@ -146,13 +151,11 @@ export default function Register({ onBack }) {
       });
 
       alert("Account created! Now go log in.");
-      onBack(); // go back to login screen
+      router.replace("/(auth)/login"); // go back to login screen
     } catch (err) {
       alert(err?.message ?? "Sign up failed");
     }
   };
-
-  //
 
   return (
     <ScrollView
@@ -411,7 +414,10 @@ export default function Register({ onBack }) {
       </View>
 
       {/* Back */}
-      <TouchableOpacity onPress={onBack} style={{ marginTop: 18 }}>
+      <TouchableOpacity
+        onPress={() => router.replace("/(auth)/login")}
+        style={{ marginTop: 18 }}
+      >
         <Text style={styles.back}>Back to Login</Text>
       </TouchableOpacity>
     </ScrollView>

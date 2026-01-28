@@ -7,7 +7,7 @@ export const commonStyles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   
-  formSection: {
+  contentBox: {
     backgroundColor: colors.white,
     borderRadius: 20,
     padding: 24,
