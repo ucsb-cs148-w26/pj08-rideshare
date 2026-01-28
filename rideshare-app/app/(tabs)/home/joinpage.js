@@ -23,29 +23,6 @@ export default function JoinPage() {
   const [selectedRide, setSelectedRide] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-//   useEffect(() => {
-//   setLoading(true);
-
-//   const ridesQuery = query(collection(db, "rides"), orderBy("createdAt", "desc"));
-
-//   const unsub = onSnapshot(
-//     ridesQuery,
-//     (snapshot) => {
-//       const ridesData = snapshot.docs
-//         .map((d) => ({ id: d.id, ...d.data() }))
-//         .filter((ride) => ride.ownerId !== user?.uid); // keep if you still want to hide your own
-
-//       setRides(ridesData);
-//       setLoading(false);
-//     },
-//     (error) => {
-//       console.error("onSnapshot error:", error);
-//       setLoading(false);
-//     }
-//   );
-
-//   return () => unsub();
-// }, [user?.uid]);
 
 useEffect(() => {
   setLoading(true);
@@ -140,24 +117,52 @@ useEffect(() => {
       style={styles.rideCard}
       onPress={() => handleRidePress(item)}
     >
-      <View style={styles.rideHeader}>
-        <View style={styles.driverIcon}>
-          <Text style={styles.driverIconText}>👤</Text>
-        </View>
-        <View style={styles.rideInfo}>
+        <View style={styles.cardTopRow}>
+        <View style={styles.driverNameSection}>
+          <View style={styles.driverIcon}>
+            <Text style={styles.driverIconText}>👤</Text>
+          </View>
           <Text style={styles.driverName}>{item.ownerName}</Text>
-          <Text style={styles.rideDate}>WHEN: {formatDate(item.rideDate)}</Text>
-          <Text style={styles.rideCapacity}>CAP: {item.seats} seats</Text>
-        </View>
-        <View style={styles.rideDestinations}>
-          <Text style={styles.destinationLabel}>TO: {item.toAddress}</Text>
-          <Text style={styles.destinationLabel}>FROM: {item.fromAddress}</Text>
         </View>
         <Text style={styles.ridePrice}>${item.price}</Text>
       </View>
-      <TouchableOpacity style={styles.joinButton}>
-        <Text style={styles.joinButtonText}>JOIN</Text>
-      </TouchableOpacity>
+            {/* Main content row */}
+      <View style={styles.cardMainRow}>
+        {/* Left side: When and Cap */}
+        <View style={styles.leftInfo}>
+          <View style={styles.whenSection}>
+            <Text style={styles.label}>WHEN:</Text>
+            <Text style={styles.dateText}>{formatDate(item.rideDate)}</Text>
+            <Text style={styles.timeText}>{formatTime(item.rideDate)}</Text>
+          </View>
+          <Text style={styles.capacityText}>CAP: {item.seats} seats</Text>
+        </View>
+
+        {/* Right side: To and From */}
+        <View style={styles.rightInfo}>
+          <View style={styles.destinationRow}>
+            <Text style={styles.destinationLabel}>TO:</Text>
+            <Text style={styles.destinationValue}>{item.toAddress}</Text>
+          </View>
+          <View style={styles.destinationRow}>
+            <Text style={styles.destinationLabel}>FROM:</Text>
+            <Text style={styles.destinationValue}>{item.fromAddress}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Bottom row: more info and JOIN button */}
+      <View style={styles.cardBottomRow}>
+        <TouchableOpacity 
+          style={styles.viewDetailsButton}
+          onPress={() => handleRidePress(item)}
+        >
+          <Text style={styles.viewDetailsButtonText}>View Details</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.joinButton}>
+          <Text style={styles.joinButtonText}>JOIN</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -349,55 +354,105 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  rideHeader: {
+  cardTopRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   driverIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 10,
   },
   driverIconText: {
-    fontSize: 20,
+    fontSize: 22,
   },
   rideInfo: {
     marginLeft: 12,
     flex: 1,
   },
   driverName: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 4,
   },
-  rideDate: {
-    fontSize: 14,
+   ridePrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  cardMainRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  leftInfo: {
+    flex: 1,
+  },
+  whenSection: {
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
-  rideCapacity: {
-    fontSize: 12,
+   dateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  timeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  capacityText: {
+    fontSize: 16,
     color: colors.textSecondary,
   },
-  rideDestinations: {
-    flex: 2,
-    marginLeft: 10,
+  rightInfo: {
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
   },
   destinationLabel: {
-    fontSize: 12,
+    fontSize: 18,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 8,
   },
-  ridePrice: {
-    fontSize: 20,
+  destinationValue: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  cardBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  viewDetailsButton: {
+    backgroundColor: colors.backgroundLight,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#b8baba',
+  },
+  viewDetailsButtonText: {
+    color: '#b8baba',
+    fontSize: 14,
     fontWeight: 'bold',
     color: colors.primary,
     marginLeft: 10,
@@ -405,9 +460,8 @@ const styles = StyleSheet.create({
   joinButton: {
     backgroundColor: colors.accent,
     paddingVertical: 10,
-    paddingHorizontal: 30,
+    paddingHorizontal: 35,
     borderRadius: 6,
-    alignSelf: 'flex-end',
   },
   joinButtonText: {
     color: colors.white,
