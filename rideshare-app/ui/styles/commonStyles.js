@@ -79,4 +79,14 @@ export const commonStyles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
+  emptyState: {
+  paddingVertical: 10,
+  alignItems: 'center',
+  },
+  emptyText: {
+  color: colors.primary,
+  fontSize: 14,
+  textAlign: 'center',
+  },
 });
