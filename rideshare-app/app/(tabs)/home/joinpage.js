@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { collection, query, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { colors } from '../../../ui/styles/colors';
@@ -23,78 +23,94 @@ export default function JoinPage() {
   const [selectedRide, setSelectedRide] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  useEffect(() => {
-    fetchRides();
-  }, []);
+//   useEffect(() => {
+//   setLoading(true);
 
-  // const fetchRides = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const ridesQuery = query(
-  //       collection(db, 'rides'),
-  //       orderBy('createdAt', 'desc')
-  //     );
+//   const ridesQuery = query(collection(db, "rides"), orderBy("createdAt", "desc"));
+
+//   const unsub = onSnapshot(
+//     ridesQuery,
+//     (snapshot) => {
+//       const ridesData = snapshot.docs
+//         .map((d) => ({ id: d.id, ...d.data() }))
+//         .filter((ride) => ride.ownerId !== user?.uid); // keep if you still want to hide your own
+
+//       setRides(ridesData);
+//       setLoading(false);
+//     },
+//     (error) => {
+//       console.error("onSnapshot error:", error);
+//       setLoading(false);
+//     }
+//   );
+
+//   return () => unsub();
+// }, [user?.uid]);
+
+useEffect(() => {
+  setLoading(true);
+
+  const ridesQuery = query(collection(db, "rides"), orderBy("createdAt", "desc"));
+
+  const unsub = onSnapshot(
+    ridesQuery,
+    (snapshot) => {
+      const ridesData = snapshot.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            ...data,
+            ownerName: (data.ownerName ?? "Unknown Driver").toString(),
+          };
+        })
+        .filter((ride) => ride.ownerId !== user?.uid);
+
+      setRides(ridesData);
+      setLoading(false);
+    },
+    (error) => {
+      console.error("onSnapshot error:", error);
+      setLoading(false);
+    }
+  );
+
+  return () => unsub();
+}, [user?.uid]);
+
+
+  const fetchRides = async () => {
+    try {
+      setLoading(true);
+      const ridesQuery = query(
+        collection(db, 'rides'),
+        orderBy('createdAt', 'desc')
+      );
       
-  //     const querySnapshot = await getDocs(ridesQuery);
-  //     const ridesData = [];
+      const querySnapshot = await getDocs(ridesQuery);
+      const ridesData = [];
       
-  //     // Fetch each ride with driver name
-  //     for (const rideDoc of querySnapshot.docs) {
-  //       const ride = { id: rideDoc.id, ...rideDoc.data() };
-        
-  //       // Don't show user's own rides
-  //       if (ride.ownerId !== user?.uid) {
-  //         // Fetch driver's name from users collection
-  //         try {
-  //           const userDocRef = doc(db, 'users', ride.ownerId);
-  //           const userDoc = await getDoc(userDocRef);
-            
-  //           if (userDoc.exists()) {
-  //             ride.ownerName = userDoc.data().name || 'Unknown Driver';
-  //           } else {
-  //             ride.ownerName = 'Unknown Driver';
-  //           }
-  //         } catch (error) {
-  //           console.error('Error fetching driver name:', error);
-  //           ride.ownerName = 'Unknown Driver';
-  //         }
-          
-  //         ridesData.push(ride);
-  //       }
-  //     }
+
+      for (const rideDoc of querySnapshot.docs) {
+      const ride = { id: rideDoc.id, ...rideDoc.data() };
+
+  if (ride.ownerId !== user?.uid) {
+    ridesData.push({
+      ...ride,
+      ownerName: ride.ownerName || "Unknown Driver", // use saved name if present
+    });
+  }
+}
+
       
-  //     setRides(ridesData);
-  //   } catch (error) {
-  //     console.error('Error fetching rides:', error);
-  //     Alert.alert('Error', 'Failed to load available rides. Please try again.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-    const fetchRides = async () => {
-      try {
-        setLoading(true);
-
-        const ridesQuery = query(
-          collection(db, 'rides'),
-          orderBy('createdAt', 'desc')
-        );
-
-        const querySnapshot = await getDocs(ridesQuery);
-
-        const ridesData = querySnapshot.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((ride) => ride.ownerId !== user?.uid);
-
-        setRides(ridesData);
-      } catch (error) {
-        console.error('Error fetching rides:', error);
-        Alert.alert('Error', 'Failed to load available rides. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+      setRides(ridesData);
+    } catch (error) {
+      console.error('Error fetching rides:', error);
+      Alert.alert('Error', 'Failed to load available rides. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

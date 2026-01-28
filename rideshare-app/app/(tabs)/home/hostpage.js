@@ -138,9 +138,12 @@ export default function HostPage() {
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
       const userSnap = await getDoc(doc(db, "users", user.uid));
-      const ownerName = userSnap.exists()
-        ? (userSnap.data().name ?? "Unknown Driver")
-        : "Unknown Driver";
+      const u = userSnap.exists() ? userSnap.data() : null;
+      const ownerName =
+        u?.name ||
+        u?.displayName ||
+        u?.fullName ||
+        (auth.currentUser?.displayName ?? "Unknown Driver");
 
       const ridePayload = {
         price: price.trim(),
