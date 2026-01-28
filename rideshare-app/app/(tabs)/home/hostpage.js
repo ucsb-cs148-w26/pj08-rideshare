@@ -48,6 +48,9 @@ export default function HostPage() {
   const [rideDate, setRideDate] = useState(null);
   const [seats, setSeats] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
+  const [driverNotes, setDriverNotes] = useState("");
+  const [vehicle, setVehicle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -142,7 +145,7 @@ export default function HostPage() {
 
   const handleSubmit = async () => {
     if (!price || !toAddress || !fromAddress || !rideDate || !seats || !selectedTag) {
-      Alert.alert("Missing info", "Please fill out all fields.");
+      Alert.alert("Missing info", "Please fill out all required fields.");
       return;
     }
 
@@ -163,6 +166,9 @@ export default function HostPage() {
         rideDate: rideDate.toISOString(),
         seats: seats.trim(),
         tag: selectedTag,
+        contactInfo: contactInfo.trim(),
+        driverNotes: driverNotes.trim(),
+        vehicle: vehicle.trim(),
         ownerId: user.uid,
         ownerEmail: user.email || "",
         createdAt: serverTimestamp(),
@@ -179,6 +185,9 @@ export default function HostPage() {
       setRideDate("");
       setSeats("");
       setSelectedTag("");
+      setContactInfo("");
+      setDriverNotes("");
+      setVehicle("");
       router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error?.message || "Could not save ride. Please try again.");
@@ -380,6 +389,39 @@ export default function HostPage() {
           </View>
         </Modal>
       )}
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Contact Information</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Phone number or preferred contact"
+          value={contactInfo}
+          onChangeText={setContactInfo}
+          keyboardType="phone-pad"
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Vehicle</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., White Toyota Camry"
+          value={vehicle}
+          onChangeText={setVehicle}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Driver Notes</Text>
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          placeholder="Payment methods, luggage space, pet-friendly, etc."
+          value={driverNotes}
+          onChangeText={setDriverNotes}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+      </View>
 
       <TouchableOpacity
         style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
@@ -428,6 +470,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     backgroundColor: "#f9fafb",
+  },
+  multilineInput: {
+    minHeight: 80,
+    paddingTop: 12,
   },
   priceInputWrapper: {
     flexDirection: "row",
