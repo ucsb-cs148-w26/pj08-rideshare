@@ -132,6 +132,8 @@ export default function Homepage({ user }) {
   const [selectedRide, setSelectedRide] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [driverVehicle, setDriverVehicle] = useState(null);
+  const [hasVehicleInfo, setHasVehicleInfo] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -197,6 +199,47 @@ export default function Homepage({ user }) {
     }, (error) => {
       console.error('Error listening to rides:', error);
     });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setHasVehicleInfo(false);
+      setLoadingProfile(false);
+      return;
+    }
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setHasVehicleInfo(false);
+          setLoadingProfile(false);
+          return;
+        }
+        const data = snapshot.data() || {};
+        const vehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+        const primaryVehicle = vehicles[0] || {};
+        const hasVehicle = Boolean(
+          primaryVehicle.make &&
+            primaryVehicle.make.trim() &&
+            primaryVehicle.model &&
+            primaryVehicle.model.trim() &&
+            primaryVehicle.plate &&
+            primaryVehicle.plate.trim()
+        );
+        setHasVehicleInfo(hasVehicle);
+        setLoadingProfile(false);
+      },
+      (error) => {
+        console.error('Error loading user profile:', error);
+        setHasVehicleInfo(false);
+        setLoadingProfile(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -305,8 +348,14 @@ export default function Homepage({ user }) {
               style={[
                 commonStyles.primaryButton,
                 { backgroundColor: colors.accent },
+                (!hasVehicleInfo || loadingProfile) && styles.buttonDisabled,
               ]}
-              onPress={() => router.push("/(tabs)/home/hostpage")}
+              onPress={() => {
+                if (hasVehicleInfo) {
+                  router.push("/(tabs)/home/hostpage");
+                }
+              }}
+              disabled={!hasVehicleInfo || loadingProfile}
             >
               <Text 
                 style={[
@@ -317,6 +366,16 @@ export default function Homepage({ user }) {
                 Host
               </Text>
             </TouchableOpacity>
+            {!loadingProfile && !hasVehicleInfo && (
+              <TouchableOpacity
+                style={styles.vehicleNotice}
+                onPress={() => router.push('/(tabs)/account/accountpage')}
+              >
+                <Text style={styles.vehicleNoticeText}>
+                  Add vehicle info in your profile to host a ride.
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -505,6 +564,23 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     opacity: 0.8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  vehicleNotice: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  vehicleNoticeText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
   },
   logoContainer: {
     marginBottom: 12,
