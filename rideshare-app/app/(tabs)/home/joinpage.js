@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView,
 } from "react-native";
 import {
   collection,
@@ -31,6 +32,26 @@ export default function JoinPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  const tagOptions = [
+    "Groceries/Shopping",
+    "Downtown",
+    "Going Home/Far",
+    "SBA",
+    "LAX",
+    "Amtrak Station",
+    "Other",
+  ];
+  
+  const tagColors = {
+    "Downtown": "#e11d48",
+    "Groceries/Shopping": "#f97316",
+    "SBA": "#efdf70",
+    "LAX": "#10b981",
+    "Amtrak Station": "#0ea5e9",
+    "Going Home/Far": "#6366f1",
+    "Other": "#ff1493",
+  };
+
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +63,9 @@ export default function JoinPage() {
   const [isJoining, setIsJoining] = useState(false);
 
   const [joinedRideIds, setJoinedRideIds] = useState(new Set());
+  
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedTags, setSelectedTags] = useState(new Set());
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -158,6 +182,27 @@ export default function JoinPage() {
     setConfirmVisible(false);
     setConfirmRide(null);
   };
+//Filter logic for retrieving rides based on selected tags
+  const toggleTagFilter = (tag) => {
+    const newTags = new Set(selectedTags);
+    if (newTags.has(tag)) {
+      newTags.delete(tag);
+    } else {
+      newTags.add(tag);
+    }
+    setSelectedTags(newTags);
+  };
+
+  const clearFilters = () => {
+    setSelectedTags(new Set());
+  };
+
+  const getFilteredRides = () => {
+    if (selectedTags.size === 0) {
+      return rides;
+    }
+    return rides.filter((ride) => selectedTags.has(ride.tag));
+  };
 
   const toNumber = (v) => {
     const n = typeof v === "number" ? v : parseFloat(String(v));
@@ -236,6 +281,7 @@ export default function JoinPage() {
     const alreadyJoined = joinedRideIds.has(item.id);
     const soldOut = Number(item.seats) <= 0;
     const disabled = alreadyJoined || soldOut;
+    const tagColor = item.tag ? tagColors[item.tag] : null;
 
     return (
       <TouchableOpacity
@@ -243,9 +289,12 @@ export default function JoinPage() {
         onPress={() => handleRidePress(item)}
         activeOpacity={0.85}
       >
-        {/* Top row: Driver name and Price */}
+        {/* Tag Color Box and Top row: Driver name and Price */}
         <View style={styles.cardTopRow}>
           <View style={styles.driverNameSection}>
+            {tagColor && (
+              <View style={[styles.tagBox, { backgroundColor: tagColor }]} />
+            )}
             <View style={[styles.driverIcon, disabled && styles.driverIconDisabled]}>
               <Text style={[styles.driverIconText, disabled && styles.textDisabled]}>👤</Text>
             </View>
@@ -344,7 +393,7 @@ export default function JoinPage() {
       </View>
 
       {/* Filter Button (Placeholder) */}
-      <TouchableOpacity style={styles.filterButton}>
+      <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
         <Text style={styles.filterButtonText}>FILTER ▾</Text>
       </TouchableOpacity>
 
@@ -356,7 +405,7 @@ export default function JoinPage() {
         </View>
       ) : (
         <FlatList
-          data={rides}
+          data={getFilteredRides()}
           renderItem={renderRideCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
@@ -365,6 +414,58 @@ export default function JoinPage() {
           onRefresh={fetchRides}
         />
       )}
+
+      {/* Filter Modal */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={showFilterModal}
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View style={styles.filterModalOverlay}>
+          <View style={styles.filterModalContent}>
+            <View style={styles.filterModalHeader}>
+              <Text style={styles.filterModalTitle}>Filter by Tags</Text>
+              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                <Text style={styles.filterModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.filterTagList}>
+              {tagOptions.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={styles.filterTagOption}
+                  onPress={() => toggleTagFilter(tag)}
+                >
+                  <View style={styles.filterTagCheckbox}>
+                    {selectedTags.has(tag) && (
+                      <Text style={styles.filterTagCheckmark}>✓</Text>
+                    )}
+                  </View>
+                  <View style={[styles.filterTagDot, { backgroundColor: tagColors[tag] || "#9ca3af" }]} />
+                  <Text style={styles.filterTagOptionText}>{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.filterModalActions}>
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={clearFilters}
+              >
+                <Text style={styles.filterClearButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.filterDoneButton}
+                onPress={() => setShowFilterModal(false)}
+              >
+                <Text style={styles.filterDoneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Confirm modal (your current feature) */}
       <Modal
@@ -591,6 +692,12 @@ const styles = StyleSheet.create({
   driverNameSection: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  tagBox: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    marginRight: 10,
   },
   driverIcon: {
     width: 45,
@@ -909,4 +1016,105 @@ const styles = StyleSheet.create({
   joinButtonTextDisabled: {
     color: "#111111",
   },
+  
+  // Filter Modal
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  filterModalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
+    maxHeight: "80%",
+  },
+  filterModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  filterModalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.textPrimary,
+  },
+  filterModalClose: {
+    fontSize: 24,
+    color: colors.textPrimary,
+  },
+  filterTagList: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  filterTagOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filterTagCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    backgroundColor: colors.background,
+  },
+  filterTagCheckmark: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.primary,
+  },
+  filterTagDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  filterTagOptionText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  filterModalActions: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  filterClearButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: "center",
+    backgroundColor: colors.background,
+  },
+  filterClearButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  filterDoneButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+  },
+  filterDoneButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.white,
+  },
 });
+
