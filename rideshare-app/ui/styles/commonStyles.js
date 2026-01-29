@@ -114,4 +114,9 @@ export const commonStyles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  
+  multilineInput: {
+  minHeight: 80,
+  paddingTop: 12,
+  },
 });
