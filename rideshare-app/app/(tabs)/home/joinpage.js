@@ -29,7 +29,7 @@ import { db } from "../../../src/firebase";
 import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
-import NavBar from '../../../src/components/nav-bar';
+import NavBar from '../../../app/components/nav-bar';
 
 export default function JoinPage() {
   const { user } = useAuth();

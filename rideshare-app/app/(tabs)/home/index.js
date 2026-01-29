@@ -15,7 +15,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
-import NavBar from '../../../src/components/nav-bar';
+import NavBar from '../../../app/components/nav-bar';
 
 // Placeholder data for joined rides (MUST update later)
 const MOCK_JOINED_RIDES = [

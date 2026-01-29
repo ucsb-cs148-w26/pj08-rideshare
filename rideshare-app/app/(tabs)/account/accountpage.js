@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { colors } from '../../../ui/styles/colors';
-import NavBar from '../../../src/components/nav-bar';
+import NavBar from '../../../app/components/nav-bar';
 
 export default function AccountPage() {
   return (

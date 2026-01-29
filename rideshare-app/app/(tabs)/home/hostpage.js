@@ -25,7 +25,7 @@ import {
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { commonStyles } from "../../../ui/styles/commonStyles";
-import NavBar from '../../../src/components/nav-bar';
+import NavBar from '../../../app/components/nav-bar';
 
 export default function HostPage() {
   const router = useRouter();
