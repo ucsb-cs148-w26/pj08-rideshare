@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { router } from "expo-router";
 import {
   StyleSheet,
@@ -7,29 +7,37 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
-
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
 
-// Placeholder data (will be replaced with backend data later)
+// Placeholder data for joined rides (MUST update later)
 const MOCK_JOINED_RIDES = [
   { id: '1', title: 'UCSB → Downtown SB' },
   { id: '2', title: 'IV → LAX' },
 ];
 
-const MOCK_HOSTED_RIDES = [
-  { id: '3', title: 'UCSB → SFO' },
-  { id: '4', title: 'UCSB → SF4' },
-  { id: '5', title: 'UCSB → SF8' },
-];
+function formatDateTime(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  return date.toLocaleDateString([], {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+  }) + ' at ' + date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
-
-function RideList({ rides, emptyText }) {
+function RideList({ rides, emptyText, isHosted = false }) {
   if (!rides || rides.length === 0) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyStateText}>{emptyText}</Text>
+      <View style={commonStyles.emptyState}>
+        <Text style={commonStyles.emptyText}>{emptyText}</Text>
       </View>
     );
   }
@@ -42,8 +50,15 @@ function RideList({ rides, emptyText }) {
       ItemSeparatorComponent={() => <View style={styles.divider} />}
       renderItem={({ item }) => (
         <View style={styles.rideRow}>
-          <Text style={styles.rideTitle}>{item.title}</Text>
-          {!!item.subtitle && <Text style={styles.rideSubtitle}>{item.subtitle}</Text>}
+          <Text style={styles.rideTitle}>
+            {isHosted ? `${item.fromAddress} → ${item.toAddress}` : item.title}
+          </Text>
+          {isHosted && item.rideDate && (
+            <Text style={styles.rideSubtitle}>{formatDateTime(item.rideDate)}</Text>
+          )}
+          {!isHosted && !!item.subtitle && (
+            <Text style={styles.rideSubtitle}>{item.subtitle}</Text>
+          )}
         </View>
       )}
     />
@@ -51,6 +66,34 @@ function RideList({ rides, emptyText }) {
 }
 
 export default function Homepage({ user }) {
+  const [hostedRides, setHostedRides] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    const ridesRef = collection(db, 'rides');
+    const q = query(ridesRef, where('ownerId', '==', currentUser.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rides = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setHostedRides(rides);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching hosted rides:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <View style={commonStyles.container}>
       <ScrollView
@@ -61,7 +104,6 @@ export default function Homepage({ user }) {
           {/* can add image here later if wanted */}
         </View>
 
-        {/* Main Content Box */}
         <View 
           style={[
             commonStyles.contentBox,
@@ -92,10 +134,15 @@ export default function Homepage({ user }) {
             <Text style={styles.sectionTitle}>Hosted Rides</Text>
 
             <View style={styles.card}>
-              <RideList
-                rides={MOCK_HOSTED_RIDES}
-                emptyText={"No hosted rides yet.\nTap Host to create a ride."}
-              />
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <RideList
+                  rides={hostedRides}
+                  emptyText={"No hosted rides yet.\nTap Host to create a ride."}
+                  isHosted={true}
+                />
+              )}
             </View>
 
             <TouchableOpacity 
@@ -163,19 +210,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-
-  // List styles
   emptyState: {
     paddingVertical: 10,
   },

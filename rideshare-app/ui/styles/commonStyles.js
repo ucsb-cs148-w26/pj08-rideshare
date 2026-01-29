@@ -79,4 +79,39 @@ export const commonStyles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
+  emptyState: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  
+  emptyText: {
+    color: colors.primary,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+
+  // Loading state
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+
+  // Read-only fields (for pre-filled data)
+  readOnlyField: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#e5e7eb',
+  },
+  
+  readOnlyText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '500',
+  },
 });
