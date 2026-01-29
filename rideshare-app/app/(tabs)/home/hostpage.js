@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -11,16 +11,19 @@ import {
   Platform,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { colors } from "../../../ui/styles/colors";
 import {
   collection,
   doc,
+  getDoc,
   serverTimestamp,
   writeBatch,
 } from "firebase/firestore";
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { commonStyles } from "../../../ui/styles/commonStyles";
 
 export default function HostPage() {
   const router = useRouter();
@@ -42,6 +45,12 @@ export default function HostPage() {
     "Going Home/Far": "#6366f1",
     "Other": "#ff1493",
   };
+
+  // User profile state
+  const [ownerName, setOwnerName] = useState("");
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Form state
   const [price, setPrice] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromAddress, setFromAddress] = useState("");
@@ -53,6 +62,31 @@ export default function HostPage() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   const [showTagPicker, setShowTagPicker] = useState(false);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setOwnerName(data.name || "");
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -165,6 +199,7 @@ export default function HostPage() {
         tag: selectedTag,
         ownerId: user.uid,
         ownerEmail: user.email || "",
+        ownerName: ownerName,  // Include the name
         createdAt: serverTimestamp(),
       };
 
@@ -187,11 +222,29 @@ export default function HostPage() {
     }
   };
 
+  if (loadingProfile) {
+    return (
+      <View style={commonStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Host a Ride</Text>
 
+      {/* Owner Name (pulled from profile) */}
       <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
+        <Text style={styles.label}>Host Name</Text>
+        <View style={commonStyles.readOnlyField}>
+          <Text style={commonStyles.readOnlyText}>
+            {ownerName || "Name not set"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.fieldGroup}>
         <Text style={styles.label}>Price</Text>
         <View style={styles.priceInputWrapper}>
           <Text style={styles.pricePrefix}>$</Text>
@@ -401,6 +454,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingTop: 45,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
   title: {
     fontSize: 24,
     fontWeight: "700",
@@ -429,9 +488,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#f9fafb",
   },
-  multilineInput: {
-    minHeight: 80,
-    paddingTop: 12,
+  readOnlyField: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#e5e7eb",
+  },
+  readOnlyText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: "500",
   },
   priceInputWrapper: {
     flexDirection: "row",
