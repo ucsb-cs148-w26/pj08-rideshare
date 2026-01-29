@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { collection, query, getDocs, orderBy, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, getDoc, onSnapshot,runTransaction, serverTimestamp, setDoc, } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { colors } from '../../../ui/styles/colors';
@@ -22,6 +22,10 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(true);
   const [selectedRide, setSelectedRide] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmRide, setConfirmRide] = useState(null);
+  const [isJoining, setIsJoining] = useState(false);
+
 
 
 useEffect(() => {
@@ -112,6 +116,80 @@ useEffect(() => {
     setModalVisible(true);
   };
 
+  const openJoinConfirm = (ride) => {
+  setConfirmRide(ride);
+  setConfirmVisible(true);
+};
+
+const closeJoinConfirm = () => {
+  setConfirmVisible(false);
+  setConfirmRide(null);
+};
+
+const toNumber = (v) => {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
+  return Number.isFinite(n) ? n : 0;
+};
+
+const handleConfirmJoin = async () => {
+  if (!confirmRide) return;
+    if (!user?.uid) {
+      Alert.alert("Not signed in", "Please sign in to join a ride.");
+      return;
+    }
+
+    try {
+      setIsJoining(true);
+
+      const rideRef = doc(db, "rides", confirmRide.id);
+      const joinRef = doc(db, "rides", confirmRide.id, "joins", user.uid);
+
+      await runTransaction(db, async (tx) => {
+        const [rideSnap, joinSnap] = await Promise.all([
+          tx.get(rideRef),
+          tx.get(joinRef),
+        ]);
+
+        if (!rideSnap.exists()) {
+          throw new Error("This ride no longer exists.");
+        }
+
+        if (joinSnap.exists()) {
+          throw new Error("You already joined this ride.");
+        }
+
+        const rideData = rideSnap.data();
+        const seatsNum = Number(rideData.seats);
+
+        if (!Number.isFinite(seatsNum)) {
+          throw new Error("Ride capacity is invalid (not a number).");
+        }
+
+        if (seatsNum <= 0) {
+          throw new Error("No seats left for this ride.");
+        }
+
+        tx.update(rideRef, { seats: seatsNum - 1 });
+
+        tx.set(joinRef, {
+          riderId: user.uid,
+          riderEmail: user.email ?? "",
+          joinedAt: serverTimestamp(),
+          pricePaid: Number(rideData.price) || 0, // placeholder until real payment
+        });
+      });
+
+      closeJoinConfirm();
+      Alert.alert("Confirmed!", "You joined the ride.");
+    } catch (e) {
+      console.error("join error:", e);
+      Alert.alert("Error", e?.message ?? "Could not join ride.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+
   const renderRideCard = ({ item }) => (
     <TouchableOpacity
       style={styles.rideCard}
@@ -135,7 +213,7 @@ useEffect(() => {
             <Text style={styles.dateText}>{formatDate(item.rideDate)}</Text>
             <Text style={styles.timeText}>{formatTime(item.rideDate)}</Text>
           </View>
-          <Text style={styles.capacityText}>CAP: {item.seats} seats</Text>
+          <Text style={styles.capacityText}>CAP: {Number(item.seats)} seats</Text>
         </View>
 
         {/* Right side: To and From */}
@@ -159,7 +237,7 @@ useEffect(() => {
         >
           <Text style={styles.viewDetailsButtonText}>View Details</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.joinButton}>
+        <TouchableOpacity style={styles.joinButton} onPress={() => openJoinConfirm(item)}>
           <Text style={styles.joinButtonText}>JOIN</Text>
         </TouchableOpacity>
       </View>
@@ -213,6 +291,94 @@ useEffect(() => {
           onRefresh={fetchRides}
         />
       )}
+
+
+  <Modal
+  animationType="fade"
+  transparent={true}
+  visible={confirmVisible}
+  onRequestClose={closeJoinConfirm}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.confirmCard}>
+      <Text style={styles.confirmTitle}>Confirm your ride</Text>
+
+      {confirmRide && (
+        <>
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>Driver</Text>
+            <Text style={styles.confirmValue}>{confirmRide.ownerName}</Text>
+          </View>
+
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>When</Text>
+            <Text style={styles.confirmValue}>
+              {formatDate(confirmRide.rideDate)} • {formatTime(confirmRide.rideDate)}
+            </Text>
+          </View>
+
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>From</Text>
+            <Text style={styles.confirmValue} numberOfLines={2}>
+              {confirmRide.fromAddress}
+            </Text>
+          </View>
+
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>To</Text>
+            <Text style={styles.confirmValue} numberOfLines={2}>
+              {confirmRide.toAddress}
+            </Text>
+          </View>
+
+          <View style={styles.confirmDivider} />
+
+          {/* Payment summary */}
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>Ride price</Text>
+            <Text style={styles.confirmValue}>${toNumber(confirmRide.price).toFixed(2)}</Text>
+          </View>
+
+          {/* If you want a fee line, uncomment:
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmLabel}>Service fee</Text>
+            <Text style={styles.confirmValue}>$0.00</Text>
+          </View>
+          */}
+
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmTotalLabel}>Total</Text>
+            <Text style={styles.confirmTotalValue}>
+              ${toNumber(confirmRide.price).toFixed(2)}
+            </Text>
+          </View>
+
+          <Text style={styles.confirmTinyNote}>
+            By confirming, you agree to pay the total amount shown.
+          </Text>
+        </>
+      )}
+
+      <View style={styles.confirmActions}>
+        <TouchableOpacity style={styles.cancelBtn} onPress={closeJoinConfirm} disabled={isJoining}>
+          <Text style={styles.cancelBtnText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
+          onPress={handleConfirmJoin}
+          disabled={isJoining}
+          >
+            <Text style={styles.payBtnText}>
+              {isJoining ? "Confirming..." : "Confirm & Pay"}
+            </Text>
+          </TouchableOpacity>
+            </View>
+          </View>
+      </View>
+    </Modal>
+
+
 
       {/* Modal for Ride Details */}
       <Modal
@@ -563,4 +729,95 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
+  confirmCard: {
+  backgroundColor: colors.white,
+  borderRadius: 14,
+  padding: 18,
+  width: "88%",
+  borderWidth: 2,
+  borderColor: colors.text,
+},
+confirmTitle: {
+  fontSize: 18,
+  fontWeight: "800",
+  color: colors.text,
+  marginBottom: 12,
+},
+confirmRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  marginBottom: 10,
+  gap: 12,
+},
+confirmLabel: {
+  width: 80,
+  fontSize: 13,
+  fontWeight: "700",
+  color: colors.textSecondary,
+},
+confirmValue: {
+  flex: 1,
+  fontSize: 14,
+  fontWeight: "600",
+  color: colors.text,
+  textAlign: "right",
+},
+confirmDivider: {
+  height: 1,
+  backgroundColor: colors.border,
+  marginVertical: 10,
+},
+confirmTotalLabel: {
+  width: 80,
+  fontSize: 14,
+  fontWeight: "900",
+  color: colors.text,
+},
+confirmTotalValue: {
+  flex: 1,
+  fontSize: 16,
+  fontWeight: "900",
+  color: colors.primary,
+  textAlign: "right",
+},
+confirmTinyNote: {
+  marginTop: 6,
+  fontSize: 12,
+  color: colors.textSecondary,
+  lineHeight: 16,
+},
+confirmActions: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 16,
+},
+cancelBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 10,
+  borderWidth: 2,
+  borderColor: colors.border,
+  backgroundColor: colors.backgroundLight,
+  marginRight: 10,
+  alignItems: "center",
+},
+cancelBtnText: {
+  fontSize: 14,
+  fontWeight: "800",
+  color: colors.text,
+},
+payBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 10,
+  backgroundColor: colors.accent,
+  alignItems: "center",
+},
+payBtnText: {
+  fontSize: 14,
+  fontWeight: "800",
+  color: colors.white,
+},
+
 });

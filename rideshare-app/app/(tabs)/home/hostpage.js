@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -11,29 +11,82 @@ import {
   Platform,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { colors } from "../../../ui/styles/colors";
 import {
   collection,
   doc,
+  getDoc,
   serverTimestamp,
   writeBatch,
-  getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { commonStyles } from "../../../ui/styles/commonStyles";
 
 export default function HostPage() {
   const router = useRouter();
+  const tagOptions = [
+    "Groceries/Shopping",
+    "Downtown",
+    "Going Home/Far",
+    "SBA",
+    "LAX",
+    "Amtrak Station",
+    "Other",
+  ];
+  const tagColors = {
+    "Downtown": "#e11d48",
+    "Groceries/Shopping": "#f97316",
+    "SBA": "#efdf70",
+    "LAX": "#10b981",
+    "Amtrak Station": "#0ea5e9",
+    "Going Home/Far": "#6366f1",
+    "Other": "#ff1493",
+  };
+
+  // User profile state
+  const [ownerName, setOwnerName] = useState("");
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Form state
   const [price, setPrice] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromAddress, setFromAddress] = useState("");
   const [rideDate, setRideDate] = useState(null);
   const [seats, setSeats] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+  const [showTagPicker, setShowTagPicker] = useState(false);
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setOwnerName(data.name || "");
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -122,8 +175,8 @@ export default function HostPage() {
   };
 
   const handleSubmit = async () => {
-    if (!price || !toAddress || !fromAddress || !rideDate || !seats) {
-      Alert.alert("Missing info", "Please fill out all fields.");
+    if (!price || !toAddress || !fromAddress || !rideDate || !seats || !selectedTag) {
+      Alert.alert("Missing info", "Please fill out all required fields.");
       return;
     }
 
@@ -137,23 +190,16 @@ export default function HostPage() {
       setIsSaving(true);
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
-      const userSnap = await getDoc(doc(db, "users", user.uid));
-      const u = userSnap.exists() ? userSnap.data() : null;
-      const ownerName =
-        u?.name ||
-        u?.displayName ||
-        u?.fullName ||
-        (auth.currentUser?.displayName ?? "Unknown Driver");
-
       const ridePayload = {
         price: price.trim(),
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
         seats: seats.trim(),
+        tag: selectedTag,
         ownerId: user.uid,
         ownerEmail: user.email || "",
-        ownerName: ownerName,
+        ownerName: ownerName,  // Include the name
         createdAt: serverTimestamp(),
       };
 
@@ -165,8 +211,9 @@ export default function HostPage() {
       setPrice("");
       setToAddress("");
       setFromAddress("");
-      setRideDate(null);
+      setRideDate("");
       setSeats("");
+      setSelectedTag("");
       router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error?.message || "Could not save ride. Please try again.");
@@ -175,11 +222,29 @@ export default function HostPage() {
     }
   };
 
+  if (loadingProfile) {
+    return (
+      <View style={commonStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Host a Ride</Text>
 
+      {/* Owner Name (pulled from profile) */}
       <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
+        <Text style={styles.label}>Host Name</Text>
+        <View style={commonStyles.readOnlyField}>
+          <Text style={commonStyles.readOnlyText}>
+            {ownerName || "Name not set"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.fieldGroup}>
         <Text style={styles.label}>Price</Text>
         <View style={styles.priceInputWrapper}>
           <Text style={styles.pricePrefix}>$</Text>
@@ -318,6 +383,57 @@ export default function HostPage() {
         />
       </View>
 
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Tags</Text>
+        <TouchableOpacity onPress={() => setShowTagPicker(true)}>
+          <TextInput
+            style={styles.input}
+            placeholder="Select a tag"
+            value={selectedTag}
+            editable={false}
+            pointerEvents="none"
+          />
+        </TouchableOpacity>
+      </View>
+
+      {showTagPicker && (
+        <Modal transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.tagModalCard}>
+              <Text style={styles.tagModalTitle}>Popular tags</Text>
+              <ScrollView style={styles.tagList}>
+                {tagOptions.map((tag) => (
+                  <Pressable
+                    key={tag}
+                    style={styles.tagOption}
+                    onPress={() => {
+                      setSelectedTag(tag);
+                      setShowTagPicker(false);
+                    }}
+                  >
+                    <View style={styles.tagOptionRow}>
+                      <View
+                        style={[
+                          styles.tagDot,
+                          { backgroundColor: tagColors[tag] || "#9ca3af" },
+                        ]}
+                      />
+                      <Text style={styles.tagOptionText}>{tag}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <Pressable
+                onPress={() => setShowTagPicker(false)}
+                style={styles.tagCloseButton}
+              >
+                <Text style={styles.tagCloseText}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      )}
+
       <TouchableOpacity
         style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
         onPress={handleSubmit}
@@ -338,6 +454,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingTop: 45,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
   title: {
     fontSize: 24,
     fontWeight: "700",
@@ -349,7 +471,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   firstFieldGroup: {
-    marginTop: 30,
+    marginTop: 14,
   },
   label: {
     fontSize: 14,
@@ -365,6 +487,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     backgroundColor: "#f9fafb",
+  },
+  readOnlyField: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#e5e7eb",
+  },
+  readOnlyText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: "500",
   },
   priceInputWrapper: {
     flexDirection: "row",
@@ -414,6 +549,50 @@ const styles = StyleSheet.create({
     paddingLeft: 35,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  tagModalCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: "70%",
+  },
+  tagModalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
+    marginBottom: 12,
+  },
+  tagList: {
+    maxHeight: 280,
+  },
+  tagOption: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  tagOptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tagDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  tagOptionText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  tagCloseButton: {
+    alignSelf: "flex-end",
+    paddingTop: 12,
+  },
+  tagCloseText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
   },
   modalActions: {
     flexDirection: "row",
