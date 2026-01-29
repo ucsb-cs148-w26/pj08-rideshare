@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -25,6 +26,7 @@ export default function JoinPage() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [confirmRide, setConfirmRide] = useState(null);
   const [isJoining, setIsJoining] = useState(false);
+  const router = useRouter();
 
 
 
@@ -131,63 +133,58 @@ const toNumber = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+
 const handleConfirmJoin = async () => {
   if (!confirmRide) return;
-    if (!user?.uid) {
-      Alert.alert("Not signed in", "Please sign in to join a ride.");
-      return;
-    }
+  if (!user?.uid) {
+    Alert.alert("Not signed in", "Please sign in to join a ride.");
+    return;
+  }
 
-    try {
-      setIsJoining(true);
+  try {
+    setIsJoining(true);
 
-      const rideRef = doc(db, "rides", confirmRide.id);
-      const joinRef = doc(db, "rides", confirmRide.id, "joins", user.uid);
+    const rideRef = doc(db, "rides", confirmRide.id);
+    const joinRef = doc(db, "rides", confirmRide.id, "joins", user.uid);
 
-      await runTransaction(db, async (tx) => {
-        const [rideSnap, joinSnap] = await Promise.all([
-          tx.get(rideRef),
-          tx.get(joinRef),
-        ]);
+    await runTransaction(db, async (tx) => {
+      const [rideSnap, joinSnap] = await Promise.all([
+        tx.get(rideRef),
+        tx.get(joinRef),
+      ]);
 
-        if (!rideSnap.exists()) {
-          throw new Error("This ride no longer exists.");
-        }
+      if (!rideSnap.exists()) throw new Error("This ride no longer exists.");
+      if (joinSnap.exists()) throw new Error("You already joined this ride.");
 
-        if (joinSnap.exists()) {
-          throw new Error("You already joined this ride.");
-        }
+      const rideData = rideSnap.data();
+      const seatsNum = Number(rideData.seats);
 
-        const rideData = rideSnap.data();
-        const seatsNum = Number(rideData.seats);
+      if (!Number.isFinite(seatsNum) || seatsNum <= 0) {
+        throw new Error("No seats left for this ride.");
+      }
 
-        if (!Number.isFinite(seatsNum)) {
-          throw new Error("Ride capacity is invalid (not a number).");
-        }
-
-        if (seatsNum <= 0) {
-          throw new Error("No seats left for this ride.");
-        }
-
-        tx.update(rideRef, { seats: seatsNum - 1 });
-
-        tx.set(joinRef, {
-          riderId: user.uid,
-          riderEmail: user.email ?? "",
-          joinedAt: serverTimestamp(),
-          pricePaid: Number(rideData.price) || 0, // placeholder until real payment
-        });
+      tx.update(rideRef, { seats: seatsNum - 1 });
+      tx.set(joinRef, {
+        riderId: user.uid,
+        riderEmail: user.email ?? "",
+        joinedAt: serverTimestamp(),
+        pricePaid: Number(rideData.price) || 0,
       });
+    });
 
-      closeJoinConfirm();
-      Alert.alert("Confirmed!", "You joined the ride.");
-    } catch (e) {
-      console.error("join error:", e);
-      Alert.alert("Error", e?.message ?? "Could not join ride.");
-    } finally {
-      setIsJoining(false);
-    }
-  };
+    closeJoinConfirm();
+
+    // 👇 go to landing/home page
+    router.replace("/(tabs)/home");
+
+  } catch (e) {
+    console.error("join error:", e);
+    Alert.alert("Error", e?.message ?? "Could not join ride.");
+  } finally {
+    setIsJoining(false);
+  }
+};
+
 
 
   const renderRideCard = ({ item }) => (
