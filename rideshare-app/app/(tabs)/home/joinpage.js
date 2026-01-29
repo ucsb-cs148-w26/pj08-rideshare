@@ -43,7 +43,6 @@ export default function JoinPage() {
 
   const [joinedRideIds, setJoinedRideIds] = useState(new Set());
 
-  // Live rides list (keeps UI updated)
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -77,14 +76,12 @@ export default function JoinPage() {
     return () => unsub();
   }, [user?.uid]);
 
-  // Joined rides (doc existence check: rides/{rideId}/joins/{uid})
   useEffect(() => {
     if (!user?.uid) {
       setJoinedRideIds(new Set());
       return;
     }
 
-    // Recompute whenever rides change
     const unsub = onSnapshot(collection(db, "rides"), async (snap) => {
       try {
         const ids = new Set();
@@ -108,7 +105,6 @@ export default function JoinPage() {
   }, [user?.uid]);
 
   const fetchRides = async () => {
-    // Manual pull-to-refresh fallback
     try {
       setLoading(true);
 
@@ -236,7 +232,6 @@ export default function JoinPage() {
     }
   };
 
-  // ======= UI YOU WANT (same layout), but with joined/sold out logic =======
   const renderRideCard = ({ item }) => {
     const alreadyJoined = joinedRideIds.has(item.id);
     const soldOut = Number(item.seats) <= 0;
@@ -516,7 +511,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  /* Search/Filter */
+// search
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
