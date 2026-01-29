@@ -62,6 +62,7 @@ export default function HostPage() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   const [showTagPicker, setShowTagPicker] = useState(false);
+  const [driverNotes, setDriverNotes] = useState("");
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -197,6 +198,7 @@ export default function HostPage() {
         rideDate: rideDate.toISOString(),
         seats: seats.trim(),
         tag: selectedTag,
+        driverNotes: driverNotes.trim(),
         ownerId: user.uid,
         ownerEmail: user.email || "",
         ownerName: ownerName,  // Include the name
@@ -214,6 +216,7 @@ export default function HostPage() {
       setRideDate("");
       setSeats("");
       setSelectedTag("");
+      setDriverNotes("");
       router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error?.message || "Could not save ride. Please try again.");
@@ -433,6 +436,19 @@ export default function HostPage() {
           </View>
         </Modal>
       )}
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Driver Notes (optional)</Text>
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          placeholder="Any additional info for riders?"
+          value={driverNotes}
+          onChangeText={setDriverNotes}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+      </View>
 
       <TouchableOpacity
         style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
