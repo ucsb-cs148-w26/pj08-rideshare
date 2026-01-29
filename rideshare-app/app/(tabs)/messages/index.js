@@ -1,17 +1,16 @@
-// placeholder file for now
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { colors } from '../../../ui/styles/colors';
 import NavBar from '../../../app/components/nav-bar';
 
-export default function AccountPage() {
+export default function MessagesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>Messages</Text>
         <Text style={styles.placeholder}>Coming Soon!</Text>
         <Text style={styles.subtitle}>
-          Manage your profile and settings here
+          Chat with your ride matches here
         </Text>
       </View>
       <NavBar />

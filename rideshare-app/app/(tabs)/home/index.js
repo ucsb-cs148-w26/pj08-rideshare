@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
+import NavBar from '../../../app/components/nav-bar';
 
 const tagColors = {
   'Downtown': '#e11d48',
@@ -202,7 +204,10 @@ export default function Homepage({ user }) {
   return (
     <View style={commonStyles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContainer,
+          { paddingBottom: Platform.OS === 'ios' ? 108 : 80 }
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerSection}>
@@ -427,6 +432,7 @@ export default function Homepage({ user }) {
           </View>
         </View>
       </Modal>
+      <NavBar />
     </View>
   );
 }
