@@ -12,6 +12,7 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { colors } from "../../../ui/styles/colors";
 import {
@@ -24,6 +25,7 @@ import {
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { commonStyles } from "../../../ui/styles/commonStyles";
+import NavBar from '../../../src/components/nav-bar';
 
 export default function HostPage() {
   const router = useRouter();
@@ -201,7 +203,7 @@ export default function HostPage() {
         driverNotes: driverNotes.trim(),
         ownerId: user.uid,
         ownerEmail: user.email || "",
-        ownerName: ownerName,  // Include the name
+        ownerName: ownerName,
         createdAt: serverTimestamp(),
       };
 
@@ -217,7 +219,8 @@ export default function HostPage() {
       setSeats("");
       setSelectedTag("");
       setDriverNotes("");
-      router.replace("/(tabs)/home");
+      closeJoinConfirm();
+router.push("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error?.message || "Could not save ride. Please try again.");
     } finally {
@@ -234,232 +237,241 @@ export default function HostPage() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Host a Ride</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Platform.OS === 'ios' ? 108 : 80 }
+        ]}
+      >
+        <Text style={styles.title}>Host a Ride</Text>
 
-      {/* Owner Name (pulled from profile) */}
-      <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
-        <Text style={styles.label}>Host Name</Text>
-        <View style={commonStyles.readOnlyField}>
-          <Text style={commonStyles.readOnlyText}>
-            {ownerName || "Name not set"}
-          </Text>
+        {/* Owner Name (pulled from profile) */}
+        <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
+          <Text style={styles.label}>Host Name</Text>
+          <View style={commonStyles.readOnlyField}>
+            <Text style={commonStyles.readOnlyText}>
+              {ownerName || "Name not set"}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Price</Text>
-        <View style={styles.priceInputWrapper}>
-          <Text style={styles.pricePrefix}>$</Text>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Price</Text>
+          <View style={styles.priceInputWrapper}>
+            <Text style={styles.pricePrefix}>$</Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="0"
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>To (destination address)</Text>
           <TextInput
-            style={styles.priceInput}
-            placeholder="0"
-            value={price}
-            onChangeText={setPrice}
+            style={styles.input}
+            placeholder="Where are you going?"
+            value={toAddress}
+            onChangeText={setToAddress}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>From (pickup address)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Pickup address"
+            value={fromAddress}
+            onChangeText={setFromAddress}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Date</Text>
+          <TouchableOpacity onPress={handleOpenDatePicker}>
+            <TextInput
+              style={styles.input}
+              placeholder="Select date"
+              value={formatDate(rideDate)}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Time</Text>
+          <TouchableOpacity onPress={handleOpenTimePicker}>
+            <TextInput
+              style={styles.input}
+              placeholder="Select time"
+              value={formatTime(rideDate)}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {showDatePicker && (
+          Platform.OS === "ios" ? (
+            <Modal transparent animationType="slide">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalCard}>
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display="inline"
+                    onChange={handleDateChange}
+                    themeVariant="light"
+                    style={styles.picker}
+                  />
+                  <View style={styles.modalActions}>
+                    <Pressable onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.modalActionText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleConfirmDate}>
+                      <Text style={styles.modalActionText}>Done</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={rideDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )
+        )}
+
+        {showTimePicker && (
+          Platform.OS === "ios" ? (
+            <Modal transparent animationType="slide">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalCard}>
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="time"
+                    display="spinner"
+                    onChange={handleTimeChange}
+                    themeVariant="light"
+                    style={styles.picker}
+                  />
+                  <View style={styles.modalActions}>
+                    <Pressable onPress={() => setShowTimePicker(false)}>
+                      <Text style={styles.modalActionText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleConfirmTime}>
+                      <Text style={styles.modalActionText}>Done</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={rideDate || new Date()}
+              mode="time"
+              display="default"
+              onChange={handleTimeChange}
+            />
+          )
+        )}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Space in the car</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Number of seats"
+            value={seats}
+            onChangeText={setSeats}
             keyboardType="numeric"
           />
         </View>
-      </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>To (destination address)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Where are you going?"
-          value={toAddress}
-          onChangeText={setToAddress}
-        />
-      </View>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Tags</Text>
+          <TouchableOpacity onPress={() => setShowTagPicker(true)}>
+            <TextInput
+              style={styles.input}
+              placeholder="Select a tag"
+              value={selectedTag}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>From (pickup address)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Pickup address"
-          value={fromAddress}
-          onChangeText={setFromAddress}
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Date</Text>
-        <TouchableOpacity onPress={handleOpenDatePicker}>
-          <TextInput
-            style={styles.input}
-            placeholder="Select date"
-            value={formatDate(rideDate)}
-            editable={false}
-            pointerEvents="none"
-          />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Time</Text>
-        <TouchableOpacity onPress={handleOpenTimePicker}>
-          <TextInput
-            style={styles.input}
-            placeholder="Select time"
-            value={formatTime(rideDate)}
-            editable={false}
-            pointerEvents="none"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {showDatePicker && (
-        Platform.OS === "ios" ? (
-          <Modal transparent animationType="slide">
+        {showTagPicker && (
+          <Modal transparent animationType="fade">
             <View style={styles.modalBackdrop}>
-              <View style={styles.modalCard}>
-                <DateTimePicker
-                  value={tempDate}
-                  mode="date"
-                  display="inline"
-                  onChange={handleDateChange}
-                  themeVariant="light"
-                  style={styles.picker}
-                />
-                <View style={styles.modalActions}>
-                  <Pressable onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.modalActionText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable onPress={handleConfirmDate}>
-                    <Text style={styles.modalActionText}>Done</Text>
-                  </Pressable>
-                </View>
+              <View style={styles.tagModalCard}>
+                <Text style={styles.tagModalTitle}>Popular tags</Text>
+                <ScrollView style={styles.tagList}>
+                  {tagOptions.map((tag) => (
+                    <Pressable
+                      key={tag}
+                      style={styles.tagOption}
+                      onPress={() => {
+                        setSelectedTag(tag);
+                        setShowTagPicker(false);
+                      }}
+                    >
+                      <View style={styles.tagOptionRow}>
+                        <View
+                          style={[
+                            styles.tagDot,
+                            { backgroundColor: tagColors[tag] || "#9ca3af" },
+                          ]}
+                        />
+                        <Text style={styles.tagOptionText}>{tag}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <Pressable
+                  onPress={() => setShowTagPicker(false)}
+                  style={styles.tagCloseButton}
+                >
+                  <Text style={styles.tagCloseText}>Close</Text>
+                </Pressable>
               </View>
             </View>
           </Modal>
-        ) : (
-          <DateTimePicker
-            value={rideDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )
-      )}
+        )}
 
-      {showTimePicker && (
-        Platform.OS === "ios" ? (
-          <Modal transparent animationType="slide">
-            <View style={styles.modalBackdrop}>
-              <View style={styles.modalCard}>
-                <DateTimePicker
-                  value={tempDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={handleTimeChange}
-                  themeVariant="light"
-                  style={styles.picker}
-                />
-                <View style={styles.modalActions}>
-                  <Pressable onPress={() => setShowTimePicker(false)}>
-                    <Text style={styles.modalActionText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable onPress={handleConfirmTime}>
-                    <Text style={styles.modalActionText}>Done</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={rideDate || new Date()}
-            mode="time"
-            display="default"
-            onChange={handleTimeChange}
-          />
-        )
-      )}
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Space in the car</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Number of seats"
-          value={seats}
-          onChangeText={setSeats}
-          keyboardType="numeric"
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Tags</Text>
-        <TouchableOpacity onPress={() => setShowTagPicker(true)}>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Driver Notes (optional)</Text>
           <TextInput
-            style={styles.input}
-            placeholder="Select a tag"
-            value={selectedTag}
-            editable={false}
-            pointerEvents="none"
+            style={[styles.input, styles.multilineInput]}
+            placeholder="Any additional info for riders?"
+            value={driverNotes}
+            onChangeText={setDriverNotes}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
           />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSaving}
+        >
+          <Text style={styles.submitButtonText}>
+            {isSaving ? "Saving..." : "Submit"}
+          </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
-      {showTagPicker && (
-        <Modal transparent animationType="fade">
-          <View style={styles.modalBackdrop}>
-            <View style={styles.tagModalCard}>
-              <Text style={styles.tagModalTitle}>Popular tags</Text>
-              <ScrollView style={styles.tagList}>
-                {tagOptions.map((tag) => (
-                  <Pressable
-                    key={tag}
-                    style={styles.tagOption}
-                    onPress={() => {
-                      setSelectedTag(tag);
-                      setShowTagPicker(false);
-                    }}
-                  >
-                    <View style={styles.tagOptionRow}>
-                      <View
-                        style={[
-                          styles.tagDot,
-                          { backgroundColor: tagColors[tag] || "#9ca3af" },
-                        ]}
-                      />
-                      <Text style={styles.tagOptionText}>{tag}</Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
-              <Pressable
-                onPress={() => setShowTagPicker(false)}
-                style={styles.tagCloseButton}
-              >
-                <Text style={styles.tagCloseText}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Driver Notes (optional)</Text>
-        <TextInput
-          style={[styles.input, styles.multilineInput]}
-          placeholder="Any additional info for riders?"
-          value={driverNotes}
-          onChangeText={setDriverNotes}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.submitButton, isSaving && styles.submitButtonDisabled]}
-        onPress={handleSubmit}
-        disabled={isSaving}
-      >
-        <Text style={styles.submitButtonText}>
-          {isSaving ? "Saving..." : "Submit"}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <NavBar />
+    </SafeAreaView>
   );
 }
 
@@ -503,6 +515,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     backgroundColor: "#f9fafb",
+  },
+  multilineInput: {
+    minHeight: 80,
   },
   readOnlyField: {
     borderWidth: 1,

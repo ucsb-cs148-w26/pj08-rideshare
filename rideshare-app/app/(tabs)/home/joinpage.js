@@ -11,6 +11,8 @@ import {
   Alert,
   Modal,
   ScrollView,
+  SafeAreaView,
+  Platform,
 } from "react-native";
 import {
   collection,
@@ -27,6 +29,7 @@ import { db } from "../../../src/firebase";
 import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
+import NavBar from '../../../src/components/nav-bar';
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -182,7 +185,7 @@ export default function JoinPage() {
     setConfirmVisible(false);
     setConfirmRide(null);
   };
-//Filter logic for retrieving rides based on selected tags
+
   const toggleTagFilter = (tag) => {
     const newTags = new Set(selectedTags);
     if (newTags.has(tag)) {
@@ -262,7 +265,8 @@ export default function JoinPage() {
       });
 
       closeJoinConfirm();
-      router.replace("/(tabs)/home");
+      closeJoinConfirm();
+router.push("/(tabs)/home");
     } catch (e) {
       const msg = e?.message ?? "";
       if (msg.toLowerCase().includes("already joined")) {
@@ -375,226 +379,233 @@ export default function JoinPage() {
   );
 
   return (
-    <View style={commonStyles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AVAILABLE RIDES</Text>
-      </View>
-
-      {/* Search Bar (Placeholder) */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Enter Location"
-          placeholderTextColor={colors.textSecondary}
-          editable={false}
-        />
-        <Text style={styles.searchIcon}>🔍</Text>
-      </View>
-
-      {/* Filter Button (Placeholder) */}
-      <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-        <Text style={styles.filterButtonText}>FILTER ▾</Text>
-      </TouchableOpacity>
-
-      {/* Rides List */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.secondary} />
-          <Text style={styles.loadingText}>Loading available rides...</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={commonStyles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>AVAILABLE RIDES</Text>
         </View>
-      ) : (
-        <FlatList
-          data={getFilteredRides()}
-          renderItem={renderRideCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={renderEmptyState}
-          refreshing={loading}
-          onRefresh={fetchRides}
-        />
-      )}
 
-      {/* Filter Modal */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={showFilterModal}
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <View style={styles.filterModalOverlay}>
-          <View style={styles.filterModalContent}>
-            <View style={styles.filterModalHeader}>
-              <Text style={styles.filterModalTitle}>Filter by Tags</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Text style={styles.filterModalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Search Bar (Placeholder) */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Enter Location"
+            placeholderTextColor={colors.textSecondary}
+            editable={false}
+          />
+          <Text style={styles.searchIcon}>🔍</Text>
+        </View>
 
-            <ScrollView style={styles.filterTagList}>
-              {tagOptions.map((tag) => (
-                <TouchableOpacity
-                  key={tag}
-                  style={styles.filterTagOption}
-                  onPress={() => toggleTagFilter(tag)}
-                >
-                  <View style={styles.filterTagCheckbox}>
-                    {selectedTags.has(tag) && (
-                      <Text style={styles.filterTagCheckmark}>✓</Text>
-                    )}
-                  </View>
-                  <View style={[styles.filterTagDot, { backgroundColor: tagColors[tag] || "#9ca3af" }]} />
-                  <Text style={styles.filterTagOptionText}>{tag}</Text>
+        {/* Filter Button (Placeholder) */}
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+          <Text style={styles.filterButtonText}>FILTER ▾</Text>
+        </TouchableOpacity>
+
+        {/* Rides List */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.secondary} />
+            <Text style={styles.loadingText}>Loading available rides...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={getFilteredRides()}
+            renderItem={renderRideCard}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.listContainer,
+              { paddingBottom: Platform.OS === 'ios' ? 108 : 80 }
+            ]}
+            ListEmptyComponent={renderEmptyState}
+            refreshing={loading}
+            onRefresh={fetchRides}
+          />
+        )}
+
+        {/* Filter Modal */}
+        <Modal
+          animationType="fade"
+          transparent
+          visible={showFilterModal}
+          onRequestClose={() => setShowFilterModal(false)}
+        >
+          <View style={styles.filterModalOverlay}>
+            <View style={styles.filterModalContent}>
+              <View style={styles.filterModalHeader}>
+                <Text style={styles.filterModalTitle}>Filter by Tags</Text>
+                <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                  <Text style={styles.filterModalClose}>✕</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
 
-            <View style={styles.filterModalActions}>
-              <TouchableOpacity
-                style={styles.filterClearButton}
-                onPress={clearFilters}
-              >
-                <Text style={styles.filterClearButtonText}>Clear Filters</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.filterDoneButton}
-                onPress={() => setShowFilterModal(false)}
-              >
-                <Text style={styles.filterDoneButtonText}>Done</Text>
-              </TouchableOpacity>
+              <ScrollView style={styles.filterTagList}>
+                {tagOptions.map((tag) => (
+                  <TouchableOpacity
+                    key={tag}
+                    style={styles.filterTagOption}
+                    onPress={() => toggleTagFilter(tag)}
+                  >
+                    <View style={styles.filterTagCheckbox}>
+                      {selectedTags.has(tag) && (
+                        <Text style={styles.filterTagCheckmark}>✓</Text>
+                      )}
+                    </View>
+                    <View style={[styles.filterTagDot, { backgroundColor: tagColors[tag] || "#9ca3af" }]} />
+                    <Text style={styles.filterTagOptionText}>{tag}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <View style={styles.filterModalActions}>
+                <TouchableOpacity
+                  style={styles.filterClearButton}
+                  onPress={clearFilters}
+                >
+                  <Text style={styles.filterClearButtonText}>Clear Filters</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterDoneButton}
+                  onPress={() => setShowFilterModal(false)}
+                >
+                  <Text style={styles.filterDoneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Confirm modal (your current feature) */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={confirmVisible}
-        onRequestClose={closeJoinConfirm}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Confirm your ride</Text>
+        {/* Confirm modal */}
+        <Modal
+          animationType="fade"
+          transparent
+          visible={confirmVisible}
+          onRequestClose={closeJoinConfirm}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.confirmCard}>
+              <Text style={styles.confirmTitle}>Confirm your ride</Text>
 
-            {confirmRide && (
-              <>
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmLabel}>Driver</Text>
-                  <Text style={styles.confirmValue}>{confirmRide.ownerName}</Text>
-                </View>
-
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmLabel}>When</Text>
-                  <Text style={styles.confirmValue}>
-                    {formatDate(confirmRide.rideDate)} • {formatTime(confirmRide.rideDate)}
-                  </Text>
-                </View>
-
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmLabel}>From</Text>
-                  <Text style={styles.confirmValue} numberOfLines={2}>
-                    {confirmRide.fromAddress}
-                  </Text>
-                </View>
-
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmLabel}>To</Text>
-                  <Text style={styles.confirmValue} numberOfLines={2}>
-                    {confirmRide.toAddress}
-                  </Text>
-                </View>
-
-                <View style={styles.confirmDivider} />
-
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmLabel}>Ride price</Text>
-                  <Text style={styles.confirmValue}>
-                    ${toNumber(confirmRide.price).toFixed(2)}
-                  </Text>
-                </View>
-
-                <View style={styles.confirmRow}>
-                  <Text style={styles.confirmTotalLabel}>Total</Text>
-                  <Text style={styles.confirmTotalValue}>
-                    ${toNumber(confirmRide.price).toFixed(2)}
-                  </Text>
-                </View>
-
-                <Text style={styles.confirmTinyNote}>
-                  By confirming, you agree to pay the total amount shown.
-                </Text>
-              </>
-            )}
-
-            <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={closeJoinConfirm}
-                disabled={isJoining}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
-                onPress={handleConfirmJoin}
-                disabled={isJoining}
-              >
-                <Text style={styles.payBtnText}>
-                  {isJoining ? "Confirming..." : "Confirm"} 
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal for Ride Details (from UI you want) */}
-      <Modal
-        animationType="slide"
-        transparent
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-
-            {selectedRide && (
-              <>
-                <View style={styles.modalHeader}>
-                  <View style={styles.modalDriverIcon}>
-                    <Text style={styles.modalDriverIconText}>👤</Text>
+              {confirmRide && (
+                <>
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>Driver</Text>
+                    <Text style={styles.confirmValue}>{confirmRide.ownerName}</Text>
                   </View>
-                  <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
-                </View>
 
-                <View style={styles.modalInfo}>
-                  <Text style={styles.modalInfoText}>Email: {selectedRide.ownerEmail}</Text>
-                  <Text style={styles.modalInfoText}>Date: {formatDate(selectedRide.rideDate)}</Text>
-                  <Text style={styles.modalInfoText}>Time: {formatTime(selectedRide.rideDate)}</Text>
-                  <Text style={styles.modalInfoText}>From: {selectedRide.fromAddress}</Text>
-                  <Text style={styles.modalInfoText}>To: {selectedRide.toAddress}</Text>
-                  <Text style={styles.modalInfoText}>
-                    Seats Available: {selectedRide.seats}
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>When</Text>
+                    <Text style={styles.confirmValue}>
+                      {formatDate(confirmRide.rideDate)} • {formatTime(confirmRide.rideDate)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>From</Text>
+                    <Text style={styles.confirmValue} numberOfLines={2}>
+                      {confirmRide.fromAddress}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>To</Text>
+                    <Text style={styles.confirmValue} numberOfLines={2}>
+                      {confirmRide.toAddress}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmDivider} />
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>Ride price</Text>
+                    <Text style={styles.confirmValue}>
+                      ${toNumber(confirmRide.price).toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmTotalLabel}>Total</Text>
+                    <Text style={styles.confirmTotalValue}>
+                      ${toNumber(confirmRide.price).toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.confirmTinyNote}>
+                    By confirming, you agree to pay the total amount shown.
                   </Text>
-                  <Text style={styles.modalInfoText}>Price: ${selectedRide.price}</Text>
-                </View>
+                </>
+              )}
 
-                <Text style={styles.modalNotesTitle}>Notes:</Text>
-                <View style={styles.modalNotes}>
-                  <Text style={styles.modalNotesPlaceholder}>(Driver notes will be displayed here)</Text>
-                </View>
-              </>
-            )}
+              <View style={styles.confirmActions}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={closeJoinConfirm}
+                  disabled={isJoining}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
+                  onPress={handleConfirmJoin}
+                  disabled={isJoining}
+                >
+                  <Text style={styles.payBtnText}>
+                    {isJoining ? "Confirming..." : "Confirm"} 
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        {/* Modal for Ride Details */}
+        <Modal
+          animationType="slide"
+          transparent
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+
+              {selectedRide && (
+                <>
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalDriverIcon}>
+                      <Text style={styles.modalDriverIconText}>👤</Text>
+                    </View>
+                    <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                  </View>
+
+                  <View style={styles.modalInfo}>
+                    <Text style={styles.modalInfoText}>Email: {selectedRide.ownerEmail}</Text>
+                    <Text style={styles.modalInfoText}>Date: {formatDate(selectedRide.rideDate)}</Text>
+                    <Text style={styles.modalInfoText}>Time: {formatTime(selectedRide.rideDate)}</Text>
+                    <Text style={styles.modalInfoText}>From: {selectedRide.fromAddress}</Text>
+                    <Text style={styles.modalInfoText}>To: {selectedRide.toAddress}</Text>
+                    <Text style={styles.modalInfoText}>
+                      Seats Available: {selectedRide.seats}
+                    </Text>
+                    <Text style={styles.modalInfoText}>Price: ${selectedRide.price}</Text>
+                  </View>
+
+                  <Text style={styles.modalNotesTitle}>Notes:</Text>
+                  <View style={styles.modalNotes}>
+                    <Text style={styles.modalNotesPlaceholder}>(Driver notes will be displayed here)</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+
+      <NavBar />
+    </SafeAreaView>
   );
 }
 
@@ -1117,4 +1128,3 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 });
-
