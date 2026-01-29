@@ -543,7 +543,7 @@ export default function JoinPage() {
                 disabled={isJoining}
               >
                 <Text style={styles.payBtnText}>
-                  {isJoining ? "Confirming..." : "Confirm & Pay"}
+                  {isJoining ? "Confirming..." : "Confirm"} 
                 </Text>
               </TouchableOpacity>
             </View>
