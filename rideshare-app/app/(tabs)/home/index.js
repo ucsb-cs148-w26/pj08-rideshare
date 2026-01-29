@@ -8,6 +8,7 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
@@ -101,7 +102,15 @@ export default function Homepage({ user }) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerSection}>
-          {/* can add image here later if wanted */}
+          {/* Logo and App Name */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../../assets/cs148_logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.appName}>UCSB Rideshare</Text>
         </View>
 
         <View 
@@ -177,6 +186,7 @@ const styles = StyleSheet.create({
   headerSection: {
     alignItems: 'center',
     marginBottom: 40,
+    paddingTop: 70,
   },  
   section: {
     marginBottom: 32,
@@ -234,5 +244,20 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     opacity: 0.8,
+  },
+  logoContainer: {
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.secondary,
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
 });
