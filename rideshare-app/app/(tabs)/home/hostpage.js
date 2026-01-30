@@ -215,12 +215,11 @@ export default function HostPage() {
       setPrice("");
       setToAddress("");
       setFromAddress("");
-      setRideDate("");
+      setRideDate(null);
       setSeats("");
       setSelectedTag("");
       setDriverNotes("");
-      closeJoinConfirm();
-router.push("/(tabs)/home");
+      router.push("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error?.message || "Could not save ride. Please try again.");
     } finally {

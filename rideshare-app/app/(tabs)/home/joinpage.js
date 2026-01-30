@@ -595,7 +595,11 @@ router.push("/(tabs)/home");
 
                   <Text style={styles.modalNotesTitle}>Notes:</Text>
                   <View style={styles.modalNotes}>
-                    <Text style={styles.modalNotesPlaceholder}>(Driver notes will be displayed here)</Text>
+                    {selectedRide.driverNotes ? (
+                      <Text style={styles.modalNotesText}>{selectedRide.driverNotes}</Text>
+                    ) : (
+                      <Text style={styles.modalNotesPlaceholder}>No notes provided</Text>
+                    )}
                   </View>
                 </>
               )}
@@ -910,6 +914,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontStyle: "italic",
+  },
+  modalNotesText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
   },
 // confirm modal
   confirmCard: {
