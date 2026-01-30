@@ -15,6 +15,41 @@ Unlike public rideshare platforms such as Uber or Lyft, this app is restricted t
 
 ---
 
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** (v16+) - [Download](https://nodejs.org/)
+- **Expo Go App** on your phone:
+  - [iOS App Store](https://apps.apple.com/us/app/expo-go/id982107779)
+  - [Android Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+
+### Installation & Running
+```bash
+# Clone the repository
+git clone [your-repo-url]
+
+# Navigate to the app directory
+cd pj08-rideshare/rideshare-app
+
+# Install dependencies
+npm install
+
+# Start the app
+npx expo start
+```
+
+### Testing on Your Phone
+
+1. Run `npx expo start` in your terminal
+2. Open **Expo Go** app on your phone
+3. Scan the QR code:
+   - **iOS**: Use Camera app to scan
+   - **Android**: Use Expo Go app to scan
+4. App will load on your phone!
+
+---
+
 ## Project Plan
 
 This project aims to build a simple, safe, and reliable platform for UCSB community members to coordinate shared transportation. The app will allow users to create ride listings, search for available rides, and communicate ride details in a centralized system. By restricting access to users with a valid `@ucsb.edu` email, the app creates a trusted environment where users feel more comfortable sharing rides with people they know are affiliated with the university. The initial version of the app will focus on core functionality—posting rides, joining rides, and managing ride details—while leaving room for future features such as messaging, ratings, or ride history.
@@ -84,20 +119,20 @@ Because the app is public-facing and allows user-generated content (ride listing
 ### Technologies Used
 
 - **Platform:** Mobile Application (iOS-first, cross-platform capable)
-- **Frontend:** React Native  
+- **Frontend:** React Native with Expo
   - Allows a single codebase for mobile platforms  
   - Modern UI development and fast iteration  
 
-- **Backend:** Node.js  
-  - RESTful API support  
-  - Works well with React Native  
-  - Scalable for future growth  
+- **Backend:** Firebase
+  - Cloud Firestore for database
+  - Firebase Authentication for secure login
+  - Real-time updates for ride listings
 
 - **Authentication:** Firebase Authentication  
   - Secure login system  
   - Easy enforcement of `@ucsb.edu` email restriction  
 
-- **Database:** Firebase / NoSQL-based database (planned)  
+- **Database:** Cloud Firestore (NoSQL)
   - Stores users, rides, and participation data  
 
 ---
@@ -122,4 +157,4 @@ This tech stack was chosen to:
 - **Joel Sanchez** — `Jsanchez021`  
 - **Tanvi Ladha** — `t-ladha`  
 - **Wyatt Hamabe** — `Greathambino`  
-- **Hien Huynh** — `hienhuynh2026`  
+- **Hien Huynh** — `hienhuynh2026`
