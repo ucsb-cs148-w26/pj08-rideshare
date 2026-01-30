@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../src/firebase";
+import { useAuth } from "../../src/auth/AuthProvider";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../src/firebase";
 
@@ -32,6 +33,7 @@ const formatPhone = (value) => {
 
 
 export default function Register() {
+  const { setSuppressAuthRedirect } = useAuth();
   // Required fields
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -134,6 +136,7 @@ export default function Register() {
     };
 
     try {
+      setSuppressAuthRedirect(true);
       const cred = await createUserWithEmailAndPassword(
         auth,
         payload.email,
@@ -150,10 +153,13 @@ export default function Register() {
         createdAt: serverTimestamp(),
       });
 
+      await signOut(auth);
       alert("Account created! Now go log in.");
       router.replace("/(auth)/login"); // go back to login screen
     } catch (err) {
       alert(err?.message ?? "Sign up failed");
+    } finally {
+      setSuppressAuthRedirect(false);
     }
   };
 

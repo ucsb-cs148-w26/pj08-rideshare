@@ -5,11 +5,14 @@ import { auth } from "../firebase";
 const AuthContext = createContext({
   user: null,
   initializing: true,
+  suppressAuthRedirect: false,
+  setSuppressAuthRedirect: () => {},
 });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
+  const [suppressAuthRedirect, setSuppressAuthRedirect] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -20,7 +23,10 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const value = useMemo(() => ({ user, initializing }), [user, initializing]);
+  const value = useMemo(
+    () => ({ user, initializing, suppressAuthRedirect, setSuppressAuthRedirect }),
+    [user, initializing, suppressAuthRedirect]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
