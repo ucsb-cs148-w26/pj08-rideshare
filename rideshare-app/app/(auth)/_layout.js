@@ -2,11 +2,11 @@ import { Stack, Redirect } from "expo-router";
 import { useAuth } from "../../src/auth/AuthProvider";
 
 export default function AuthLayout() {
-  const { user, initializing } = useAuth();
+  const { user, initializing, suppressAuthRedirect } = useAuth();
 
   if (initializing) return null;
 
-  if (user) {
+  if (user && !suppressAuthRedirect) {
     return <Redirect href="/(tabs)/home" />;
   }
 
