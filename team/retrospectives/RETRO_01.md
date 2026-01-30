@@ -30,3 +30,5 @@ This retro used the start, stop, continue outline. This three part framework hel
 ## Experiment/Change 
 We have agreed to try to have each PR approved by at least 2 people before being committed. We will evaluate how many PRs have 2 people approving and if that results in cleaner code being pushed with less concerns during the next retro.
 
+## Experiment Results - UPDATED 1/30/2026
+By 1/30/2026 we completed all user stories required for our MVP. Each user story and subtask has been marked as completed in our KanBan board. Since the date of our retrospective (1 week prior to today), we have attempted to have at least 2 people approve each PR. This week, as we moved fast to complete our MVP, almost 95% of our PRs were approved by 2 people. We found this change in our workflow to add a little bit of extra time in approving PRs but this additional time was worth it as we felt more secure in the code we were pushing to our main branch. Additionally, the team did a great job being responsive and handling PRs in a timely manner. We plan to keep this as part of our general team workflow. 
