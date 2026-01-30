@@ -213,6 +213,10 @@ export default function AccountPage() {
                 numberOfLines={3}
               />
             </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Vehicle</Text>
             <View style={styles.field}>
               <Text style={styles.label}>Vehicle Make</Text>
               <TextInput
@@ -222,10 +226,6 @@ export default function AccountPage() {
                 editable={isEditing}
               />
             </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vehicle</Text>
             <View style={styles.field}>
               <Text style={styles.label}>Vehicle Model</Text>
               <TextInput
