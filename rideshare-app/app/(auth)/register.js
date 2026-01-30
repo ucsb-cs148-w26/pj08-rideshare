@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../src/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../src/firebase";
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from "react-native";
 
 import { router } from "expo-router";
@@ -150,8 +151,14 @@ export default function Register() {
         createdAt: serverTimestamp(),
       });
 
-      alert("Account created! Now go log in.");
-      router.replace("/(auth)/login"); // go back to login screen
+      // Sign out after saving to prevent flash of home screen
+      await signOut(auth);
+
+      Alert.alert(
+        "",
+        "Your account has been successfully created. Please log in to continue.",
+        [{ text: "OK", onPress: () => router.replace("/(auth)/login") }]
+      );
     } catch (err) {
       alert(err?.message ?? "Sign up failed");
     }
