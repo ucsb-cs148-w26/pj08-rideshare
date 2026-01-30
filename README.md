@@ -158,3 +158,14 @@ This tech stack was chosen to:
 - **Tanvi Ladha** — `t-ladha`  
 - **Wyatt Hamabe** — `Greathambino`  
 - **Hien Huynh** — `hienhuynh2026`
+
+---
+
+## Things to Look Out For 
+ ** Search Bar is not supported in the MVP ** —
+ ** Only filtering can be done by tags in MVP ** —
+ ** Keyboard Blocks Last Fields in Driver Side, simply exit out of keyboard and select lower fields to fill ** - 
+ 
+ 
+ 
+ 
