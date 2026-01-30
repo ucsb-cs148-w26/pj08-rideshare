@@ -30,6 +30,7 @@ import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
 import NavBar from '../../../app/components/nav-bar';
+import { getOrCreateConversation } from '../../../src/utils/messaging';
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -264,9 +265,24 @@ export default function JoinPage() {
         });
       });
 
+      // Create conversation with the host after successful join
+      try {
+        await getOrCreateConversation(confirmRide.ownerId, {
+          rideId: confirmRide.id,
+          rideInfo: `${confirmRide.fromAddress} → ${confirmRide.toAddress}`,
+          rideDate: confirmRide.rideDate,
+        });
+      } catch (convoError) {
+        console.error("Error creating conversation:", convoError);
+        // Don't block the join flow if conversation creation fails
+      }
+
       closeJoinConfirm();
-      closeJoinConfirm();
-router.push("/(tabs)/home");
+      Alert.alert(
+        "Ride Joined!",
+        "You can now message the driver in your Messages tab.",
+        [{ text: "OK", onPress: () => router.push("/(tabs)/home") }]
+      );
     } catch (e) {
       const msg = e?.message ?? "";
       if (msg.toLowerCase().includes("already joined")) {
