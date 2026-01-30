@@ -50,28 +50,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) 
     );
   }
 
-  if (isHosted) {
-    return (
-      <FlatList
-        data={rides}
-        keyExtractor={(item) => String(item.id)}
-        scrollEnabled={false}
-        ItemSeparatorComponent={() => <View style={styles.divider} />}
-        renderItem={({ item }) => (
-          <View style={styles.rideRow}>
-            <Text style={styles.rideTitle}>
-              {`${item.fromAddress} → ${item.toAddress}`}
-            </Text>
-            {item.rideDate && (
-              <Text style={styles.rideSubtitle}>{formatDateTime(item.rideDate)}</Text>
-            )}
-          </View>
-        )}
-      />
-    );
-  }
-
-  // For joined rides, show cards with WHEN/TO and view details button
+  // Show cards with WHEN/TO and view details button for both hosted and joined rides
   return (
     <FlatList
       data={rides}
@@ -339,7 +318,42 @@ export default function Homepage({ user }) {
                 <RideList
                   rides={hostedRides}
                   emptyText={"No hosted rides yet.\nTap Host to create a ride."}
-                  isHosted={true}
+                  isHosted={false}
+                  onViewDetails={async (ride) => {
+                    setSelectedRide(ride);
+                    setDetailsModalVisible(true);
+
+                    // Fetch driver's vehicle information (which is the current user's vehicle)
+                    try {
+                      const driverRef = doc(db, 'users', ride.ownerId);
+                      const driverSnap = await getDoc(driverRef);
+                      if (driverSnap.exists()) {
+                        const driverData = driverSnap.data() || {};
+
+                        // Support legacy `vehicle` field or `vehicles` array
+                        let firstVehicle = null;
+                        if (driverData.vehicle) {
+                          firstVehicle = driverData.vehicle;
+                        } else if (Array.isArray(driverData.vehicles) && driverData.vehicles.length > 0) {
+                          firstVehicle = driverData.vehicles[0];
+                        }
+
+                        if (firstVehicle) {
+                          const licensePlate = firstVehicle.licensePlate || firstVehicle.plate || firstVehicle.license_plate || '';
+                          setDriverVehicle({
+                            make: firstVehicle.make || firstVehicle.manufacturer || '',
+                            model: firstVehicle.model || firstVehicle.trim || '',
+                            licensePlate: licensePlate,
+                          });
+                        } else {
+                          setDriverVehicle(null);
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error fetching driver vehicle info:', error);
+                      setDriverVehicle(null);
+                    }
+                  }}
                 />
               )}
             </View>
@@ -442,6 +456,15 @@ export default function Homepage({ user }) {
                   </View>
                 </View>
 
+                {selectedRide.driverNotes && (
+                  <View style={styles.modalVehicleSection}>
+                    <Text style={styles.modalVehicleSectionTitle}>Driver Notes</Text>
+                    <View style={styles.modalNotes}>
+                      <Text style={styles.modalNotesText}>{selectedRide.driverNotes}</Text>
+                    </View>
+                  </View>
+                )}
+
                 {driverVehicle && (
                   <View style={styles.modalVehicleSection}>
                     <Text style={styles.modalVehicleSectionTitle}>Vehicle Information</Text>
@@ -476,15 +499,6 @@ export default function Homepage({ user }) {
                       <Text style={styles.modalTagText}>{selectedRide.tag}</Text>
                     </View>
                   </View>
-                )}
-
-                {selectedRide.notes && (
-                  <>
-                    <Text style={styles.modalNotesTitle}>Notes:</Text>
-                    <View style={styles.modalNotes}>
-                      <Text style={styles.modalNotesText}>{selectedRide.notes}</Text>
-                    </View>
-                  </>
                 )}
               </ScrollView>
             )}

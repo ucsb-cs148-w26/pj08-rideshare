@@ -284,7 +284,7 @@ export default function AccountPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background || '#F8F9FA',
+    backgroundColor: colors.primary,
   },
   content: {
     paddingHorizontal: 20,
