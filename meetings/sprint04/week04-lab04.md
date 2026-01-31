@@ -36,3 +36,8 @@ Hien’s Check-in:
 - Working on developing the MVP release notes and video
 - No blockers
 
+Kenisha's Check-in:
+- added the JOIN button which updates to joined or full depending on the capacity. 
+- brainstorming new features to add and planning MVP video 
+- no blockers 
+
