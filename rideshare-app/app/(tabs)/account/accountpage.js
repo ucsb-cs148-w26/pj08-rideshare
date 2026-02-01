@@ -29,6 +29,15 @@ const emptyAccount = {
   vehiclePlate: '',
 };
 
+const formatPhoneNumber = (phoneNumber) => {
+  if (!phoneNumber) return '';
+  const cleaned = String(phoneNumber).replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+  return phoneNumber;
+};
+
 export default function AccountPage() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -183,7 +192,7 @@ export default function AccountPage() {
               <Text style={styles.label}>Phone</Text>
               <TextInput
                 style={[styles.input, !isEditing && styles.inputDisabled]}
-                value={draft.phone}
+                value={isEditing ? draft.phone : formatPhoneNumber(draft.phone)}
                 onChangeText={(value) => handleChange('phone', value)}
                 editable={isEditing}
                 keyboardType="phone-pad"
