@@ -196,6 +196,7 @@ export default function AccountPage() {
                 onChangeText={(value) => handleChange('phone', value)}
                 editable={isEditing}
                 keyboardType="phone-pad"
+                maxLength={10}
               />
             </View>
             <View style={styles.field}>
