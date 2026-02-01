@@ -60,6 +60,7 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedRide, setSelectedRide] = useState(null);
+  const [driverInfo, setDriverInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -177,9 +178,28 @@ export default function JoinPage() {
     });
   };
 
-  const handleRidePress = (ride) => {
+  const formatPhoneNumber = (phoneNumber) => {
+    if (!phoneNumber) return "Not provided";
+    const cleaned = String(phoneNumber).replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phoneNumber;
+  };
+
+  const handleRidePress = async (ride) => {
     setSelectedRide(ride);
     setModalVisible(true);
+    
+    // Fetch driver info from Firestore
+    try {
+      const driverDoc = await getDoc(doc(db, "users", ride.ownerId));
+      if (driverDoc.exists()) {
+        setDriverInfo(driverDoc.data());
+      }
+    } catch (error) {
+      console.error("Error fetching driver info:", error);
+    }
   };
 
   const closeJoinConfirm = () => {
@@ -588,37 +608,92 @@ export default function JoinPage() {
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
 
-              {selectedRide && (
-                <>
-                  <View style={styles.modalHeader}>
-                    <View style={styles.modalDriverIcon}>
-                      <Text style={styles.modalDriverIconText}>👤</Text>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {selectedRide && (
+                  <>
+                    <View style={styles.modalHeader}>
+                      <View style={styles.modalDriverIcon}>
+                        <Text style={styles.modalDriverIconText}>👤</Text>
+                      </View>
+                      <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
                     </View>
-                    <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
-                  </View>
 
-                  <View style={styles.modalInfo}>
-                    <Text style={styles.modalInfoText}>Email: {selectedRide.ownerEmail}</Text>
-                    <Text style={styles.modalInfoText}>Date: {formatDate(selectedRide.rideDate)}</Text>
-                    <Text style={styles.modalInfoText}>Time: {formatTime(selectedRide.rideDate)}</Text>
-                    <Text style={styles.modalInfoText}>From: {selectedRide.fromAddress}</Text>
-                    <Text style={styles.modalInfoText}>To: {selectedRide.toAddress}</Text>
-                    <Text style={styles.modalInfoText}>
-                      Seats Available: {selectedRide.seats}
-                    </Text>
-                    <Text style={styles.modalInfoText}>Price: ${selectedRide.price}</Text>
-                  </View>
+                    <Text style={styles.modalSectionTitle}>Ride Info</Text>
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Date:</Text>
+                        <Text style={styles.modalInfoValue}>{formatDate(selectedRide.rideDate)}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Time:</Text>
+                        <Text style={styles.modalInfoValue}>{formatTime(selectedRide.rideDate)}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>From:</Text>
+                        <Text style={styles.modalInfoValue}>{selectedRide.fromAddress}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>To:</Text>
+                        <Text style={styles.modalInfoValue}>{selectedRide.toAddress}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Seats Available:</Text>
+                        <Text style={styles.modalInfoValue}>{selectedRide.seats}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Price:</Text>
+                        <Text style={styles.modalInfoValue}>${selectedRide.price}</Text>
+                      </View>
+                      {selectedRide.tag && (
+                        <View style={styles.modalInfoRow}>
+                          <Text style={styles.modalInfoLabel}>Tag:</Text>
+                          <View style={styles.modalTagContent}>
+                            <View style={[styles.modalTagDot, { backgroundColor: tagColors[selectedRide.tag] || '#9ca3af' }]} />
+                            <Text style={styles.modalTagText}>{selectedRide.tag}</Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
 
-                  <Text style={styles.modalNotesTitle}>Notes:</Text>
-                  <View style={styles.modalNotes}>
-                    {selectedRide.driverNotes ? (
-                      <Text style={styles.modalNotesText}>{selectedRide.driverNotes}</Text>
-                    ) : (
-                      <Text style={styles.modalNotesPlaceholder}>No notes provided</Text>
-                    )}
-                  </View>
-                </>
-              )}
+                    <View style={styles.sectionDivider} />
+
+                    <Text style={styles.modalSectionTitle}>Driver Info</Text>
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Name:</Text>
+                        <Text style={styles.modalInfoValue}>{driverInfo?.name || selectedRide.ownerName}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Email:</Text>
+                        <Text style={styles.modalInfoValue}>{driverInfo?.email || selectedRide.ownerEmail}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Phone:</Text>
+                        <Text style={styles.modalInfoValue}>{formatPhoneNumber(driverInfo?.phone)}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Pay Handle:</Text>
+                        <Text style={styles.modalInfoValue}>{driverInfo?.payHandle || "Not provided"}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={styles.modalInfoLabel}>Bio:</Text>
+                        <Text style={styles.modalInfoValue}>{driverInfo?.bio || "Not provided"}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.sectionDivider} />
+
+                    <Text style={styles.modalSectionTitle}>Driver Notes</Text>
+                    <View style={styles.modalNotes}>
+                      {selectedRide.driverNotes ? (
+                        <Text style={styles.modalNotesText}>{selectedRide.driverNotes}</Text>
+                      ) : (
+                        <Text style={styles.modalNotesPlaceholder}>No notes provided</Text>
+                      )}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -903,38 +978,79 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.text,
   },
-  modalInfo: {
-    marginBottom: 20,
-  },
-  modalInfoText: {
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  modalNotesTitle: {
+  modalSectionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: colors.text,
-    marginBottom: 10,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginBottom: 12,
+    marginTop: 20,
   },
-  modalNotes: {
+  modalSection: {
     backgroundColor: colors.backgroundLight,
     borderRadius: 8,
     padding: 15,
-    minHeight: 80,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 10,
+  },
+  modalInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    alignItems: "flex-start",
+  },
+  modalInfoLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    width: 120,
+  },
+  modalInfoValue: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: "right",
+  },
+  modalNotes: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 15,
+    minHeight: 60,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
+  modalNotesText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    lineHeight: 20,
   },
   modalNotesPlaceholder: {
     fontSize: 14,
     color: colors.textSecondary,
     fontStyle: "italic",
   },
-  modalNotesText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
+  modalTagContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalTagDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  modalTagText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: '500',
   },
 // confirm modal
   confirmCard: {
