@@ -664,14 +664,6 @@ export default function JoinPage() {
                         <Text style={styles.modalInfoValue}>{driverInfo?.name || selectedRide.ownerName}</Text>
                       </View>
                       <View style={styles.modalInfoRow}>
-                        <Text style={styles.modalInfoLabel}>Email:</Text>
-                        <Text style={styles.modalInfoValue}>{driverInfo?.email || selectedRide.ownerEmail}</Text>
-                      </View>
-                      <View style={styles.modalInfoRow}>
-                        <Text style={styles.modalInfoLabel}>Phone:</Text>
-                        <Text style={styles.modalInfoValue}>{formatPhoneNumber(driverInfo?.phone)}</Text>
-                      </View>
-                      <View style={styles.modalInfoRow}>
                         <Text style={styles.modalInfoLabel}>Pay Handle:</Text>
                         <Text style={styles.modalInfoValue}>{driverInfo?.payHandle || "Not provided"}</Text>
                       </View>
