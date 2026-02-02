@@ -281,7 +281,7 @@ export default function JoinPage() {
       closeJoinConfirm();
       Alert.alert(
         "Ride Joined!",
-        "You can now message the driver in your Messages tab.",
+        "You can now message everyone in this ride from your Messages tab.",
         [{ text: "OK", onPress: () => router.push("/(tabs)/home") }]
       );
     } catch (e) {
