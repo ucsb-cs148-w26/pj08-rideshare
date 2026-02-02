@@ -27,7 +27,7 @@ Unlike public rideshare platforms such as Uber or Lyft, this app is restricted t
 ### Installation & Running
 ```bash
 # Clone the repository
-git clone [your-repo-url]
+git clone https://github.com/ucsb-cs148-w26/pj08-rideshare.git
 
 # Navigate to the app directory
 cd pj08-rideshare/rideshare-app
