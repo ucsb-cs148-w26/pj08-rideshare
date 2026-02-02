@@ -30,7 +30,7 @@ import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
 import NavBar from '../../../app/components/nav-bar';
-import { getOrCreateConversation } from '../../../src/utils/messaging';
+import { getOrCreateRideConversation } from '../../../src/utils/messaging';
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -287,8 +287,9 @@ export default function JoinPage() {
 
       // Create conversation with the host after successful join
       try {
-        await getOrCreateConversation(confirmRide.ownerId, {
+        await getOrCreateRideConversation({
           rideId: confirmRide.id,
+          ownerId: confirmRide.ownerId,
           rideInfo: `${confirmRide.fromAddress} → ${confirmRide.toAddress}`,
           rideDate: confirmRide.rideDate,
         });
@@ -300,7 +301,7 @@ export default function JoinPage() {
       closeJoinConfirm();
       Alert.alert(
         "Ride Joined!",
-        "You can now message the driver in your Messages tab.",
+        "You can now message everyone in this ride from your Messages tab.",
         [{ text: "OK", onPress: () => router.push("/(tabs)/home") }]
       );
     } catch (e) {

@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { setTypingStatus } from '../../../src/utils/messaging';
+import { setTypingStatus, getTitle, getSubtitle } from '../../../src/utils/messaging';
 import TypingIndicator from '../../../app/components/typingIndicator';
 import {
   View,
@@ -35,13 +35,13 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [conversationData, setConversationData] = useState(null);
-  const [otherUserName, setOtherUserName] = useState('');
   const flatListRef = useRef(null);
-  const [otherUserId, setOtherUserId] = useState('');
-  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
-  const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
   const safetyTimeoutRef = useRef(null);
+
+  const [title, setTitle] = useState('Chat');
+  const [subtitle, setSubtitle] = useState('');
+  const [typingNames, setTypingNames] = useState([]); // array of names currently typing
 
   useEffect(() => {
         if (!conversationId) return;
@@ -52,13 +52,18 @@ export default function ChatScreen() {
                 const data = snapshot.data();
                 setConversationData(data);
 
-                const otherUid = data.participants.find(
-                    (id) => id !== auth.currentUser?.uid
-                );
-                setOtherUserId(otherUid);
-                setOtherUserName(data.participantNames?.[otherUid] || 'Unknown');
+                const currentUid = auth.currentUser?.uid;
 
-                setIsOtherUserTyping(data.typing?.[otherUid] || false);
+                setTitle(getTitle(data, currentUid));
+                setSubtitle(getSubtitle(data));
+
+                // Typing indicator: allow many typers
+                const typingMap = data.typing || {};
+                const typers = Object.keys(typingMap)
+                  .filter((uid) => uid !== currentUid && typingMap[uid])
+                  .map((uid) => data.participantNames?.[uid] || "Someone");
+
+                setTypingNames(typers)
             }
         });
 
@@ -72,7 +77,10 @@ export default function ChatScreen() {
             }));
             setMessages(msgs);
             setLoading(false);
-            markMessagesAsRead();
+            if (msgs.length > 0) {
+              const last = msgs[msgs.length - 1];
+              if (last.senderId !== auth.currentUser?.uid) markChatAsRead();
+            }
         });
 
         return () => {
@@ -117,18 +125,17 @@ export default function ChatScreen() {
         }
     }, [conversationId]);
 
-  const markMessagesAsRead = async () => {
+  const markChatAsRead = async () => {
+    const user = auth.currentUser;
+    if (!user || !conversationId) return;
+
     try {
       const convoRef = doc(db, 'conversations', conversationId);
-      const convoDoc = await getDoc(convoRef);
-      if (convoDoc.exists()) {
-        const data = convoDoc.data();
-        if (data.lastMessageSenderId !== auth.currentUser?.uid) {
-          await updateDoc(convoRef, { lastMessageRead: true });
-        }
-      }
+      await updateDoc(convoRef, {
+        [`lastReadAt.${user.uid}`]: serverTimestamp(),
+      });
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error('Error marking chat as read:', error);
     }
   };
 
@@ -161,7 +168,6 @@ export default function ChatScreen() {
         lastMessage: trimmedMessage,
         lastMessageTime: serverTimestamp(),
         lastMessageSenderId: user.uid,
-        lastMessageRead: false,
         hasMessages: true,
       });
     } catch (error) {
@@ -190,15 +196,47 @@ export default function ChatScreen() {
     });
   };
 
+  const getAvatarInitial = (uid, fallbackName = 'U') => {
+    const name =
+      conversationData?.participantNames?.[uid] ||
+      fallbackName ||
+      'U';
+
+    return (String(name).trim().charAt(0) || 'U').toUpperCase();
+  };
+
   const renderMessage = ({ item, index }) => {
-    const isMyMessage = item.senderId === auth.currentUser?.uid;
+    const myUid = auth.currentUser?.uid;
+    const isMyMessage = item.senderId === myUid
     const showDate = shouldShowDate(index);
 
-    return (
-      <>
-        {showDate && (
-          <Text style={styles.dateHeader}>{formatDateHeader(item.createdAt)}</Text>
+    const senderDisplayName =
+      item.senderName ||
+      conversationData?.participantNames?.[item.senderId] ||
+      'Unknown';
+
+  return (
+    <>
+      {showDate && (
+        <Text style={styles.dateHeader}>{formatDateHeader(item.createdAt)}</Text>
+      )}
+
+      <View
+        style={[
+          styles.messageRow,
+          isMyMessage ? styles.messageRowRight : styles.messageRowLeft,
+        ]}
+      >
+        {/* Left avatar for other people's messages */}
+        {!isMyMessage && (
+          <View style={styles.msgAvatar}>
+            <Text style={styles.msgAvatarText}>
+              {getAvatarInitial(item.senderId, senderDisplayName)}
+            </Text>
+          </View>
         )}
+
+        {/* Bubble */}
         <View
           style={[
             styles.messageContainer,
@@ -213,6 +251,7 @@ export default function ChatScreen() {
           >
             {item.text}
           </Text>
+
           <Text
             style={[
               styles.messageTime,
@@ -222,9 +261,10 @@ export default function ChatScreen() {
             {formatMessageTime(item.createdAt)}
           </Text>
         </View>
-      </>
-    );
-  };
+      </View>
+    </>
+  );
+};
 
   const shouldShowDate = (index) => {
     if (index === 0) return true;
@@ -263,10 +303,10 @@ export default function ChatScreen() {
       <View style={styles.emptyChatCard}>
         <View style={styles.emptyChatAvatar}>
           <Text style={styles.emptyChatAvatarText}>
-            {otherUserName.charAt(0).toUpperCase()}
+            {(title || 'C').charAt(0).toUpperCase()}
           </Text>
         </View>
-        <Text style={styles.emptyChatName}>{otherUserName}</Text>
+        <Text style={styles.emptyChatName}>{title}</Text>
         
         {conversationData?.rideInfo && (
           <View style={styles.rideInfoCard}>
@@ -303,21 +343,24 @@ export default function ChatScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push("/messages")} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.primary} />
         </TouchableOpacity>
         <View style={styles.headerAvatar}>
           <Text style={styles.headerAvatarText}>
-            {otherUserName.charAt(0).toUpperCase()}
+            {(title || 'C').charAt(0).toUpperCase()}
           </Text>
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{otherUserName}</Text>
-          {conversationData?.rideInfo && (
+          <Text style={styles.headerName} numberOfLines={1}>
+            {title}
+          </Text>
+
+          {subtitle ? (
             <Text style={styles.headerRide} numberOfLines={1}>
-              {conversationData.rideInfo}
+              {subtitle}
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
 
@@ -336,7 +379,7 @@ export default function ChatScreen() {
           }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
           ListFooterComponent={
-            isOtherUserTyping ? <TypingIndicator userName={otherUserName} /> : null
+            typingNames.length > 0 ? <TypingIndicator names={typingNames} /> : null
           }
         />
       )}
@@ -559,5 +602,30 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#e0e0e0',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginVertical: 4,
+  },
+  messageRowLeft: {
+    justifyContent: 'flex-start',
+  },
+  messageRowRight: {
+    justifyContent: 'flex-end',
+  },
+  msgAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  msgAvatarText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

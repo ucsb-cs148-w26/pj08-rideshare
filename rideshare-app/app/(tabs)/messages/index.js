@@ -16,6 +16,10 @@ import {
   orderBy,
   onSnapshot,
 } from 'firebase/firestore';
+import {
+  getTitle,
+  getSubtitle,
+} from '../../../src/utils/messaging'
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,12 +55,6 @@ export default function MessagesScreen() {
     return () => unsubscribe();
   }, []);
 
-  const getOtherParticipantName = (conversation) => {
-    const userId = auth.currentUser?.uid;
-    const otherUserId = conversation.participants.find((id) => id !== userId);
-    return conversation.participantNames?.[otherUserId] || 'Unknown';
-  };
-
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -83,10 +81,20 @@ export default function MessagesScreen() {
 
   const renderConversation = ({ item }) => {
     const hasMessages = item.hasMessages || item.lastMessage;
+
+    const myUid = auth.currentUser?.uid;
+    const lastReadAt = myUid ? item.lastReadAt?.[myUid] : null;
+
+    const lastReadDate = lastReadAt?.toDate ? lastReadAt.toDate() : (lastReadAt ? new Date(lastReadAt) : null);
+    const lastMsgDate = item.lastMessageTime?.toDate ? item.lastMessageTime.toDate() : (item.lastMessageTime ? new Date(item.lastMessageTime) : null);
+
+    const title = getTitle(item, myUid);
+    const subtitle = getSubtitle(item);
+
     const isUnread =
-      hasMessages &&
-      item.lastMessageSenderId !== auth.currentUser?.uid &&
-      !item.lastMessageRead;
+      !!item.lastMessage &&
+      item.lastMessageSenderId !== myUid &&
+      (!lastReadDate || (lastMsgDate && lastMsgDate > lastReadDate));
 
     return (
       <TouchableOpacity
@@ -101,7 +109,7 @@ export default function MessagesScreen() {
         {/* Avatar */}
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {getOtherParticipantName(item).charAt(0).toUpperCase()}
+            {title.charAt(0).toUpperCase()}
           </Text>
         </View>
 
@@ -109,12 +117,16 @@ export default function MessagesScreen() {
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
             <Text style={[styles.participantName, isUnread && styles.unreadText]}>
-              {getOtherParticipantName(item)}
+              {title}
             </Text>
             {hasMessages && (
               <Text style={styles.timestamp}>{formatTime(item.lastMessageTime)}</Text>
             )}
           </View>
+
+          {subtitle ? (
+            <Text style={styles.groupSubtitle}>{subtitle}</Text>
+          ) : null}
 
           {/* Ride info badge */}
           {item.rideInfo && (
@@ -211,6 +223,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  groupSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
   },
   listContent: {
     paddingBottom: 20,
