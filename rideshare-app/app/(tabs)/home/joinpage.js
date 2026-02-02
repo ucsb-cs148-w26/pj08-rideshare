@@ -30,7 +30,7 @@ import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
 import NavBar from '../../../app/components/nav-bar';
-import { getOrCreateConversation } from '../../../src/utils/messaging';
+import { getOrCreateRideConversation } from '../../../src/utils/messaging';
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -267,8 +267,9 @@ export default function JoinPage() {
 
       // Create conversation with the host after successful join
       try {
-        await getOrCreateConversation(confirmRide.ownerId, {
+        await getOrCreateRideConversation({
           rideId: confirmRide.id,
+          ownerId: confirmRide.ownerId,
           rideInfo: `${confirmRide.fromAddress} → ${confirmRide.toAddress}`,
           rideDate: confirmRide.rideDate,
         });

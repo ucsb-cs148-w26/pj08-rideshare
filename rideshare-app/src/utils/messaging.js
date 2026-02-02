@@ -1,69 +1,90 @@
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
   serverTimestamp,
   doc,
   getDoc,
+  setDoc,
   updateDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
-export async function getOrCreateConversation(otherUserId, rideDetails = null) {
+export async function getOrCreateRideConversation(rideDetails) {
   const currentUser = auth.currentUser;
   if (!currentUser) throw new Error('Not authenticated');
-  if (currentUser.uid === otherUserId) throw new Error('Cannot message yourself');
 
-  const conversationsRef = collection(db, 'conversations');
-  const q = query(
-    conversationsRef,
-    where('participants', 'array-contains', currentUser.uid)
-  );
+  const { rideId, rideInfo, rideDate, ownerId } = rideDetails || {};
+  if (!rideId) throw new Error("rideId required");
 
-  const snapshot = await getDocs(q);
-  const existingConvo = snapshot.docs.find((doc) => {
-    const data = doc.data();
-    const hasOtherUser = data.participants.includes(otherUserId);
-    if (rideDetails?.rideId) {
-      return hasOtherUser && data.rideId === rideDetails.rideId;
-    }
-    return hasOtherUser;
-  });
+  const conversationsRef = doc(db, 'conversations', rideId);
 
-  if (existingConvo) {
-    return existingConvo.id;
+  // Fetch current user's name
+  let currentUserName = 'Unknown';
+  try {
+    const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    currentUserName = currentUserDoc.exists()
+      ? (currentUserDoc.data()?.name ?? 'Unknown')
+      : 'Unknown';
+  }
+  catch {
+    // keeps name as "Unknown"
   }
 
-  const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
-  const otherUserDoc = await getDoc(doc(db, 'users', otherUserId));
+  // try to join/update first
+  try {
+    await updateDoc(conversationsRef, {
+      participants: arrayUnion(currentUser.uid),
+      [`participantNames.${currentUser.uid}`]: currentUserName,
+      [`lastReadAt.${currentUser.uid}`]: serverTimestamp(),
+      ...(rideInfo ? { rideInfo } : {}),
+      ...(rideDate ? { rideDate } : {}),
+    });
 
-  const currentUserName = currentUserDoc.exists()
-    ? currentUserDoc.data().name
-    : 'Unknown';
-  const otherUserName = otherUserDoc.exists()
-    ? otherUserDoc.data().name
-    : 'Unknown';
+    return rideId;
+  } catch (e) {
+    // if the conversation doc doesn't exist yet, updateDoc throws "not-found"
+    if (e?.code !== 'not-found') {
+      throw e;
+    }
+  }
 
-  const newConvo = await addDoc(conversationsRef, {
-    participants: [currentUser.uid, otherUserId],
+  // fetch owner's name
+  let ownerName = null;
+  if (ownerId) {
+    try {
+      const ownerDoc = await getDoc(doc(db, 'users', ownerId));
+      ownerName = ownerDoc.exists() ? (ownerDoc.data()?.name ?? null) : null;
+    } catch {
+      ownerName = null;
+    }
+  }
+
+  // create conversation doc for the ride
+  const initialParticipants = ownerId
+    ? Array.from(new Set([ownerId, currentUser.uid]))
+    : [currentUser.uid];
+
+  await setDoc(conversationsRef, {
+    type: 'ride',
+    rideId,
+    rideInfo: rideInfo || null,
+    rideDate: rideDate || null,
+    participants: initialParticipants,
     participantNames: {
       [currentUser.uid]: currentUserName,
-      [otherUserId]: otherUserName,
+      ...(ownerId ? { [ownerId]: ownerName } : {}),
     },
-    rideId: rideDetails?.rideId || null,
-    rideInfo: rideDetails?.rideInfo || null,
-    rideDate: rideDetails?.rideDate || null,
     lastMessage: null,
     lastMessageTime: serverTimestamp(),
     lastMessageSenderId: null,
-    lastMessageRead: true,
     hasMessages: false,
+    typing: {},
+    lastReadAt: {
+      [currentUser.uid]: serverTimestamp(),
+    },
     createdAt: serverTimestamp(),
   });
 
-  return newConvo.id;
+  return rideId;
 }
 
 export async function setTypingStatus(conversationId, isTyping) {
@@ -78,4 +99,25 @@ export async function setTypingStatus(conversationId, isTyping) {
   } catch (error) {
     console.error('Error updating typing status:', error);
   }
+}
+
+export function getTitle(conversation, currentUid) {
+  const participants = conversation.participants || [];
+  const namesMap = conversation.participantNames || {};
+
+  if (!currentUid) return 'Ride Chat';
+
+  const otherUids = participants.filter((uid) => uid !== currentUid); // everyone except me
+  const otherNames = otherUids.map((uid) => namesMap[uid] || 'Unknown'); // map uids to display names (fallback if missing)
+
+  if (otherNames.length === 0) return conversation.rideInfo || 'Ride Chat';
+  return otherNames.join(', ');
+}
+
+export function getSubtitle(conversation) {
+  const count = conversation.participants?.length || 0;
+
+  // display the total number of participants (excluding myself)
+  if (count > 2) return `${count - 1} people`;
+  return '';
 }

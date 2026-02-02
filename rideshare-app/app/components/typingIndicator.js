@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors } from '../../ui/styles/colors';
 
-export default function TypingIndicator({ userName }) {
+export default function TypingIndicator({ names = [] }) {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -35,7 +35,7 @@ export default function TypingIndicator({ userName }) {
     animation.start();
 
     return () => animation.stop();
-  }, []);
+  }, [dot1, dot2, dot3]);
 
   const getDotStyle = (animatedValue) => ({
     transform: [
@@ -52,6 +52,17 @@ export default function TypingIndicator({ userName }) {
     }),
   });
 
+  const label = useMemo(() => {
+    const safeNames = (Array.isArray(names) ? names : [])
+      .map((n) => (typeof n === 'string' ? n.trim() : ''))
+      .filter(Boolean);
+
+    if (safeNames.length === 0) return 'Someone is typing...';
+    if (safeNames.length === 1) return `${safeNames[0]} is typing...`;
+    if (safeNames.length === 2) return `${safeNames[0]} and ${safeNames[1]} are typing...`;
+    return 'Several people are typing...';
+  }, [names]);
+
   return (
     <View style={styles.container}>
       <View style={styles.bubble}>
@@ -59,7 +70,7 @@ export default function TypingIndicator({ userName }) {
         <Animated.View style={[styles.dot, getDotStyle(dot2)]} />
         <Animated.View style={[styles.dot, getDotStyle(dot3)]} />
       </View>
-      <Text style={styles.text}>{userName} is typing...</Text>
+      <Text style={styles.text}>{label}</Text>
     </View>
   );
 }
