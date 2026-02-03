@@ -1,5 +1,7 @@
 ## ADDITIONAL INSTRUCTIONS FOR MVP DEMO
 
+Link: https://drive.google.com/file/d/1fKO370SGlTgCg1GfCtlWlsgn3ByrW859/view?usp=sharing
+
 ## Quick Start
 
 ### Prerequisites
