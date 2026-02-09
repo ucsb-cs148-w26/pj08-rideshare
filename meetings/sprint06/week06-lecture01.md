@@ -37,3 +37,8 @@ Joel’s check-in:
 -Looked through mvp feedback 
 - brainstorming new features and what ai experiment can be done
 - No blockers
+
+Wyatt's check-in:
+ - Looked through mvp feedback
+ - Thinking of new features, and ai experiment, will pick up tasks on board
+ - No blockers
