@@ -524,6 +524,32 @@ export default function Homepage({ user }) {
                     </View>
                   </>
                 )}
+
+                {/* Cancellation Policy - Only show for joined rides (when user is not the owner) */}
+                {selectedRide && selectedRide.ownerId !== auth.currentUser?.uid && (
+                  <>
+                    <View style={styles.sectionDivider} />
+
+                    <Text style={styles.modalSectionTitle}>Cancellation Deadline</Text>
+
+                    <Text style={styles.cancellationDeadlineText}>Date will be displayed here</Text>
+
+                    <View style={styles.cancellationNotice}>
+                      <Text style={styles.cancellationNoticeText}>
+                        ⚠️ Warning: Leaving after the cancellation deadline may result in penalties.
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                      style={styles.leaveRideButton}
+                      onPress={() => {}}
+                    >
+                      <Text style={styles.leaveRideButtonText}>
+                        Leave Ride
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </ScrollView>
             )}
           </View>
@@ -817,5 +843,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
     fontWeight: '500',
+  },
+  cancellationDeadlineText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  cancellationNotice: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  cancellationNoticeText: {
+    color: '#991b1b',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  cancellationDatePlaceholder: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    flex: 1,
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  leaveRideButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderWidth: 2,
+    borderColor: '#dc2626',
+  },
+  leaveRideButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
