@@ -8,6 +8,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
@@ -152,8 +153,13 @@ export default function AccountPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Account</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Account</Text>
 
         <View style={styles.card}>
           <View style={styles.headerRow}>
@@ -285,7 +291,8 @@ export default function AccountPage() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
       <NavBar />
     </SafeAreaView>
   );

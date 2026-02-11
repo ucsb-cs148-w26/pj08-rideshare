@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 
 import { router } from "expo-router";
@@ -164,15 +166,19 @@ export default function Register() {
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Title */}
-      <Text style={styles.header}>Create Account</Text>
-      <Text style={styles.subheader}>
-        Enter your details to join UCSB Rideshare
-      </Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Title */}
+        <Text style={styles.header}>Create Account</Text>
+        <Text style={styles.subheader}>
+          Enter your details to join UCSB Rideshare
+        </Text>
 
       {/* White Card */}
       <View style={styles.card}>
@@ -420,13 +426,14 @@ export default function Register() {
       </View>
 
       {/* Back */}
-      <TouchableOpacity
-        onPress={() => router.replace("/(auth)/login")}
-        style={{ marginTop: 18 }}
-      >
-        <Text style={styles.back}>Back to Login</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          onPress={() => router.replace("/(auth)/login")}
+          style={{ marginTop: 18 }}
+        >
+          <Text style={styles.back}>Back to Login</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

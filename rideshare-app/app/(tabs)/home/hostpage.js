@@ -13,6 +13,7 @@ import {
   Pressable,
   ActivityIndicator,
   SafeAreaView,
+  KeyboardAvoidingView,
 } from "react-native";
 import { colors } from "../../../ui/styles/colors";
 import {
@@ -237,13 +238,19 @@ export default function HostPage() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView 
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: Platform.OS === 'ios' ? 108 : 80 }
-        ]}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
       >
-        <Text style={styles.title}>Host a Ride</Text>
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingBottom: Platform.OS === "ios" ? 108 : 80 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Host a Ride</Text>
 
         {/* Owner Name (pulled from profile) */}
         <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
@@ -467,7 +474,8 @@ export default function HostPage() {
             {isSaving ? "Saving..." : "Submit"}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <NavBar />
     </SafeAreaView>
