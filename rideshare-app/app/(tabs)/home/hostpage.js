@@ -190,6 +190,13 @@ export default function HostPage() {
       return;
     }
 
+    const seatsNum = Number(seats);
+
+    if (!Number.isFinite(seatsNum) || seatsNum <= 0) {
+      Alert.alert("Invalid seats", "Seats must be a number greater than 0.");
+      return;
+    }
+
     try {
       setIsSaving(true);
       const ridesRef = doc(collection(db, "rides"));
@@ -199,7 +206,8 @@ export default function HostPage() {
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
-        seats: seats.trim(),
+        seats: seatsNum,
+        total_seats: seatsNum,
         tag: selectedTag,
         driverNotes: driverNotes.trim(),
         ownerId: user.uid,
