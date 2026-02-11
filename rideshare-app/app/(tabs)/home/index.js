@@ -451,7 +451,9 @@ export default function Homepage({ user }) {
                   </View>
                   <View style={styles.modalInfoRow}>
                     <Text style={styles.modalInfoLabel}>Seats Available:</Text>
-                    <Text style={styles.modalInfoValue}>{selectedRide.seats}</Text>
+                    <Text style={styles.modalInfoValue}>
+                      {Number(selectedRide.seats)} / {Number(selectedRide.total_seats ?? selectedRide.seats)}
+                    </Text>
                   </View>
                   <View style={styles.modalInfoRow}>
                     <Text style={styles.modalInfoLabel}>Price:</Text>
