@@ -12,7 +12,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
@@ -113,6 +113,12 @@ function formatPhoneNumber(phoneNumber) {
   return phoneNumber;
 }
 
+function formatCurrency(value) {
+  const num = typeof value === 'number' ? value : Number(value);
+  const safe = Number.isFinite(num) ? num : 0;
+  return `$${safe.toFixed(2)}`;
+}
+
 export default function Homepage({ user }) {
   const [hostedRides, setHostedRides] = useState([]);
   const [joinedRides, setJoinedRides] = useState([]);
@@ -125,6 +131,9 @@ export default function Homepage({ user }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [leaveRideModalVisible, setLeaveRideModalVisible] = useState(false);
   const [leavingRide, setLeavingRide] = useState(false);
+
+  const cancellationFee = selectedRide ? Number(selectedRide.price) * 0.25 : 0;
+  const cancellationFeeText = formatCurrency(cancellationFee);
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -566,9 +575,9 @@ export default function Homepage({ user }) {
                 <Text style={styles.confirmModalMessage}>
                   <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
                   {'\n\n'}
-                  • Cancellations made after the deadline will incur a $[calculated price] fee
+                  • Cancellations made after the deadline will incur a {cancellationFeeText} fee
                   {'\n\n'}
-                  • Fee calculation: [percentage]% of ride price with a $[minimum] minimum
+                  • Fee calculation: 25% of ride price
                   {'\n\n'}
                   • If a waitlist exists for this ride, you must rejoin through the waitlist
                   {'\n\n'}
@@ -594,14 +603,33 @@ export default function Homepage({ user }) {
                         const currentUser = auth.currentUser;
                         if (!currentUser) return;
 
-                        // TODO: Implement leave ride logic here
-                        // Example: Delete the join document
-                        // const joinRef = doc(db, 'rides', selectedRide.id, 'joins', currentUser.uid);
-                        // await deleteDoc(joinRef);
-                        
-                        // Also update seats count if needed
-                        
-                        console.log('Leave ride logic to be implemented');
+                        const rideRef = doc(db, 'rides', selectedRide.id);
+                        const joinRef = doc(db, 'rides', selectedRide.id, 'joins', currentUser.uid);
+
+                        await runTransaction(db, async (tx) => {
+                          const [rideSnap, joinSnap] = await Promise.all([
+                            tx.get(rideRef),
+                            tx.get(joinRef),
+                          ]);
+
+                          if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
+                          if (!joinSnap.exists()) throw new Error('You have not joined this ride.');
+
+                          const rideData = rideSnap.data() || {};
+                          const seatsNumRaw = Number(rideData.seats);
+                          const seatsNum = Number.isFinite(seatsNumRaw) ? seatsNumRaw : 0;
+                          const totalSeatsRaw = Number(rideData.total_seats ?? seatsNum);
+                          const totalSeats = Number.isFinite(totalSeatsRaw) ? totalSeatsRaw : null;
+                          const nextSeats = totalSeats !== null
+                            ? Math.min(seatsNum + 1, totalSeats)
+                            : seatsNum + 1;
+
+                          tx.update(rideRef, {
+                            seats: nextSeats,
+                            total_seats: rideData.total_seats ?? seatsNum,
+                          });
+                          tx.delete(joinRef);
+                        });
                         
                         // Close both modals
                         setLeaveRideModalVisible(false);
