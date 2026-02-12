@@ -276,7 +276,10 @@ export default function JoinPage() {
           throw new Error("No seats left for this ride.");
         }
 
-        tx.update(rideRef, { seats: seatsNum - 1 });
+        tx.update(rideRef, {
+          seats: seatsNum - 1,
+          total_seats: rideData.total_seats ?? seatsNum, // ensures field exists
+        });
         tx.set(joinRef, {
           riderId: user.uid,
           riderEmail: user.email ?? "",
@@ -360,7 +363,7 @@ export default function JoinPage() {
               </Text>
             </View>
             <Text style={[styles.capacityText, disabled && styles.textDisabled]}>
-              CAP: {Number(item.seats)} seats
+              CAP: {Number(item.seats)} / {Number(item.total_seats ?? item.seats)} seats
             </Text>
           </View>
 
@@ -639,7 +642,9 @@ export default function JoinPage() {
                       </View>
                       <View style={styles.modalInfoRow}>
                         <Text style={styles.modalInfoLabel}>Seats Available:</Text>
-                        <Text style={styles.modalInfoValue}>{selectedRide.seats}</Text>
+                        <Text style={styles.modalInfoValue}>
+                          {Number(selectedRide.seats)} / {Number(selectedRide.total_seats ?? selectedRide.seats)}
+                        </Text> 
                       </View>
                       <View style={styles.modalInfoRow}>
                         <Text style={styles.modalInfoLabel}>Price:</Text>
