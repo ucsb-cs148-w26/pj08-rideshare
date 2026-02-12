@@ -274,6 +274,14 @@ export default function HostPage() {
       return;
     }
 
+    if (cancellationDeadline && cancellationDeadline > rideDate) {
+      Alert.alert(
+        "Invalid cancellation deadline",
+        "Cancellation deadline must be before or at the ride time."
+      );
+      return;
+    }
+
     const user = auth.currentUser;
     if (!user) {
       Alert.alert("Not signed in", "Please sign in to post a ride.");
