@@ -236,7 +236,11 @@ export default function ChatScreen() {
           </View>
         )}
 
-        {/* Bubble */}
+        {/* Bubble (wrapped with name label for others) */}
+        <View style={styles.bubbleWrapper}>
+          {!isMyMessage && (
+            <Text style={styles.senderName}>{senderDisplayName}</Text>
+          )}
         <View
           style={[
             styles.messageContainer,
@@ -260,6 +264,7 @@ export default function ChatScreen() {
           >
             {formatMessageTime(item.createdAt)}
           </Text>
+        </View>
         </View>
       </View>
     </>
@@ -475,7 +480,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   messageContainer: {
-    maxWidth: '75%',
     marginVertical: 4,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -627,5 +631,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+  },
+  bubbleWrapper: {
+    flexShrink: 1,
+    maxWidth: '75%',
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 3,
+    marginLeft: 4,
   },
 });
