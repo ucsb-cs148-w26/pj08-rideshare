@@ -123,6 +123,8 @@ export default function Homepage({ user }) {
   const [driverVehicle, setDriverVehicle] = useState(null);
   const [hasVehicleInfo, setHasVehicleInfo] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [leaveRideModalVisible, setLeaveRideModalVisible] = useState(false);
+  const [leavingRide, setLeavingRide] = useState(false);
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -526,11 +528,111 @@ export default function Homepage({ user }) {
                     </View>
                   </>
                 )}
+
+                {/* Cancellation Policy - Only show for joined rides (when user is not the owner) */}
+                {selectedRide && selectedRide.ownerId !== auth.currentUser?.uid && (
+                  <>
+                    <View style={styles.sectionDivider} />
+
+                    <Text style={styles.modalSectionTitle}>Cancellation Deadline</Text>
+
+                    <Text style={styles.cancellationDeadlineText}>Date will be displayed here</Text>
+
+                    <View style={styles.cancellationNotice}>
+                      <Text style={styles.cancellationNoticeText}>
+                        ⚠️ Warning: Leaving after the cancellation deadline may result in penalties.
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                      style={styles.leaveRideButton}
+                      onPress={() => setLeaveRideModalVisible(true)}
+                    >
+                      <Text style={styles.leaveRideButtonText}>
+                        Leave Ride
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </ScrollView>
             )}
           </View>
+
+          {/* Leave Ride Confirmation Overlay */}
+          {leaveRideModalVisible && (
+            <View style={styles.confirmModalOverlay}>
+              <View style={styles.confirmModalContent}>
+                <Text style={styles.confirmModalTitle}>Leave this ride?</Text>
+                <Text style={styles.confirmModalMessage}>
+                  <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
+                  {'\n\n'}
+                  • Cancellations made after the deadline will incur a $[calculated price] fee
+                  {'\n\n'}
+                  • Fee calculation: [percentage]% of ride price with a $[minimum] minimum
+                  {'\n\n'}
+                  • If a waitlist exists for this ride, you must rejoin through the waitlist
+                  {'\n\n'}
+                  <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                </Text>
+                
+                <View style={styles.confirmModalButtons}>
+                  <TouchableOpacity 
+                    style={styles.confirmCancelButton}
+                    onPress={() => setLeaveRideModalVisible(false)}
+                    disabled={leavingRide}
+                  >
+                    <Text style={styles.confirmCancelButtonText}>Go Back</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.confirmLeaveButton, leavingRide && styles.buttonDisabled]}
+                    onPress={async () => {
+                      if (!selectedRide || leavingRide) return;
+                      
+                      setLeavingRide(true);
+                      try {
+                        const currentUser = auth.currentUser;
+                        if (!currentUser) return;
+
+                        // TODO: Implement leave ride logic here
+                        // Example: Delete the join document
+                        // const joinRef = doc(db, 'rides', selectedRide.id, 'joins', currentUser.uid);
+                        // await deleteDoc(joinRef);
+                        
+                        // Also update seats count if needed
+                        
+                        console.log('Leave ride logic to be implemented');
+                        
+                        // Close both modals
+                        setLeaveRideModalVisible(false);
+                        setDetailsModalVisible(false);
+                        
+                        // Reset states
+                        setSelectedRide(null);
+                        setDriverInfo(null);
+                        setDriverVehicle(null);
+                      } catch (error) {
+                        console.error('Error leaving ride:', error);
+                        alert('Failed to leave ride. Please try again.');
+                      } finally {
+                        setLeavingRide(false);
+                      }
+                    }}
+                    disabled={leavingRide}
+                  >
+                    {leavingRide ? (
+                      <ActivityIndicator size="small" color={colors.white} />
+                    ) : (
+                      <Text style={styles.confirmLeaveButtonText}>Leave Ride</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
+
       <NavBar />
     </View>
   );
@@ -702,6 +804,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
+    paddingBottom: 1,
     width: '88%',
     maxHeight: '80%',
     borderWidth: 2,
@@ -819,5 +922,120 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
     fontWeight: '500',
+  },
+  cancellationDeadlineText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  cancellationNotice: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  cancellationNoticeText: {
+    color: '#991b1b',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  cancellationDatePlaceholder: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    flex: 1,
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  leaveRideButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 6,
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderWidth: 2,
+    borderColor: '#dc2626',
+  },
+  leaveRideButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  // Confirmation modal styles
+  confirmModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  confirmModalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  confirmModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 24,
+    textAlign: 'left',
+    lineHeight: 22,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  confirmCancelButtonText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  confirmLeaveButton: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#dc2626',
+  },
+  confirmLeaveButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
