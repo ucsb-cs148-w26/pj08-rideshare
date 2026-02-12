@@ -470,6 +470,14 @@ export default function Homepage({ user }) {
                       </View>
                     </View>
                   )}
+                  {selectedRide.cancellationDeadline && (
+                    <View style={styles.cancellationBox}>
+                      <Text style={styles.cancellationBoxLabel}>Cancellation Deadline</Text>
+                      <Text style={styles.cancellationBoxText}>
+                        {formatDate(selectedRide.cancellationDeadline)} at {formatTime(selectedRide.cancellationDeadline)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.sectionDivider} />
@@ -536,7 +544,11 @@ export default function Homepage({ user }) {
 
                     <Text style={styles.modalSectionTitle}>Cancellation Deadline</Text>
 
-                    <Text style={styles.cancellationDeadlineText}>Date will be displayed here</Text>
+                    <Text style={styles.cancellationDeadlineText}>
+                      {selectedRide.cancellationDeadline
+                        ? formatDateTime(selectedRide.cancellationDeadline)
+                        : 'No deadline set.'}
+                    </Text>
 
                     <View style={styles.cancellationNotice}>
                       <Text style={styles.cancellationNoticeText}>
@@ -922,6 +934,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
     fontWeight: '500',
+  },
+  cancellationBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  cancellationBoxLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#991b1b',
+    marginBottom: 4,
+  },
+  cancellationBoxText: {
+    fontSize: 14,
+    color: '#7f1d1d',
+    fontWeight: '600',
   },
   cancellationDeadlineText: {
     fontSize: 16,

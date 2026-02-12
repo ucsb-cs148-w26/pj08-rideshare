@@ -66,6 +66,10 @@ export default function HostPage() {
   const [tempDate, setTempDate] = useState(new Date());
   const [showTagPicker, setShowTagPicker] = useState(false);
   const [driverNotes, setDriverNotes] = useState("");
+  const [cancellationDeadline, setCancellationDeadline] = useState(null);
+  const [showCancelDatePicker, setShowCancelDatePicker] = useState(false);
+  const [showCancelTimePicker, setShowCancelTimePicker] = useState(false);
+  const [cancelTempDate, setCancelTempDate] = useState(new Date());
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -109,6 +113,23 @@ export default function HostPage() {
     });
   };
 
+  const formatCancelDate = (date) => {
+    if (!date) return "";
+    return date.toLocaleDateString([], {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const formatCancelTime = (date) => {
+    if (!date) return "";
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const handleOpenDatePicker = () => {
     const baseDate = rideDate || new Date();
     setTempDate(baseDate);
@@ -119,6 +140,18 @@ export default function HostPage() {
     const baseDate = rideDate || new Date();
     setTempDate(baseDate);
     setShowTimePicker(true);
+  };
+
+  const handleOpenCancelDatePicker = () => {
+    const baseDate = cancellationDeadline || new Date();
+    setCancelTempDate(baseDate);
+    setShowCancelDatePicker(true);
+  };
+
+  const handleOpenCancelTimePicker = () => {
+    const baseDate = cancellationDeadline || new Date();
+    setCancelTempDate(baseDate);
+    setShowCancelTimePicker(true);
   };
 
   const handleDateChange = (event, selectedDate) => {
@@ -151,6 +184,36 @@ export default function HostPage() {
     }
   };
 
+  const handleCancelDateChange = (event, selectedDate) => {
+    if (Platform.OS !== "ios") {
+      setShowCancelDatePicker(false);
+      if (event?.type === "dismissed") return;
+      const nextDate = selectedDate || cancellationDeadline || new Date();
+      setCancellationDeadline(nextDate);
+    } else if (selectedDate) {
+      setCancelTempDate(selectedDate);
+    }
+  };
+
+  const handleCancelTimeChange = (event, selectedTime) => {
+    if (Platform.OS !== "ios") {
+      setShowCancelTimePicker(false);
+      if (event?.type === "dismissed") return;
+      const baseDate = cancellationDeadline || new Date();
+      const timeDate = selectedTime || baseDate;
+      const combined = new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth(),
+        baseDate.getDate(),
+        timeDate.getHours(),
+        timeDate.getMinutes()
+      );
+      setCancellationDeadline(combined);
+    } else if (selectedTime) {
+      setCancelTempDate(selectedTime);
+    }
+  };
+
   const handleConfirmDate = () => {
     setRideDate(
       new Date(
@@ -176,6 +239,33 @@ export default function HostPage() {
       )
     );
     setShowTimePicker(false);
+  };
+
+  const handleConfirmCancelDate = () => {
+    setCancellationDeadline(
+      new Date(
+        cancelTempDate.getFullYear(),
+        cancelTempDate.getMonth(),
+        cancelTempDate.getDate(),
+        (cancellationDeadline || new Date()).getHours(),
+        (cancellationDeadline || new Date()).getMinutes()
+      )
+    );
+    setShowCancelDatePicker(false);
+  };
+
+  const handleConfirmCancelTime = () => {
+    const baseDate = cancellationDeadline || new Date();
+    setCancellationDeadline(
+      new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth(),
+        baseDate.getDate(),
+        cancelTempDate.getHours(),
+        cancelTempDate.getMinutes()
+      )
+    );
+    setShowCancelTimePicker(false);
   };
 
   const handleSubmit = async () => {
@@ -206,6 +296,9 @@ export default function HostPage() {
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
+        cancellationDeadline: cancellationDeadline
+          ? cancellationDeadline.toISOString()
+          : null,
         seats: seatsNum,
         total_seats: seatsNum,
         tag: selectedTag,
@@ -225,6 +318,7 @@ export default function HostPage() {
       setToAddress("");
       setFromAddress("");
       setRideDate(null);
+      setCancellationDeadline(null);
       setSeats("");
       setSelectedTag("");
       setDriverNotes("");
@@ -410,6 +504,99 @@ export default function HostPage() {
         </View>
 
         <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Cancellation Deadline</Text>
+          <Text style={styles.helperText}>
+            Latest time riders can cancel without a fee.
+          </Text>
+          <TouchableOpacity onPress={handleOpenCancelDatePicker}>
+            <TextInput
+              style={styles.input}
+              placeholder="Select date"
+              value={formatCancelDate(cancellationDeadline)}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleOpenCancelTimePicker} style={{ marginTop: 10 }}>
+            <TextInput
+              style={styles.input}
+              placeholder="Select time"
+              value={formatCancelTime(cancellationDeadline)}
+              editable={false}
+              pointerEvents="none"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {showCancelDatePicker && (
+          Platform.OS === "ios" ? (
+            <Modal transparent animationType="slide">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalCard}>
+                  <DateTimePicker
+                    value={cancelTempDate}
+                    mode="date"
+                    display="inline"
+                    onChange={handleCancelDateChange}
+                    themeVariant="light"
+                    style={styles.picker}
+                  />
+                  <View style={styles.modalActions}>
+                    <Pressable onPress={() => setShowCancelDatePicker(false)}>
+                      <Text style={styles.modalActionText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleConfirmCancelDate}>
+                      <Text style={styles.modalActionText}>Done</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={cancellationDeadline || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleCancelDateChange}
+            />
+          )
+        )}
+
+        {showCancelTimePicker && (
+          Platform.OS === "ios" ? (
+            <Modal transparent animationType="slide">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalCard}>
+                  <DateTimePicker
+                    value={cancelTempDate}
+                    mode="time"
+                    display="spinner"
+                    onChange={handleCancelTimeChange}
+                    themeVariant="light"
+                    style={styles.picker}
+                  />
+                  <View style={styles.modalActions}>
+                    <Pressable onPress={() => setShowCancelTimePicker(false)}>
+                      <Text style={styles.modalActionText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleConfirmCancelTime}>
+                      <Text style={styles.modalActionText}>Done</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={cancellationDeadline || new Date()}
+              mode="time"
+              display="default"
+              onChange={handleCancelTimeChange}
+            />
+          )
+        )}
+
+        <View style={styles.fieldGroup}>
           <Text style={styles.label}>Tags</Text>
           <TouchableOpacity onPress={() => setShowTagPicker(true)}>
             <TextInput
@@ -521,6 +708,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 8,
     color: colors.primary,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#9ca3af",
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
