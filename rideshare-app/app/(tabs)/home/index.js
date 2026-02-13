@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import {
   StyleSheet,
   Text,
+  TextInput,
   View,
   TouchableOpacity,
   ScrollView,
@@ -122,18 +123,26 @@ function formatCurrency(value) {
 export default function Homepage({ user }) {
   const [hostedRides, setHostedRides] = useState([]);
   const [joinedRides, setJoinedRides] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [selectedRide, setSelectedRide] = useState(null);
   const [driverInfo, setDriverInfo] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+
   const [driverVehicle, setDriverVehicle] = useState(null);
   const [hasVehicleInfo, setHasVehicleInfo] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+
   const [leaveRideModalVisible, setLeaveRideModalVisible] = useState(false);
   const [leavingRide, setLeavingRide] = useState(false);
-
   const cancellationFee = selectedRide ? Number(selectedRide.price) * 0.25 : 0;
   const cancellationFeeText = formatCurrency(cancellationFee);
+
+  const [cancelRideModalVisible, setCancelRideModalVisible] = useState(false);
+  const [cancellingRide, setCancellingRide] = useState(false);
+  const [cancelNote, setCancelNote] = useState('');
+  const [cancelNoteError, setCancelNoteError] = useState(''); 
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -575,6 +584,27 @@ export default function Homepage({ user }) {
                     </TouchableOpacity>
                   </>
                 )}
+
+                {/* Driver Cancel - Only show for hosted rides (when user is the owner) */}
+                {selectedRide && selectedRide.ownerId === auth.currentUser?.uid && (
+                  <>
+                    <View style={styles.sectionDivider} />
+
+                    <Text style={styles.modalSectionTitle}>Driver Controls</Text>
+
+                    <TouchableOpacity
+                      style={styles.cancelRideButton}
+                      onPress={() => {
+                        setCancelNote('');
+                        setCancelNoteError('');
+                        setCancelRideModalVisible(true);
+                      }}
+                    >
+                      <Text style={styles.cancelRideButtonText}>Cancel Ride</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
               </ScrollView>
             )}
           </View>
@@ -664,6 +694,101 @@ export default function Homepage({ user }) {
                       <ActivityIndicator size="small" color={colors.white} />
                     ) : (
                       <Text style={styles.confirmLeaveButtonText}>Leave Ride</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Cancel Ride Confirmation Overlay (Driver) */}
+          {cancelRideModalVisible && (
+            <View style={styles.confirmModalOverlay}>
+              <View style={styles.confirmModalContent}>
+                <Text style={styles.confirmModalTitle}>Cancel this ride?</Text>
+
+                <Text style={styles.confirmModalMessage}>
+                  Please provide a cancellation note (required). Riders will see this note.
+                </Text>
+
+                <TextInput
+                  style={styles.cancelNoteInput}
+                  value={cancelNote}
+                  onChangeText={(t) => {
+                    setCancelNote(t);
+                    if (cancelNoteError) setCancelNoteError('');
+                  }}
+                  placeholder="E.g., Car trouble / emergency / schedule conflict..."
+                  multiline
+                  editable={!cancellingRide}
+                />
+
+                {!!cancelNoteError && (
+                  <Text style={styles.cancelNoteErrorText}>{cancelNoteError}</Text>
+                )}
+
+                <View style={styles.confirmModalButtons}>
+                  <TouchableOpacity
+                    style={styles.confirmCancelButton}
+                    onPress={() => setCancelRideModalVisible(false)}
+                    disabled={cancellingRide}
+                  >
+                    <Text style={styles.confirmCancelButtonText}>Go Back</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.confirmLeaveButton, cancellingRide && styles.buttonDisabled]}
+                    disabled={cancellingRide}
+                    onPress={async () => {
+                      const trimmed = cancelNote.trim();
+                      if (!trimmed) {
+                        setCancelNoteError('Cancellation note is required.');
+                        return;
+                      }
+                      if (!selectedRide) return;
+
+                      setCancellingRide(true);
+                      try {
+                        const currentUser = auth.currentUser;
+                        if (!currentUser) return;
+
+                        const rideRef = doc(db, 'rides', selectedRide.id);
+
+                        await runTransaction(db, async (tx) => {
+                          const rideSnap = await tx.get(rideRef);
+                          if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
+
+                          const rideData = rideSnap.data() || {};
+                          if (rideData.ownerId !== currentUser.uid) {
+                            throw new Error('Only the driver can cancel this ride.');
+                          }
+
+                          tx.update(rideRef, {
+                            status: 'cancelled',
+                            cancelledAt: new Date().toISOString(),
+                            cancelledBy: currentUser.uid,
+                            cancellationNote: trimmed,
+                          });
+                        });
+
+                        // Close modals + reset state
+                        setCancelRideModalVisible(false);
+                        setDetailsModalVisible(false);
+                        setSelectedRide(null);
+                        setDriverInfo(null);
+                        setDriverVehicle(null);
+                      } catch (e) {
+                        console.error('Error cancelling ride:', e);
+                        alert('Failed to cancel ride. Please try again.');
+                      } finally {
+                        setCancellingRide(false);
+                      }
+                    }}
+                  >
+                    {cancellingRide ? (
+                      <ActivityIndicator size="small" color={colors.white} />
+                    ) : (
+                      <Text style={styles.confirmLeaveButtonText}>Confirm Cancel</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -1096,5 +1221,37 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 14,
     fontWeight: '700',
+  },
+  cancelRideButton: {
+  backgroundColor: '#ef4444',
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  marginTop: 6,
+  alignItems: 'center',
+  alignSelf: 'center',
+  borderWidth: 2,
+  borderColor: '#dc2626',
+  },
+  cancelRideButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cancelNoteInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 90,
+    textAlignVertical: 'top',
+    color: colors.textPrimary,
+    backgroundColor: colors.background,
+    marginBottom: 10,
+  },
+  cancelNoteErrorText: {
+    color: '#b91c1c',
+    fontSize: 13,
+    marginBottom: 12,
   },
 });
