@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
@@ -41,7 +43,8 @@ export default function ChatScreen() {
 
   const [title, setTitle] = useState('Chat');
   const [subtitle, setSubtitle] = useState('');
-  const [typingNames, setTypingNames] = useState([]); // array of names currently typing
+  const [typingNames, setTypingNames] = useState([]);
+  const [showParticipants, setShowParticipants] = useState(false);
 
   useEffect(() => {
         if (!conversationId) return;
@@ -57,7 +60,6 @@ export default function ChatScreen() {
                 setTitle(getTitle(data, currentUid));
                 setSubtitle(getSubtitle(data));
 
-                // Typing indicator: allow many typers
                 const typingMap = data.typing || {};
                 const typers = Object.keys(typingMap)
                   .filter((uid) => uid !== currentUid && typingMap[uid])
@@ -205,6 +207,26 @@ export default function ChatScreen() {
     return (String(name).trim().charAt(0) || 'U').toUpperCase();
   };
 
+  const navigateToProfile = (userId) => {
+    setShowParticipants(false);
+    router.push({
+      pathname: '/(tabs)/account/profilepage',
+      params: { userId, conversationId },
+    });
+  };
+
+  const handleHeaderPress = () => {
+    const myUid = auth.currentUser?.uid;
+    const participants = conversationData?.participants || [];
+    const otherParticipants = participants.filter((uid) => uid !== myUid);
+
+    if (otherParticipants.length === 1) {
+      navigateToProfile(otherParticipants[0]);
+    } else if (otherParticipants.length > 1) {
+      setShowParticipants(true);
+    }
+  };
+
   const renderMessage = ({ item, index }) => {
     const myUid = auth.currentUser?.uid;
     const isMyMessage = item.senderId === myUid
@@ -227,7 +249,6 @@ export default function ChatScreen() {
           isMyMessage ? styles.messageRowRight : styles.messageRowLeft,
         ]}
       >
-        {/* Left avatar for other people's messages */}
         {!isMyMessage && (
           <View style={styles.msgAvatar}>
             <Text style={styles.msgAvatarText}>
@@ -236,7 +257,6 @@ export default function ChatScreen() {
           </View>
         )}
 
-        {/* Bubble (wrapped with name label for others) */}
         <View style={styles.bubbleWrapper}>
           {!isMyMessage && (
             <Text style={styles.senderName}>{senderDisplayName}</Text>
@@ -351,23 +371,73 @@ export default function ChatScreen() {
         <TouchableOpacity onPress={() => router.push("/messages")} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.primary} />
         </TouchableOpacity>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>
-            {(title || 'C').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName} numberOfLines={1}>
-            {title}
-          </Text>
-
-          {subtitle ? (
-            <Text style={styles.headerRide} numberOfLines={1}>
-              {subtitle}
+        <TouchableOpacity style={styles.headerTappable} onPress={handleHeaderPress} activeOpacity={0.6}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>
+              {(title || 'C').charAt(0).toUpperCase()}
             </Text>
-          ) : null}
-        </View>
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName} numberOfLines={1}>
+              {title}
+            </Text>
+
+            {subtitle ? (
+              <Text style={styles.headerRide} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
+
+      {/* Participants Overlay Modal */}
+      <Modal
+        visible={showParticipants}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowParticipants(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowParticipants(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Participants</Text>
+              <TouchableOpacity onPress={() => setShowParticipants(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.participantsList}>
+              {(conversationData?.participants || []).map((uid) => {
+                const isMe = uid === auth.currentUser?.uid;
+                const name = conversationData?.participantNames?.[uid] || 'Unknown';
+                return (
+                  <TouchableOpacity
+                    key={uid}
+                    style={styles.participantRow}
+                    onPress={() => navigateToProfile(uid)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={styles.participantAvatar}>
+                      <Text style={styles.participantAvatarText}>
+                        {(name.charAt(0) || 'U').toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.participantName}>
+                      {name}{isMe ? ' (You)' : ''}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Messages or Empty State */}
       {messages.length === 0 ? (
@@ -516,7 +586,6 @@ const styles = StyleSheet.create({
   theirMessageTime: {
     color: colors.textSecondary,
   },
-  // Empty chat styles
   emptyChatContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -574,7 +643,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  // Input styles
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -642,5 +710,65 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 3,
     marginLeft: 4,
+  },
+  headerTappable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '60%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  participantsList: {
+    flexGrow: 0,
+  },
+  participantRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  participantAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  participantAvatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  participantName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
 });
