@@ -91,7 +91,12 @@ export default function JoinPage() {
               ownerName: (data.ownerName ?? "Unknown Driver").toString(),
             };
           })
-          .filter((ride) => ride.ownerId !== user.uid);
+          .filter(
+            (ride) =>
+              ride.ownerId !== user.uid &&
+              ride.status !== "cancelled" &&
+              ride.status !== "canceled"
+          );
 
         setRides(ridesData);
         setLoading(false);
@@ -143,7 +148,11 @@ export default function JoinPage() {
       const ridesData = [];
       for (const rideDoc of querySnapshot.docs) {
         const ride = { id: rideDoc.id, ...rideDoc.data() };
-        if (ride.ownerId !== user?.uid) {
+        if (
+          ride.ownerId !== user?.uid &&
+          ride.status !== "cancelled" &&
+          ride.status !== "canceled"
+        ) {
           ridesData.push({
             ...ride,
             ownerName: (ride.ownerName ?? "Unknown Driver").toString(),
