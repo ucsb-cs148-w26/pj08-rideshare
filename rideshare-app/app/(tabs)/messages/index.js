@@ -44,10 +44,12 @@ export default function MessagesScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const convos = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const convos = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((convo) => !convo.cancelled);
       setConversations(convos);
       setLoading(false);
     });

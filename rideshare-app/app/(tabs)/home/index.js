@@ -16,7 +16,7 @@ import {
   KeyboardAvoidingView,
   Pressable,
 } from 'react-native';
-import { collection, query, where, onSnapshot, doc, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
@@ -159,10 +159,12 @@ export default function Homepage({ user }) {
     const q = query(ridesRef, where('ownerId', '==', currentUser.uid));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const rides = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const rides = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled');
       setHostedRides(rides);
       setLoading(false);
     }, (error) => {
@@ -685,8 +687,21 @@ export default function Homepage({ user }) {
                         setDriverInfo(null);
                         setDriverVehicle(null);
                       } catch (error) {
-                        console.error('Error leaving ride:', error);
-                        alert('Failed to leave ride. Please try again.');
+                        const message = String(error?.message || '').toLowerCase();
+                        const isAlreadyLeft = message.includes('not joined');
+                        const isRideGone = message.includes('no longer exists');
+
+                        if (isAlreadyLeft || isRideGone) {
+                          setLeaveRideModalVisible(false);
+                          setDetailsModalVisible(false);
+                          setSelectedRide(null);
+                          setDriverInfo(null);
+                          setDriverVehicle(null);
+                          alert('You are no longer in this ride.');
+                        } else {
+                          console.error('Error leaving ride:', error);
+                          alert('Failed to leave ride. Please try again.');
+                        }
                       } finally {
                         setLeavingRide(false);
                       }
@@ -773,23 +788,39 @@ export default function Homepage({ user }) {
                             if (!currentUser) return;
 
                             const rideRef = doc(db, 'rides', selectedRide.id);
+                            const userRideRef = doc(db, 'users', currentUser.uid, 'rides', selectedRide.id);
+                            const conversationRef = doc(db, 'conversations', selectedRide.id);
+                            const rideSnap = await getDoc(rideRef);
+                            if (!rideSnap.exists()) {
+                              throw new Error('Ride no longer exists.');
+                            }
 
-                            await runTransaction(db, async (tx) => {
-                              const rideSnap = await tx.get(rideRef);
-                              if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
+                            const rideData = rideSnap.data() || {};
+                            if (rideData.ownerId !== currentUser.uid) {
+                              throw new Error('Only the driver can cancel this ride.');
+                            }
 
-                              const rideData = rideSnap.data() || {};
-                              if (rideData.ownerId !== currentUser.uid) {
-                                throw new Error('Only the driver can cancel this ride.');
-                              }
+                            const batchSize = 450;
 
-                              tx.update(rideRef, {
-                                status: 'cancelled',
-                                cancelledAt: new Date().toISOString(),
-                                cancelledBy: currentUser.uid,
-                                cancellationNote: trimmed,
+                            // Critical deletion path: always remove the actual ride records.
+                            const criticalRefsToDelete = [
+                              userRideRef,
+                              rideRef,
+                            ];
+
+                            for (let index = 0; index < criticalRefsToDelete.length; index += batchSize) {
+                              const batch = writeBatch(db);
+                              criticalRefsToDelete.slice(index, index + batchSize).forEach((ref) => {
+                                batch.delete(ref);
                               });
-                            });
+                              await batch.commit();
+                            }
+
+                            try {
+                              await updateDoc(conversationRef, { cancelled: true });
+                            } catch (convoError) {
+                              console.warn('Could not mark conversation as cancelled:', convoError);
+                            }
 
                             setCancelRideModalVisible(false);
                             setDetailsModalVisible(false);
