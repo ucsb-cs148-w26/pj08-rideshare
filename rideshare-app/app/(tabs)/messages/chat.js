@@ -228,19 +228,27 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item, index }) => {
-    const myUid = auth.currentUser?.uid;
-    const isMyMessage = item.senderId === myUid
-    const showDate = shouldShowDate(index);
+  const myUid = auth.currentUser?.uid;
+  const isMyMessage = item.senderId === myUid;
+  const showDate = shouldShowDate(index);
 
-    const senderDisplayName =
-      item.senderName ||
-      conversationData?.participantNames?.[item.senderId] ||
-      'Unknown';
+  const prevMessage = messages[index - 1];
+  const isFirstInGroup =
+    index === 0 ||
+    !prevMessage ||
+    prevMessage.senderId !== item.senderId;
+
+  const senderDisplayName =
+    item.senderName ||
+    conversationData?.participantNames?.[item.senderId] ||
+    'Unknown';
 
   return (
     <>
       {showDate && (
-        <Text style={styles.dateHeader}>{formatDateHeader(item.createdAt)}</Text>
+        <Text style={styles.dateHeader}>
+          {formatDateHeader(item.createdAt)}
+        </Text>
       )}
 
       <View
@@ -249,7 +257,7 @@ export default function ChatScreen() {
           isMyMessage ? styles.messageRowRight : styles.messageRowLeft,
         ]}
       >
-        {!isMyMessage && (
+        {!isMyMessage && isFirstInGroup && (
           <View style={styles.msgAvatar}>
             <Text style={styles.msgAvatarText}>
               {getAvatarInitial(item.senderId, senderDisplayName)}
@@ -257,39 +265,51 @@ export default function ChatScreen() {
           </View>
         )}
 
-        <View style={styles.bubbleWrapper}>
-          {!isMyMessage && (
-            <Text style={styles.senderName}>{senderDisplayName}</Text>
-          )}
-        <View
-          style={[
-            styles.messageContainer,
-            isMyMessage ? styles.myMessage : styles.theirMessage,
-          ]}
-        >
-          <Text
-            style={[
-              styles.messageText,
-              isMyMessage ? styles.myMessageText : styles.theirMessageText,
-            ]}
-          >
-            {item.text}
-          </Text>
+        {!isMyMessage && !isFirstInGroup && (
+          <View style={{ width: 32, marginRight: 8 }} />
+        )}
 
-          <Text
+        <View style={styles.bubbleWrapper}>
+          {!isMyMessage && isFirstInGroup && (
+            <Text style={styles.senderName}>
+              {senderDisplayName}
+            </Text>
+          )}
+
+          <View
             style={[
-              styles.messageTime,
-              isMyMessage ? styles.myMessageTime : styles.theirMessageTime,
+              styles.messageContainer,
+              isMyMessage ? styles.myMessage : styles.theirMessage,
             ]}
           >
-            {formatMessageTime(item.createdAt)}
-          </Text>
-        </View>
+            <Text
+              style={[
+                styles.messageText,
+                isMyMessage
+                  ? styles.myMessageText
+                  : styles.theirMessageText,
+              ]}
+            >
+              {item.text}
+            </Text>
+
+            <Text
+              style={[
+                styles.messageTime,
+                isMyMessage
+                  ? styles.myMessageTime
+                  : styles.theirMessageTime,
+              ]}
+            >
+              {formatMessageTime(item.createdAt)}
+            </Text>
+          </View>
         </View>
       </View>
     </>
   );
 };
+
 
   const shouldShowDate = (index) => {
     if (index === 0) return true;
