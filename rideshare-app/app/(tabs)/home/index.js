@@ -802,8 +802,11 @@ export default function Homepage({ user }) {
 
                             const batchSize = 450;
 
-                            // Critical deletion path: always remove the actual ride records.
+                            const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));
+                            const joinRefs = joinsSnapshot.docs.map((d) => d.ref);
+
                             const criticalRefsToDelete = [
+                              ...joinRefs,
                               userRideRef,
                               rideRef,
                             ];
