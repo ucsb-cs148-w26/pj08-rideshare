@@ -1,7 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import * as Device from 'expo-device';
 import {
   View,
   Text,
+  Image,
+  Alert,
   StyleSheet,
   SafeAreaView,
   Platform,
@@ -15,7 +19,10 @@ import { colors } from '../../../ui/styles/colors';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../../../src/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { auth, db, storage } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
 
 const emptyAccount = {
@@ -44,6 +51,7 @@ export default function AccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [draft, setDraft] = useState(emptyAccount);
   const [saved, setSaved] = useState(emptyAccount);
+  const [photoURL, setPhotoURL] = useState(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -69,6 +77,7 @@ export default function AccountPage() {
           vehicleModel: primaryVehicle.model || '',
           vehiclePlate: primaryVehicle.plate || '',
         };
+        setPhotoURL(data.photoURL || null);
         setSaved(next);
         setDraft(next);
       } catch (error) {
@@ -150,6 +159,104 @@ export default function AccountPage() {
     }
   };
 
+  const isIosSimulator = Platform.OS === 'ios' && !Platform.isPad && !Platform.isTV && Platform.constants == null;  
+
+const chooseImageSource = () => {
+  const isIosSimulator = Platform.OS === 'ios' && !Device.isDevice;
+
+  if (isIosSimulator) {
+    // Only Upload option on iOS Simulator
+    Alert.alert('Profile Photo', 'Choose a source', [
+      { text: 'Upload', onPress: pickImage },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+    return;
+  }
+
+  // Real devices
+  Alert.alert('Profile Photo', 'Choose a source', [
+    { text: 'Camera', onPress: takePhoto },
+    { text: 'Upload', onPress: pickImage },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+};
+
+
+const pickImage = async () => {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) {
+    Alert.alert('Permission needed', 'Please allow photo library access.');
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.7,
+  });
+
+  if (!result.canceled) {
+    await uploadImage(result.assets[0].uri);
+  }
+};
+
+const takePhoto = async () => {
+  try {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission needed', 'Please allow camera access.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      await uploadImage(result.assets[0].uri);
+    }
+  } catch (err) {
+    console.error('takePhoto error:', err);
+
+    Alert.alert(
+      'Camera not available here',
+      'Camera doesn’t work on simulator. Use Upload instead.',
+      [{ text: 'Upload', onPress: pickImage }, { text: 'OK' }]
+    );
+  }
+};
+
+const uploadImage = async (uri) => {
+  if (!user?.uid) return;
+
+  try {
+    const manipulated = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 256 } }],
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
+      encoding: 'base64',
+    });
+
+    const dataUrl = `data:image/jpeg;base64,${base64}`;
+
+    await setDoc(
+      doc(db, 'users', user.uid),
+      { photoURL: dataUrl },
+      { merge: true }
+    );
+
+    setPhotoURL(dataUrl);
+  } catch (err) {
+    console.error('Upload failed:', err);
+    Alert.alert('Upload failed', 'Image too large or could not save.');
+  }
+};
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -162,15 +269,38 @@ export default function AccountPage() {
 
         <View style={styles.card}>
           <View style={styles.headerRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
+            <View>
+              <TouchableOpacity onPress={chooseImageSource} activeOpacity={0.8}>
+                <View style={styles.avatar}>
+                  {photoURL ? (
+                    <Image source={{ uri: photoURL }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {isEditing && (
+                <TouchableOpacity onPress={chooseImageSource} style={{ marginTop: 6 }}>
+                  <Text
+                    style={{
+                      color: colors.accent,
+                      fontWeight: '600',
+                      fontSize: 9,
+                      textAlign: 'center',
+                    }}
+                  >
+                    Change Photo
+                  </Text>
+                </TouchableOpacity>
+)}
             </View>
+
             <View style={styles.headerText}>
               <Text style={styles.name}>{saved.name}</Text>
               <Text style={styles.meta}>{saved.email}</Text>
             </View>
           </View>
-
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Info</Text>
             <View style={styles.field}>
@@ -448,4 +578,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
+  avatarImage: {
+  width: 64,
+  height: 64,
+  borderRadius: 32,
+},
 });
