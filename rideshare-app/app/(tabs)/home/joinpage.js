@@ -363,7 +363,7 @@ export default function JoinPage() {
           {/* Left side: When and Cap */}
           <View style={styles.leftInfo}>
             <View style={styles.whenSection}>
-              <Text style={[styles.label, disabled && styles.textDisabled]}>WHEN:</Text>
+              <Text style={[styles.label, disabled && styles.textDisabled]}>When:</Text>
               <Text style={[styles.dateText, disabled && styles.textDisabled]}>
                 {formatDate(item.rideDate)}
               </Text>
@@ -372,20 +372,20 @@ export default function JoinPage() {
               </Text>
             </View>
             <Text style={[styles.capacityText, disabled && styles.textDisabled]}>
-              CAP: {Number(item.seats)} / {Number(item.total_seats ?? item.seats)} seats
+              {Number(item.total_seats ?? item.seats) - Number(item.seats)}/{Number(item.total_seats ?? item.seats)} seats taken
             </Text>
           </View>
 
           {/* Right side: To and From */}
           <View style={styles.rightInfo}>
             <View style={styles.destinationRow}>
-              <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>TO:</Text>
+              <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>To:</Text>
               <Text style={[styles.destinationValue, disabled && styles.textDisabled]}>
                 {item.toAddress}
               </Text>
             </View>
             <View style={styles.destinationRow}>
-              <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>FROM:</Text>
+              <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>From:</Text>
               <Text style={[styles.destinationValue, disabled && styles.textDisabled]}>
                 {item.fromAddress}
               </Text>
@@ -412,7 +412,7 @@ export default function JoinPage() {
             activeOpacity={0.85}
           >
             <Text style={[styles.joinButtonText, disabled && styles.joinButtonTextDisabled]}>
-              {alreadyJoined ? "JOINED" : soldOut ? "SOLD OUT" : "JOIN"}
+              {alreadyJoined ? "Joined" : soldOut ? "Sold Out" : "Join"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -432,7 +432,7 @@ export default function JoinPage() {
       <View style={commonStyles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>AVAILABLE RIDES</Text>
+          <Text style={styles.headerTitle}>Available Rides</Text>
         </View>
 
         {/* Search Bar (Placeholder) */}
@@ -448,7 +448,7 @@ export default function JoinPage() {
 
         {/* Filter Button (Placeholder) */}
         <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-          <Text style={styles.filterButtonText}>FILTER ▾</Text>
+          <Text style={styles.filterButtonText}>Filter ▾</Text>
         </TouchableOpacity>
 
         {/* Rides List */}
@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     borderWidth: 2,
-    borderColor: colors.text,
+    borderColor: colors.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -815,16 +815,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tagBox: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     marginRight: 10,
   },
   driverIcon: {
     width: 45,
     height: 45,
     borderRadius: 22.5,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   driverName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   ridePrice: {
     fontSize: 24,
@@ -857,20 +857,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    marginBottom: 4,
   },
   dateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   timeText: {
     fontSize: 16,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   capacityText: {
     fontSize: 16,
@@ -883,16 +883,18 @@ const styles = StyleSheet.create({
   destinationRow: {
     flexDirection: "row",
     marginBottom: 8,
+    alignItems: "center",
   },
   destinationLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textSecondary,
     marginRight: 8,
   },
   destinationValue: {
-    fontSize: 16,
-    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600",
+    color: colors.textPrimary,
     flex: 1,
   },
   cardBottomRow: {
@@ -901,15 +903,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   viewDetailsButton: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#b8baba",
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   viewDetailsButtonText: {
-    color: "#b8baba",
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "bold",
   },
@@ -953,10 +955,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
-    width: "85%",
-    maxHeight: "70%",
+    paddingBottom: 1,
+    width: "88%",
+    maxHeight: "80%",
     borderWidth: 2,
-    borderColor: colors.text,
+    borderColor: colors.border,
   },
   closeButton: {
     position: "absolute",
@@ -966,7 +969,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 24,
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: "bold",
   },
   modalHeader: {
@@ -978,7 +981,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -991,7 +994,7 @@ const styles = StyleSheet.create({
   modalDriverTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   modalSectionTitle: {
     fontSize: 16,
@@ -1093,12 +1096,12 @@ const styles = StyleSheet.create({
     padding: 18,
     width: "88%",
     borderWidth: 2,
-    borderColor: colors.text,
+    borderColor: colors.border,
   },
   confirmTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   confirmRow: {
@@ -1117,7 +1120,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: "right",
   },
   confirmDivider: {
@@ -1129,7 +1132,7 @@ const styles = StyleSheet.create({
     width: 80,
     fontSize: 14,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   confirmTotalValue: {
     flex: 1,
@@ -1162,7 +1165,7 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 14,
     fontWeight: "800",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   payBtn: {
     flex: 1,
