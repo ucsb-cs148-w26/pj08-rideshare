@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import * as Device from 'expo-device';
 import {
   View,
   Text,
@@ -160,13 +161,27 @@ export default function AccountPage() {
 
   const isIosSimulator = Platform.OS === 'ios' && !Platform.isPad && !Platform.isTV && Platform.constants == null;  
 
-  const chooseImageSource = () => {
+const chooseImageSource = () => {
+  const isIosSimulator = Platform.OS === 'ios' && !Device.isDevice;
+
+  if (isIosSimulator) {
+    // Only Upload option on iOS Simulator
     Alert.alert('Profile Photo', 'Choose a source', [
-      { text: 'Camera', onPress: takePhoto },
       { text: 'Upload', onPress: pickImage },
       { text: 'Cancel', style: 'cancel' },
     ]);
-  };
+    return;
+  }
+
+  // Real devices
+  Alert.alert('Profile Photo', 'Choose a source', [
+    { text: 'Camera', onPress: takePhoto },
+    { text: 'Upload', onPress: pickImage },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+};
+
+
 const pickImage = async () => {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
