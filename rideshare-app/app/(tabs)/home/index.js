@@ -65,12 +65,12 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) 
         <View style={styles.joinedRideCard}>
           <View style={styles.joinedCardContent}>
             <View style={styles.joinedCardLeft}>
-              <Text style={styles.joinedCardLabel}>WHEN:</Text>
+              <Text style={styles.joinedCardLabel}>When:</Text>
               <Text style={styles.joinedCardDate}>{formatDate(item.rideDate)}</Text>
               <Text style={styles.joinedCardTime}>{formatTime(item.rideDate)}</Text>
             </View>
             <View style={styles.joinedCardRight}>
-              <Text style={styles.joinedCardLabel}>TO:</Text>
+              <Text style={styles.joinedCardLabel}>To:</Text>
               <Text style={styles.joinedCardDestination} numberOfLines={2}>
                 {item.fromAddress} → {item.toAddress}
               </Text>
