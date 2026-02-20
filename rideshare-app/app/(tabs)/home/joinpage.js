@@ -372,7 +372,7 @@ export default function JoinPage() {
               </Text>
             </View>
             <Text style={[styles.capacityText, disabled && styles.textDisabled]}>
-              Cap: {Number(item.seats)} / {Number(item.total_seats ?? item.seats)} seats
+              {Number(item.total_seats ?? item.seats) - Number(item.seats)}/{Number(item.total_seats ?? item.seats)} seats taken
             </Text>
           </View>
 
@@ -815,9 +815,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tagBox: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     marginRight: 10,
   },
   driverIcon: {
@@ -857,10 +857,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.textPrimary,
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    marginBottom: 4,
   },
   dateText: {
     fontSize: 16,
@@ -883,15 +883,17 @@ const styles = StyleSheet.create({
   destinationRow: {
     flexDirection: "row",
     marginBottom: 8,
+    alignItems: "center",
   },
   destinationLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textSecondary,
     marginRight: 8,
   },
   destinationValue: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: "600",
     color: colors.textPrimary,
     flex: 1,
   },
