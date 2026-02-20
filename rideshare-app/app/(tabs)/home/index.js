@@ -856,7 +856,6 @@ export default function Homepage({ user }) {
 
                             // collect all refs/docs associated with the ride
                             const rideRef = doc(db, 'rides', selectedRide.id);
-                            const userRideRef = doc(db, 'users', currentUser.uid, 'rides', selectedRide.id); // NOTE: This line might be a bug - the general ride id is different than the ride id of that same ride from the hosts "rides" collection
                             const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));                            
                             const joinRefs = joinsSnapshot.docs.map((d) => d.ref);
                             const riderUids = joinsSnapshot.docs.map((d) => d.id);

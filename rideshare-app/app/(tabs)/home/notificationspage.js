@@ -33,8 +33,6 @@ export default function NotificationsScreen() {
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState(null);
 
-  const myUid = auth.currentUser?.uid;
-
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) {
@@ -339,19 +337,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
-  avatarUnread: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
   content: { 
     flex: 1 
   },
@@ -379,17 +364,6 @@ const styles = StyleSheet.create({
   unreadText: {
     fontWeight: "700",
     color: colors.primary,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  badgeText: {
-    fontSize: 12,
-    color: colors.accent,
-    marginLeft: 4,
-    fontWeight: "500",
   },
   unreadDot: {
     width: 10,
