@@ -23,7 +23,6 @@ import {
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { Ionicons } from '@expo/vector-icons';
-import NavBar from '../../../app/components/nav-bar';
 
 export default function MessagesScreen() {
   const [conversations, setConversations] = useState([]);
@@ -172,7 +171,6 @@ export default function MessagesScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <NavBar />
       </View>
     );
   }
@@ -201,8 +199,6 @@ export default function MessagesScreen() {
           ]}
         />
       )}
-
-      <NavBar />
     </View>
   );
 }
