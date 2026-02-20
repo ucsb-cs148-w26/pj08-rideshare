@@ -708,10 +708,14 @@ export default function Homepage({ user }) {
                             await addDoc(collection(db, "notifications"), {
                               userId: selectedRide.ownerId,
                               type: "late_cancellation",
-                              title: "⚠️ Late Cancellation",
+                              title: "Late Cancellation Notice",
                               body: `${riderName} left your ride after the cancellation deadline.`,
+
+                              driverId: selectedRide.ownerId,
                               rideId: selectedRide.id,
-                              rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                              fromAddress: selectedRide.fromAddress,
+                              toAddress: selectedRide.toAddress,
+
                               createdAt: serverTimestamp(),
                               readAt: null,
                             });
@@ -732,10 +736,14 @@ export default function Homepage({ user }) {
                               notifBatch.set(notifRef, {
                                 userId: uid,
                                 type: "ride_left",
-                                title: "Rider Update",
-                                body: `${riderName} has left the ride. A seat is now available.`,
+                                title: "Updates to Your Ride",
+                                body: "A rider has left the ride.",
+
+                                driverId: selectedRide.ownerId,
                                 rideId: selectedRide.id,
-                                rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                                fromAddress: selectedRide.fromAddress,
+                                toAddress: selectedRide.toAddress,
+
                                 createdAt: serverTimestamp(),
                                 readAt: null,
                               });
@@ -854,38 +862,66 @@ export default function Homepage({ user }) {
                             const currentUser = auth.currentUser;
                             if (!currentUser) return;
 
+                            // collect all refs/docs associated with the ride
                             const rideRef = doc(db, 'rides', selectedRide.id);
-                            const userRideRef = doc(db, 'users', currentUser.uid, 'rides', selectedRide.id);
-                            const conversationRef = doc(db, 'conversations', selectedRide.id);
-                            const rideSnap = await getDoc(rideRef);
-                            if (!rideSnap.exists()) {
-                              throw new Error('Ride no longer exists.');
-                            }
-
-                            const rideData = rideSnap.data() || {};
-                            if (rideData.ownerId !== currentUser.uid) {
-                              throw new Error('Only the driver can cancel this ride.');
-                            }
-
-                            const batchSize = 450;
-
-                            const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));
+                            const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));                            
                             const joinRefs = joinsSnapshot.docs.map((d) => d.ref);
+                            const riderUids = joinsSnapshot.docs.map((d) => d.id);
 
-                            const criticalRefsToDelete = [
-                              ...joinRefs,
-                              userRideRef,
-                              rideRef,
-                            ];
-
-                            for (let index = 0; index < criticalRefsToDelete.length; index += batchSize) {
-                              const batch = writeBatch(db);
-                              criticalRefsToDelete.slice(index, index + batchSize).forEach((ref) => {
-                                batch.delete(ref);
+                            // auth check + soft-delete ride
+                            await runTransaction(db, async (tx) => {
+                              const rideSnap = await tx.get(rideRef);
+                              if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
+                              if (rideSnap.data().ownerId !== currentUser.uid) throw new Error('Not authorized.');
+                              
+                              tx.update(rideRef, {
+                                status: 'cancelled',
+                                cancelNote: trimmed,
+                                cancelledAt: new Date().toISOString(),
+                                cancelledBy: currentUser.uid,
                               });
+                            });
+
+                            // Create notifications for all riders
+                            if (riderUids.length > 0) {
+                              const notifBatch = writeBatch(db);
+
+                              riderUids.forEach((riderUid) => {
+                                const notifRef = doc(collection(db, "notifications")); // auto-id
+
+                                notifBatch.set(notifRef, {
+                                  userId: riderUid,
+                                  type: "ride_cancelled",
+                                  title: `Ride Cancellation Notice`,
+                                  body: trimmed,            // cancellation note
+
+                                  driverId: selectedRide.ownerId,
+                                  rideId: selectedRide.id,
+                                  fromAddress: selectedRide.fromAddress,
+                                  toAddress: selectedRide.toAddress,
+
+                                  createdAt: serverTimestamp(),
+                                  readAt: null,
+
+                                  // optional, not needed now but might be useful later
+                                  cancelledBy: currentUser.uid,
+                                  cancelledAt: serverTimestamp(),
+                                });
+                              });
+
+                              await notifBatch.commit();
+                            }
+
+                            // delete join docs
+                            const batchSize = 450;
+                            for (let i = 0; i < joinRefs.length; i += batchSize) {
+                              const batch = writeBatch(db);
+                              joinRefs.slice(i, i + batchSize).forEach((ref) => batch.delete(ref));
                               await batch.commit();
                             }
 
+                            // mark conversation associated with deleted ride as "cancelled"
+                            const conversationRef = doc(db, 'conversations', selectedRide.id);
                             try {
                               await updateDoc(conversationRef, { cancelled: true });
                             } catch (convoError) {

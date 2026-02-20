@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Modal,
+  ScrollView,
 } from "react-native";
-import { router } from "expo-router";
+import { Swipeable, RectButton } from "react-native-gesture-handler";
 import {
   collection,
   query,
@@ -17,6 +19,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +30,8 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const myUid = auth.currentUser?.uid;
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState(null);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -74,22 +78,6 @@ export default function NotificationsScreen() {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  const iconForType = (type) => {
-    switch (type) {
-      case "ride_cancelled":
-        return "close-circle-outline";
-      case "ride_left":
-        return "refresh-outline";
-      case "ride_joined":
-        return "person-add-outline";
-      case "late_cancellation":
-        return "warning-outline";
-      default:
-        return "notifications-outline";
-    }
-  };
-
-
   const onPressNotification = async (item) => {
     // Mark read (best-effort)
     try {
@@ -102,69 +90,229 @@ export default function NotificationsScreen() {
       console.warn("Failed to mark notification read:", e);
     }
 
-    // if notification has rideId -> open some ride details screen
-    // (this will need to be adjusted)
-    if (item.rideId) {
-      router.push({
-        pathname: "/(tabs)/home/index",
-        params: { highlightRideId: item.rideId },
-      });
-      return;
-    }
+    // always shows modal, contents will depend on why type of notif
+    setSelectedNotif(item);
+    setDetailsModalVisible(true);
 
+  };
+
+  const renderNotifDetails = (n) => {
+    if (!n) return null;
+
+    switch (n.type) {
+      // driver canceled ride (shown to all riders of the ride)
+      case "ride_cancelled":
+        return (
+          <>
+
+            <Text style={styles.modalSectionTitle}>Message</Text>
+            
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>Your rider has canceled this ride. See note and ride details below.</Text>
+            </View>
+            
+            <Text style={styles.modalSectionTitle}>Cancellation Note</Text>
+
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>
+                {n.body?.trim() || "No cancellation note provided."}
+              </Text>
+            </View>
+
+            <Text style={styles.modalSectionTitle}>Ride Details</Text>
+
+            <View style={styles.modalSection}>
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>From:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.fromAddress || "Not available"}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>To:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.toAddress || "Not available"}
+                </Text>
+              </View>
+            </View>
+          </>
+        );
+
+      // rider left ride before deadline (shown to driver + riders)
+      case "ride_left":
+        const isOwner = n.userId === n.driverId;
+
+        const messageText = isOwner
+          ? (n.body || "A rider left the ride.")
+          : `${n.body || "A rider left the ride."} See changes in amount due below.`;
+
+        return (
+          <>
+            <Text style={styles.modalSectionTitle}>Message</Text>
+
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>{messageText}</Text>
+            </View>
+
+            {!isOwner && (
+              <>
+                <Text style={styles.modalSectionTitle}>Price Change</Text>
+                <View style={styles.noteBox}>
+                  <Text style={styles.noteText}>Placeholder</Text>
+                </View>
+              </>
+            )}
+
+            <Text style={styles.modalSectionTitle}>Ride Details</Text>
+            
+            <View style={styles.modalSection}>
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>From:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.fromAddress || "Not available"}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>To:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.toAddress || "Not available"}
+                </Text>
+              </View>
+            </View>
+          </>
+        );
+      
+      // rider left ride after deadline (shown to driver)
+      case "late_cancellation":
+        return (
+          <>            
+            <Text style={styles.modalSectionTitle}>Message</Text>
+            
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>{n.body || "A rider left the ride."}</Text>
+            </View>
+
+            <Text style={styles.modalSectionTitle}>Ride Details</Text>
+            
+            <View style={styles.modalSection}>
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>From:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.fromAddress || "Not available"}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>To:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.toAddress || "Not available"}
+                </Text>
+              </View>
+            </View>
+          </>
+        );
+
+      // rider joined ride (semi-placeholder, this will likely be edited once this notification type is implemented)
+      case "ride_joined":
+        return (
+          <>
+            <Text style={styles.modalSectionTitle}>Update</Text>
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>{n.body || "A rider joined the ride."}</Text>
+            </View>
+          </>
+        );
+
+      default:
+        // fallback for any future notification
+        return (
+          <>
+            <Text style={styles.modalSectionTitle}>Message</Text>
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>
+                {n.body?.trim() ? n.body : "No additional details."}
+              </Text>
+            </View>
+          </>
+        );
+    }
   };
 
   const renderNotification = ({ item }) => {
     const isUnread = !item.readAt;
 
     return (
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => onPressNotification(item)}
-        activeOpacity={0.8}
+      <Swipeable
+        renderRightActions={() => renderRightActions(item)}
+        overshootRight={false}
+        friction={2}
+        rightThreshold={40}
       >
-        {/* Avatar */}
-        <View style={[styles.avatar, isUnread && styles.avatarUnread]}>
-          <Ionicons
-            name={iconForType(item.type)}
-            size={22}
-            color={colors.white}
-          />
-        </View>
+        <View style={styles.swipeContainer}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => onPressNotification(item)}
+            activeOpacity={0.8}
+          >
 
-        {/* Content */}
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={[styles.titleText, isUnread && styles.unreadText]} numberOfLines={1}>
-              {item.title || "Notification"}
-            </Text>
-            <Text style={styles.timestamp}>
-              {formatTime(item.createdAt)}
-            </Text>
-          </View>
+            {/* Blue strip on the left of notif box*/}
+            <View style={styles.leftStrip}/>
 
-          {!!item.body && (
-            <Text
-              style={[styles.bodyText, isUnread && styles.unreadText]}
-              numberOfLines={2}
-            >
-              {item.body}
-            </Text>
-          )}
+            {/* Content */}
+            <View style={styles.content}>
+              <View style={styles.header}>
+                <Text style={[styles.titleText, isUnread && styles.unreadText]} numberOfLines={1}>
+                  {item.title || "Notification"}
+                </Text>
+                <Text style={styles.timestamp}>
+                  {formatTime(item.createdAt)}
+                </Text>
+              </View>
 
-          {/* car outline placeholder */}
-          {item.rideInfo && (
-            <View style={styles.badge}>
-              <Ionicons name="car-outline" size={12} color={colors.accent} />
-              <Text style={styles.badgeText}>{item.rideInfo}</Text>
+              <Text
+                style={[
+                  styles.bodyText,
+                  styles.linkText
+                ]}
+              >
+                Click to view more details
+              </Text>
             </View>
-          )}
-        </View>
 
-        {/* Unread dot */}
-        {isUnread && <View style={styles.unreadDot} />}
-      </TouchableOpacity>
+            {/* Unread dot */}
+            {isUnread && <View style={styles.unreadDot} />}
+          </TouchableOpacity>
+        </View>
+      </Swipeable>
     );
+  };
+
+  const renderRightActions = (item) => {
+    return (
+      <View style={styles.rightActions}>
+        <RectButton
+          style={styles.deleteAction}
+          onPress={() => deleteNotification(item.id)}
+        >
+          <Ionicons name="trash-outline" size={22} color="#fff" />
+          <Text style={styles.deleteText}>Delete</Text>
+        </RectButton>
+      </View>
+    );
+  };
+
+  const deleteNotification = async (id) => {
+    if (!id) return;
+
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+    try {
+      await deleteDoc(doc(db, "notifications", id));
+    } catch (e) {
+      console.error("Failed to delete notification:", e);
+    }
   };
 
   if (loading) {
@@ -178,6 +326,41 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.screenTitle}>Notifications</Text>
+      {/* Notification Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={detailsModalVisible}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setDetailsModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+
+            {selectedNotif && (
+              <ScrollView style={styles.modalScrollContent}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalTitle}>
+                      {selectedNotif.title || "Notification"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Type-specific content */}
+                {renderNotifDetails(selectedNotif)}
+
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {notifications.length === 0 ? (
         <View style={styles.emptyState}>
@@ -225,30 +408,9 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+  content: { 
+    flex: 1 
   },
-
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
-  avatarUnread: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-
-  content: { flex: 1 },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -256,7 +418,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     gap: 12,
   },
-
   titleText: {
     flex: 1,
     fontSize: 16,
@@ -273,21 +434,8 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontWeight: "700",
-    color: colors.textPrimary,
+    color: colors.primary,
   },
-
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  badgeText: {
-    fontSize: 12,
-    color: colors.accent,
-    marginLeft: 4,
-    fontWeight: "500",
-  },
-
   unreadDot: {
     width: 10,
     height: 10,
@@ -295,13 +443,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     marginLeft: 8,
   },
-
   separator: {
     height: 1,
     backgroundColor: colors.border,
-    marginLeft: 88,
+    marginLeft: 16,
   },
-
   emptyState: {
     flex: 1,
     justifyContent: "center",
@@ -319,5 +465,126 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  linkText: {
+    color: colors.accent,
+    fontWeight: "500",
+  },
+  swipeContainer: {
+    backgroundColor: "#fff",
+  },
+  row: {
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  rightActions: {
+    width: 96,
+    justifyContent: "center",
+    alignItems: "stretch",
+  },
+  deleteAction: {
+    flex: 1,
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteText: {
+    color: "#fff",
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  // modal styles, similar to ones used in homepage - might want to move to commonStyles later for better practice
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingTop: 16,
+    paddingBottom: 18,
+    paddingHorizontal: 16,
+    maxHeight: "80%",
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 1,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+  },
+  modalScrollContent: {
+    marginTop: 28,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  modalSectionTitle: {
+    marginTop: 14,
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  modalSection: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: "#fff",
+  },
+  noteBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+  },
+  noteText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  modalInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  modalInfoLabel: {
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginRight: 8,
+    flexShrink: 0,
+  },
+  modalInfoValue: {
+    flex: 1,
+    textAlign: "right",
+    color: colors.textSecondary,
+  },
+  leftStrip: {
+    width: 4,
+    alignSelf: "stretch",
+    backgroundColor: colors.primary,
+    marginRight: 12,
+    borderRadius: 2,
   },
 });
