@@ -313,7 +313,16 @@ export default function JoinPage() {
         const seatsTakenNow = capacity - seatsNum;
         const seatsTakenAfterJoin = seatsTakenNow + 1;
 
-        const perPersonPrice = splitPricePerPerson(totalPrice, seatsTakenAfterJoin);
+        const joinsSnapshot = await tx.get(collection(db, "rides", confirmRide.id, "joins"));
+
+        joinsSnapshot.forEach((docSnap) => {
+          const existingJoinRef = doc(db, "rides", confirmRide.id, "joins", docSnap.id);
+          tx.update(existingJoinRef, {
+            pricePaid: Number(newPerPersonPrice.toFixed(2)),
+          });
+        });
+
+                const perPersonPrice = splitPricePerPerson(totalPrice, seatsTakenAfterJoin);
 
         tx.update(rideRef, {
           seats: seatsNum - 1,
