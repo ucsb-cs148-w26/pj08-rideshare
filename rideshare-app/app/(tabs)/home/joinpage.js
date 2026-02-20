@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: colors.textSecondary,
     marginBottom: 4,
@@ -886,7 +886,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   destinationLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: colors.textSecondary,
     marginRight: 8,
