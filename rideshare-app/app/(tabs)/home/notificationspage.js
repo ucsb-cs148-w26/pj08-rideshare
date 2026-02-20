@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
   };
 
   const onPressNotification = async (item) => {
-    // mark as read
+    // Mark read (best-effort)
     try {
       if (item?.id && !item.readAt) {
         await updateDoc(doc(db, "notifications", item.id), {
