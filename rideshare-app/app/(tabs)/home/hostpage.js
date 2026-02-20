@@ -294,13 +294,19 @@ export default function HostPage() {
       Alert.alert("Invalid seats", "Seats must be a number greater than 0.");
       return;
     }
+    const totalPriceNum = Number(price);
+
+    if (!Number.isFinite(totalPriceNum) || totalPriceNum <= 0) {
+      Alert.alert("Invalid price", "Price must be a number greater than 0.");
+      return;
+    }
 
     try {
       setIsSaving(true);
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
       const ridePayload = {
-        price: price.trim(),
+        price: totalPriceNum.trim(),
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
