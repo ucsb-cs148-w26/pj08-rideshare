@@ -36,4 +36,6 @@ This retro continued to use the start, stop, continue outline. It kept it simple
 ## Experiment/Change 
 Adding acceptance criteria to user stories/subtasks on kanban, so that we can test edge cases and preemptively fight bugs
 
-## Experiment Results - UPDATED XX/XX/XXXX
+## Experiment Results - UPDATED 02/20/2026
+By 02/20/2026, we successfully implemented acceptance criteria for our user stories and subtasks on the Kanban board. Over the past week, most new tickets included clearly defined acceptance criteria, and team members checked them off before moving tasks to “Done.” This made PR reviews noticeably smoother, as reviewers had a concrete checklist to validate functionality and edge cases. We also improved PR hygiene by consistently assigning ourselves, labeling what feature was being updated, and removing commented-out code before merging. While adding acceptance criteria required a bit more upfront planning, it reduced back-and-forth during reviews and helped ensure the code worked as intended. Combined with maintaining two reviewers per PR and strong groupchat responsiveness, this experiment made our workflow more structured, transparent, and reliable.
+
