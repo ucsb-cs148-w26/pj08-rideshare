@@ -139,8 +139,14 @@ export default function Homepage({ user }) {
 
   const [leaveRideModalVisible, setLeaveRideModalVisible] = useState(false);
   const [leavingRide, setLeavingRide] = useState(false);
-  const cancellationFee = selectedRide ? Number(selectedRide.price) * 0.25 : 0;
+  const cancellationFee = 5.00;
   const cancellationFeeText = formatCurrency(cancellationFee);
+  const cancellationDeadline = selectedRide?.cancellationDeadline
+    ? new Date(selectedRide.cancellationDeadline)
+    : null;
+  const isLateCancellation = Boolean(cancellationDeadline && new Date() > cancellationDeadline);
+  const paymentRecipientName = driverInfo?.name || selectedRide?.ownerName || 'the driver';
+  const paymentHandle = (driverInfo?.payHandle || '').trim();
 
   const [cancelRideModalVisible, setCancelRideModalVisible] = useState(false);
   const [cancellingRide, setCancellingRide] = useState(false);
@@ -585,7 +591,7 @@ export default function Homepage({ user }) {
 
                     <View style={styles.cancellationNotice}>
                       <Text style={styles.cancellationNoticeText}>
-                        ⚠️ Warning: Leaving after the cancellation deadline may result in penalties.
+                        ⚠️ Warning: Leaving after the cancellation deadline incurs a {cancellationFeeText} cancellation fee.
                       </Text>
                     </View>
 
@@ -628,17 +634,45 @@ export default function Homepage({ user }) {
           {leaveRideModalVisible && (
             <View style={styles.confirmModalOverlay}>
               <View style={styles.confirmModalContent}>
-                <Text style={styles.confirmModalTitle}>Leave this ride?</Text>
+                <Text style={styles.confirmModalTitle}>
+                  {isLateCancellation ? 'Late Cancellation Notice' : 'Leave this ride?'}
+                </Text>
                 <Text style={styles.confirmModalMessage}>
-                  <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
-                  {'\n\n'}
-                  • Cancellations made after the deadline will incur a {cancellationFeeText} fee
-                  {'\n\n'}
-                  • Fee calculation: 25% of ride price
-                  {'\n\n'}
-                  • If a waitlist exists for this ride, you must rejoin through the waitlist
-                  {'\n\n'}
-                  <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                  {isLateCancellation ? (
+                    <>
+                      <Text style={{ fontWeight: 'bold' }}>
+                        You are leaving after the cancellation deadline.
+                      </Text>
+                      {'\n\n'}
+                      <Text>
+                        A cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> is due.
+                      </Text>
+                      {'\n\n'}
+                      <Text>
+                        Please venmo/zelle <Text style={{ fontWeight: 'bold' }}>{paymentRecipientName}</Text>{' '}
+                        {paymentHandle
+                          ? (
+                            <>
+                              at <Text style={{ fontWeight: 'bold' }}>{paymentHandle}</Text>
+                            </>
+                          )
+                          : ' using their listed pay handle'}{' '}
+                        the cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> now.
+                      </Text>
+                      {'\n\n'}
+                      <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
+                      {'\n\n'}
+                      • Cancellations made after the deadline will incur a {cancellationFeeText} fee 
+                      {'\n\n'}
+                      • If a waitlist exists for this ride, you must rejoin through the waitlist
+                      {'\n\n'}
+                      <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                    </>
+                  )}
                 </Text>
                 
                 <View style={styles.confirmModalButtons}>
