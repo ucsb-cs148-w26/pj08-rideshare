@@ -258,7 +258,7 @@ export default function JoinPage() {
     return Number((totalPrice / seatsTaken).toFixed(2));
   };
 
-  const openJoinConfirm = (ride) => {
+ const openJoinConfirm = (ride) => {
     const alreadyJoined = joinedRideIds.has(ride.id);
     const soldOut = Number(ride.seats) <= 0;
 
@@ -270,6 +270,12 @@ export default function JoinPage() {
       Alert.alert("Sold out", "No seats left for this ride.");
       return;
     }
+
+    const totalPrice = toNumber(ride.price);
+    const capacity = Number(ride.total_seats ?? ride.seats);
+
+    console.log("ALL PRICE TIERS:");
+    console.log(computeSplitPriceTiers(totalPrice, capacity));
 
     setConfirmRide(ride);
     setConfirmVisible(true);
