@@ -17,7 +17,7 @@ import {
   KeyboardAvoidingView,
   Pressable,
 } from 'react-native';
-import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
@@ -687,7 +687,64 @@ export default function Homepage({ user }) {
                           });
                           tx.delete(joinRef);
                         });
-                        
+                        // Send notifications
+                        try {
+                          const now = new Date();
+                          const deadline = selectedRide.cancellationDeadline
+                            ? new Date(selectedRide.cancellationDeadline)
+                            : null;
+                          const isAfterDeadline = deadline && now > deadline;
+
+                          let riderName = currentUser?.email || "A rider";
+                          try {
+                            const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+                            if (userSnap.exists()) {
+                              riderName = userSnap.data().name || riderName;
+                            }
+                          } catch (e) {}
+
+                          if (isAfterDeadline) {
+                            // CASE 1: After deadline → driver only
+                            await addDoc(collection(db, "notifications"), {
+                              userId: selectedRide.ownerId,
+                              type: "late_cancellation",
+                              title: "⚠️ Late Cancellation",
+                              body: `${riderName} left your ride after the cancellation deadline.`,
+                              rideId: selectedRide.id,
+                              rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                              createdAt: serverTimestamp(),
+                              readAt: null,
+                            });
+                          } else {
+                            // CASE 2: Before deadline → driver + all remaining riders
+                            const joinsSnap = await getDocs(
+                              collection(db, "rides", selectedRide.id, "joins")
+                            );
+                            const notifyIds = new Set([selectedRide.ownerId]);
+                            joinsSnap.forEach((d) => {
+                              const rid = d.data().riderId || d.id;
+                              if (rid !== currentUser.uid) notifyIds.add(rid);
+                            });
+
+                            const notifBatch = writeBatch(db);
+                            notifyIds.forEach((uid) => {
+                              const notifRef = doc(collection(db, "notifications"));
+                              notifBatch.set(notifRef, {
+                                userId: uid,
+                                type: "ride_left",
+                                title: "Rider Update",
+                                body: `${riderName} has left the ride. A seat is now available.`,
+                                rideId: selectedRide.id,
+                                rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                                createdAt: serverTimestamp(),
+                                readAt: null,
+                              });
+                            });
+                            await notifBatch.commit();
+                          }
+                        } catch (notifError) {
+                          console.warn("Failed to send notification:", notifError);
+                        }
                         // Close both modals
                         setLeaveRideModalVisible(false);
                         setDetailsModalVisible(false);

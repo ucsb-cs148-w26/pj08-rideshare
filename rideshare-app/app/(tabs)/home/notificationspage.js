@@ -82,10 +82,13 @@ export default function NotificationsScreen() {
         return "refresh-outline";
       case "ride_joined":
         return "person-add-outline";
+      case "late_cancellation":
+        return "warning-outline";
       default:
         return "notifications-outline";
     }
   };
+
 
   const onPressNotification = async (item) => {
     // Mark read (best-effort)
