@@ -875,6 +875,35 @@ export default function Homepage({ user }) {
                               });
                             });
 
+                            // Create notifications for all riders
+                            if (riderUids.length > 0) {
+                              const notifBatch = writeBatch(db);
+
+                              riderUids.forEach((riderUid) => {
+                                const notifRef = doc(collection(db, "notifications")); // auto-id
+
+                                notifBatch.set(notifRef, {
+                                  userId: riderUid,
+                                  type: "ride_cancelled",
+                                  title: `Your driver has cancelled this ride.`,
+                                  body: trimmed,            // cancellation note
+
+                                  rideId: selectedRide.id,
+                                  fromAddress: selectedRide.fromAddress,
+                                  toAddress: selectedRide.toAddress,
+
+                                  createdAt: serverTimestamp(),
+                                  readAt: null,
+
+                                  // optional, not needed now but might be useful later
+                                  cancelledBy: currentUser.uid,
+                                  cancelledAt: serverTimestamp(),
+                                });
+                              });
+
+                              await notifBatch.commit();
+                            }
+
                             // delete join docs
                             const batchSize = 450;
                             for (let i = 0; i < joinRefs.length; i += batchSize) {
