@@ -306,7 +306,7 @@ export default function HostPage() {
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
       const ridePayload = {
-        price: totalPriceNum.trim(),
+        price: totalPriceNum,
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),

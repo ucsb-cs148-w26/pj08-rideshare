@@ -242,6 +242,22 @@ export default function JoinPage() {
     return Number.isFinite(n) ? n : 0;
   };
 
+  const computeSplitPriceTiers = (totalPrice, capacity) => {
+    const tiers = [];
+    for (let seatsTaken = 1; seatsTaken <= capacity; seatsTaken++) {
+      tiers.push({
+        seatsTaken,
+        perPerson: Number((totalPrice / seatsTaken).toFixed(2)),
+      });
+    }
+    return tiers; // [{seatsTaken:1, perPerson:...}, ...]
+  };
+
+  const splitPricePerPerson = (totalPrice, seatsTaken) => {
+    if (seatsTaken <= 0) return 0;
+    return Number((totalPrice / seatsTaken).toFixed(2));
+  };
+
   const openJoinConfirm = (ride) => {
     const alreadyJoined = joinedRideIds.has(ride.id);
     const soldOut = Number(ride.seats) <= 0;
@@ -285,15 +301,24 @@ export default function JoinPage() {
           throw new Error("No seats left for this ride.");
         }
 
+        const totalPrice = toNumber(rideData.price);
+
+        const capacity = Number(rideData.total_seats ?? seatsNum);
+        const seatsTakenNow = capacity - seatsNum;
+        const seatsTakenAfterJoin = seatsTakenNow + 1;
+
+        const perPersonPrice = splitPricePerPerson(totalPrice, seatsTakenAfterJoin);
+
         tx.update(rideRef, {
           seats: seatsNum - 1,
-          total_seats: rideData.total_seats ?? seatsNum, // ensures field exists
         });
+
         tx.set(joinRef, {
           riderId: user.uid,
           riderEmail: user.email ?? "",
           joinedAt: serverTimestamp(),
-          pricePaid: Number(rideData.price) || 0,
+          pricePaid: perPersonPrice,
+          seatsTakenAtJoin: seatsTakenAfterJoin,
         });
       });
 
