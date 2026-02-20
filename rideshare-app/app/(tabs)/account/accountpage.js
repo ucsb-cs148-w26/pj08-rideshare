@@ -19,7 +19,8 @@ import { useAuth } from '../../../src/auth/AuthProvider';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-// export const storage = getStorage(app);
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { auth, db, storage } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -157,15 +158,15 @@ export default function AccountPage() {
     }
   };
 
+  const isIosSimulator = Platform.OS === 'ios' && !Platform.isPad && !Platform.isTV && Platform.constants == null;  
 
   const chooseImageSource = () => {
-  Alert.alert('Profile Photo', 'Choose a source', [
-    { text: 'Camera', onPress: takePhoto },
-    { text: 'Upload', onPress: pickImage },
-    { text: 'Cancel', style: 'cancel' },
-  ]);
-};
-
+    Alert.alert('Profile Photo', 'Choose a source', [
+      { text: 'Camera', onPress: takePhoto },
+      { text: 'Upload', onPress: pickImage },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 const pickImage = async () => {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
@@ -186,20 +187,30 @@ const pickImage = async () => {
 };
 
 const takePhoto = async () => {
-  const perm = await ImagePicker.requestCameraPermissionsAsync();
-  if (!perm.granted) {
-    Alert.alert('Permission needed', 'Please allow camera access.');
-    return;
-  }
+  try {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission needed', 'Please allow camera access.');
+      return;
+    }
 
-  const result = await ImagePicker.launchCameraAsync({
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.7,
-  });
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
 
-  if (!result.canceled) {
-    await uploadImage(result.assets[0].uri);
+    if (!result.canceled) {
+      await uploadImage(result.assets[0].uri);
+    }
+  } catch (err) {
+    console.error('takePhoto error:', err);
+
+    Alert.alert(
+      'Camera not available here',
+      'Camera doesn’t work on simulator. Use Upload instead.',
+      [{ text: 'Upload', onPress: pickImage }, { text: 'OK' }]
+    );
   }
 };
 
@@ -207,27 +218,30 @@ const uploadImage = async (uri) => {
   if (!user?.uid) return;
 
   try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    const manipulated = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 256 } }],
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+    );
 
-    const imageRef = ref(storage, `profilePhotos/${user.uid}.jpg`);
-    await uploadBytes(imageRef, blob);
+    const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
+      encoding: 'base64',
+    });
 
-    const downloadURL = await getDownloadURL(imageRef);
+    const dataUrl = `data:image/jpeg;base64,${base64}`;
 
     await setDoc(
       doc(db, 'users', user.uid),
-      { photoURL: downloadURL },
+      { photoURL: dataUrl },
       { merge: true }
     );
 
-    setPhotoURL(downloadURL);
+    setPhotoURL(dataUrl);
   } catch (err) {
     console.error('Upload failed:', err);
-    Alert.alert('Upload failed', 'Could not upload photo. Try again.');
+    Alert.alert('Upload failed', 'Image too large or could not save.');
   }
 };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
