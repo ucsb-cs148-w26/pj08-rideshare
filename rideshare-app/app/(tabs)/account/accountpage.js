@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
-import NavBar from '../../components/nav-bar';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -293,7 +292,6 @@ export default function AccountPage() {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      <NavBar />
     </SafeAreaView>
   );
 }

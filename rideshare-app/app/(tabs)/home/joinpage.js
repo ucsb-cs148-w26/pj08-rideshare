@@ -29,7 +29,6 @@ import { db } from "../../../src/firebase";
 import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
-import NavBar from '../../../app/components/nav-bar';
 import { getOrCreateRideConversation } from '../../../src/utils/messaging';
 
 export default function JoinPage() {
@@ -714,7 +713,6 @@ export default function JoinPage() {
         </Modal>
       </View>
 
-      <NavBar />
     </SafeAreaView>
   );
 }

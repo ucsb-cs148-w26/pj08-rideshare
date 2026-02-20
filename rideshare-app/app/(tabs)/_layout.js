@@ -1,18 +1,21 @@
 import React from "react";
 import { View } from "react-native";
-import { Tabs, Redirect } from "expo-router";
+import { Tabs, Redirect, useSegments } from "expo-router";
 import { useAuth } from "../../src/auth/AuthProvider";
 import NavBar from "../components/nav-bar"
 import { commonStyles } from "../../ui/styles/commonStyles";
 
 export default function TabsLayout() {
   const { user, initializing } = useAuth();
+  const segments = useSegments();
 
   if (initializing) return null;
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
   }
+
+  const isChatScreen = segments.includes("messages") && segments.includes("chat");
 
   return (
     <View style={commonStyles.container}>
@@ -29,7 +32,7 @@ export default function TabsLayout() {
         </Tabs>
       </View>
 
-      <NavBar />
+      {!isChatScreen && <NavBar />}
     </View>
   );
 }
