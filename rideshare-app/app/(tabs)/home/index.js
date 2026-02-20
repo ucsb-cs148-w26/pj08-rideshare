@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
   StyleSheet,
   Text,
@@ -20,7 +21,6 @@ import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, 
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
-import NavBar from '../../../app/components/nav-bar';
 
 const tagColors = {
   'Downtown': '#e11d48',
@@ -260,6 +260,16 @@ export default function Homepage({ user }) {
 
   return (
     <View style={commonStyles.container}>
+      {/* Floating notifications bell */}
+      <Pressable
+        onPress={() => router.push("/(tabs)/home/notificationspage")}
+        style={styles.bellButton}
+        accessibilityLabel="Open notifications"
+        hitSlop={10}
+      >
+        <Ionicons name="notifications-outline" size={22} />
+      </Pressable>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
@@ -852,8 +862,6 @@ export default function Homepage({ user }) {
           )}
         </View>
       </Modal>
-
-      <NavBar />
     </View>
   );
 }
@@ -1308,5 +1316,24 @@ const styles = StyleSheet.create({
     color: '#b91c1c',
     fontSize: 13,
     marginBottom: 12,
+  },
+  bellButton: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 56 : 22,
+    right: 16,
+    zIndex: 2000,
+
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+
+    backgroundColor: colors.white,
+    
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
 });
