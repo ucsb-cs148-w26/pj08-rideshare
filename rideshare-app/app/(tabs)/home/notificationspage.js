@@ -100,10 +100,25 @@ export default function NotificationsScreen() {
     if (!n) return null;
 
     switch (n.type) {
-      // riders ride was cancelled
+      // driver canceled ride (shown to all riders of the ride)
       case "ride_cancelled":
         return (
           <>
+
+            <Text style={styles.modalSectionTitle}>Message</Text>
+            
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>Your rider has canceled this ride. See note and ride details below.</Text>
+            </View>
+            
+            <Text style={styles.modalSectionTitle}>Cancellation Note</Text>
+
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>
+                {n.body?.trim() || "No cancellation note provided."}
+              </Text>
+            </View>
+
             <Text style={styles.modalSectionTitle}>Ride Details</Text>
 
             <View style={styles.modalSection}>
@@ -121,24 +136,80 @@ export default function NotificationsScreen() {
                 </Text>
               </View>
             </View>
-
-            <Text style={styles.modalSectionTitle}>Cancellation Note</Text>
-
-            <View style={styles.noteBox}>
-              <Text style={styles.noteText}>
-                {n.body?.trim() || "No cancellation note provided."}
-              </Text>
-            </View>
           </>
         );
 
-      // rider left ride (semi-placeholder, this will likely be edited once this notification type is implemented)
+      // rider left ride before deadline (shown to driver + riders)
       case "ride_left":
+        const isOwner = n.userId === n.driverId;
+
+        const messageText = isOwner
+          ? (n.body || "A rider left the ride.")
+          : `${n.body || "A rider left the ride."} See changes in amount due below.`;
+
         return (
           <>
-            <Text style={styles.modalSectionTitle}>Update</Text>
+            <Text style={styles.modalSectionTitle}>Message</Text>
+
+            <View style={styles.noteBox}>
+              <Text style={styles.noteText}>{messageText}</Text>
+            </View>
+
+            {!isOwner && (
+              <>
+                <Text style={styles.modalSectionTitle}>Price Change</Text>
+                <View style={styles.noteBox}>
+                  <Text style={styles.noteText}>Placeholder</Text>
+                </View>
+              </>
+            )}
+
+            <Text style={styles.modalSectionTitle}>Ride Details</Text>
+            
+            <View style={styles.modalSection}>
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>From:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.fromAddress || "Not available"}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>To:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.toAddress || "Not available"}
+                </Text>
+              </View>
+            </View>
+          </>
+        );
+      
+      // rider left ride after deadline (shown to driver)
+      case "late_cancellation":
+        return (
+          <>            
+            <Text style={styles.modalSectionTitle}>Message</Text>
+            
             <View style={styles.noteBox}>
               <Text style={styles.noteText}>{n.body || "A rider left the ride."}</Text>
+            </View>
+
+            <Text style={styles.modalSectionTitle}>Ride Details</Text>
+            
+            <View style={styles.modalSection}>
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>From:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.fromAddress || "Not available"}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoRow}>
+                <Text style={styles.modalInfoLabel}>To:</Text>
+                <Text style={styles.modalInfoValue}>
+                  {n.toAddress || "Not available"}
+                </Text>
+              </View>
             </View>
           </>
         );

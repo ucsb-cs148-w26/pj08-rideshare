@@ -708,10 +708,14 @@ export default function Homepage({ user }) {
                             await addDoc(collection(db, "notifications"), {
                               userId: selectedRide.ownerId,
                               type: "late_cancellation",
-                              title: "⚠️ Late Cancellation",
+                              title: "Late Cancellation Notice",
                               body: `${riderName} left your ride after the cancellation deadline.`,
+
+                              driverId: selectedRide.ownerId,
                               rideId: selectedRide.id,
-                              rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                              fromAddress: selectedRide.fromAddress,
+                              toAddress: selectedRide.toAddress,
+
                               createdAt: serverTimestamp(),
                               readAt: null,
                             });
@@ -732,10 +736,14 @@ export default function Homepage({ user }) {
                               notifBatch.set(notifRef, {
                                 userId: uid,
                                 type: "ride_left",
-                                title: "Rider Update",
-                                body: `${riderName} has left the ride. A seat is now available.`,
+                                title: "Updates to Your Ride",
+                                body: "A rider has left the ride.",
+
+                                driverId: selectedRide.ownerId,
                                 rideId: selectedRide.id,
-                                rideInfo: `${selectedRide.fromAddress} → ${selectedRide.toAddress}`,
+                                fromAddress: selectedRide.fromAddress,
+                                toAddress: selectedRide.toAddress,
+
                                 createdAt: serverTimestamp(),
                                 readAt: null,
                               });
@@ -884,9 +892,10 @@ export default function Homepage({ user }) {
                                 notifBatch.set(notifRef, {
                                   userId: riderUid,
                                   type: "ride_cancelled",
-                                  title: `Your driver has cancelled this ride.`,
+                                  title: `Ride Cancellation Notice`,
                                   body: trimmed,            // cancellation note
 
+                                  driverId: selectedRide.ownerId,
                                   rideId: selectedRide.id,
                                   fromAddress: selectedRide.fromAddress,
                                   toAddress: selectedRide.toAddress,
