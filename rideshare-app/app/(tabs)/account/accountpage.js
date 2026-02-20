@@ -25,6 +25,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { auth, db, storage } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
 
+const MAX_NAME_LENGTH = 30;
+
 const emptyAccount = {
   name: '',
   email: '',
@@ -52,6 +54,8 @@ export default function AccountPage() {
   const [draft, setDraft] = useState(emptyAccount);
   const [saved, setSaved] = useState(emptyAccount);
   const [photoURL, setPhotoURL] = useState(null);
+  const [nameError, setNameError] = useState('');
+
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -98,6 +102,14 @@ export default function AccountPage() {
 
   const handleChange = (key, value) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+    if (key === 'name') {
+      const trimmed = value.trim();
+      if (trimmed.length > MAX_NAME_LENGTH) {
+        setNameError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+      } else {
+        setNameError('');
+      }
+    }
   };
 
   const handleEdit = () => setIsEditing(true);
@@ -107,6 +119,13 @@ export default function AccountPage() {
   };
   const handleSave = async () => {
     if (!user?.uid) return;
+
+    const trimmedName = draft.name.trim();
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      setNameError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+      return;
+    }
+
     const trimmed = {
       name: draft.name.trim(),
       email: draft.email.trim(),
@@ -310,7 +329,11 @@ const uploadImage = async (uri) => {
                 value={draft.name}
                 onChangeText={(value) => handleChange('name', value)}
                 editable={isEditing}
+                maxLength={MAX_NAME_LENGTH}
               />
+              <Text style={styles.charHint}>
+                {draft.name.trim().length}/{MAX_NAME_LENGTH}
+              </Text>
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
@@ -583,4 +606,19 @@ const styles = StyleSheet.create({
   height: 64,
   borderRadius: 32,
 },
+charHint: {
+  marginTop: 4,
+  fontSize: 12,
+  color: '#666',
+  textAlign: 'right',
+},
+error: {
+  marginTop: 4,
+  fontSize: 12,
+  color: '#B91C1C',
+},
+inputError: {
+  borderColor: '#B91C1C',
+},
+
 });
