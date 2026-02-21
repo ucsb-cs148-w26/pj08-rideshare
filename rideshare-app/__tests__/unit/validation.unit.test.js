@@ -12,7 +12,7 @@ const {
     passwordHasSpecial,
     passwordHasUppercase,
     isValidPhone,
-  } = require('../src/utils/validation');
+  } = require('../../src/utils/validation');
   
   // ============================================
   // EMAIL VALIDATION TESTS
