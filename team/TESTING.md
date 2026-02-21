@@ -1,93 +1,198 @@
 # Testing Documentation
 
-## Testing Libraries
+This document outlines our current testing setup for the Rideshare App
+(React Native + Expo Router), including both unit tests and higher-level
+integration/component tests.
 
-We experimented with the following testing library for our React Native/Expo application:
+------------------------------------------------------------------------
 
-### Jest (Test Runner)
-- **Why:** Jest is a strong JavaScript testing framework with assertions, mocking, and code coverage support.
-- **Use case:** Unit testing utility functions and validation logic.
-- **Documentation:** https://jestjs.io/
+# Testing Libraries
 
-## Installation
+We use the following testing tools in our project:
 
-```bash
-npm install --save-dev jest@29.7.0 jest-expo@51 --legacy-peer-deps
+## Jest (Test Runner)
+
+-   **Why:** Jest provides assertions, mocking, watch mode, and coverage
+    support.
+-   **Use case:** Unit tests and integration/component tests.
+-   **Documentation:** https://jestjs.io/
+
+## jest-expo (Expo Preset)
+
+-   **Why:** Provides proper environment configuration for testing React
+    Native + Expo apps.
+-   **Use case:** Allows Jest to correctly transform Expo modules and
+    React Native components.
+
+## React Native Testing Library (RNTL)
+
+-   **Package:** `@testing-library/react-native`
+-   **Why:** Enables testing components/screens the way users interact
+    with them (press, type, render UI).
+-   **Use case:** Integration/component testing of screens and user
+    flows.
+-   **Documentation:**
+    https://callstack.github.io/react-native-testing-library/
+
+## @testing-library/jest-native
+
+-   **Why:** Adds React Native-specific matchers like
+    `toBeOnTheScreen()`, `toHaveTextContent()`, etc.
+
+------------------------------------------------------------------------
+
+# Installation
+
+``` bash
+npm install --save-dev jest@29.7.0 jest-expo@51
+npm install --save-dev react-test-renderer@19.1.0 --save-exact
+npm install --save-dev @testing-library/react-native @testing-library/jest-native
 ```
 
-Add to `package.json`:
-```json
+------------------------------------------------------------------------
+
+# Jest Configuration
+
+We use the `jest-expo` preset.
+
+## package.json
+
+``` json
 "scripts": {
   "test": "jest"
 },
 "jest": {
-  "testEnvironment": "node",
+  "preset": "jest-expo",
   "testMatch": ["**/__tests__/**/*.test.js"],
-  "transform": {}
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+  "transformIgnorePatterns": [
+    "node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo(nent)?|expo-router|@expo(nent)?/.*|react-native-gesture-handler|react-native-reanimated|react-native-screens|react-native-safe-area-context|@firebase|firebase)/"
+  ]
 }
 ```
 
-## Project Structure
+## jest.setup.js
 
-```
-rideshare-app/
-├── __tests__/
-│   └── validation.test.js    ← Unit tests
-├── src/
-│   └── utils/
-│       └── validation.js     ← Validation utilities
-└── team/
-    └── TESTING.md            ← This file
+``` js
+import "@testing-library/jest-native/extend-expect";
+jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper");
 ```
 
-## Test Files Implemented
+------------------------------------------------------------------------
 
-### `__tests__/validation.test.js`
+# Project Structure
 
-This file contains unit tests for the validation utilities in `src/utils/validation.js`:
+    rideshare-app/
+    ├── __tests__/
+    │   ├── validation.test.js
+    │   └── notifications.integration.test.js
+    ├── src/
+    │   └── utils/
+    │       └── validation.js
+    ├── app/
+    │   └── (tabs)/
+    │       └── notifications/
+    │           └── index.js
+    └── team/
+        └── TESTING.md
 
-| Function | Description | Tests |
-|----------|-------------|-------|
-| `emailLooksValid` | Validates email format | Valid emails, invalid emails, whitespace handling |
-| `isUcsbEmail` | Checks for @ucsb.edu domain | UCSB emails, non-UCSB emails, case insensitivity |
-| `digitsOnly` | Extracts digits from strings | Mixed input, empty strings, digit-only strings |
-| `formatPhone` | Formats phone as (XXX) XXX-XXXX | Partial numbers, full numbers, truncation |
-| `isValidPhone` | Validates 10-digit phone | Valid phones, invalid phones |
-| `passwordHasMinLength` | Checks 8+ characters | Long passwords, short passwords |
-| `passwordHasSpecial` | Checks for special characters | With/without special chars |
-| `passwordHasUppercase` | Checks for uppercase letters | With/without uppercase |
+------------------------------------------------------------------------
 
-## Running Tests
+# 1️⃣ Unit Tests (Lab 05 Requirement)
 
-```bash
-# Run all tests
+### File: **tests**/validation.test.js
+
+This file contains unit tests for the validation utilities in
+`src/utils/validation.js`.
+
+We test:
+
+-   Email validation
+-   UCSB email detection
+-   Digit extraction
+-   Phone formatting and validation
+-   Password validation rules
+
+These utilities are pure functions and are ideal for deterministic unit
+testing.
+
+------------------------------------------------------------------------
+
+# 2️⃣ Higher-Level Testing (Lab 06 Requirement)
+
+## File: **tests**/notifications.integration.test.js
+
+We implemented a component/integration test using React Native Testing
+Library.
+
+### What it tests
+
+-   Subscribes to notifications (mocked Firestore subscription)
+-   Renders notification rows
+-   Opens a details modal when tapped
+-   Marks notifications as read
+-   Deletes notifications and removes them from the UI
+
+### How we made the screen testable
+
+-   Added stable `testID` attributes to key UI elements
+-   Introduced light dependency injection for:
+    -   subscribeToNotifications
+    -   markRead
+    -   deleteNotif
+
+This allows us to simulate Firestore behavior without a real backend and
+verify UI updates and handler calls.
+
+### Why this qualifies as higher-level testing
+
+This test renders a full screen, simulates real user interaction, and
+verifies UI + business logic integration.
+
+------------------------------------------------------------------------
+
+# Running Tests
+
+``` bash
 npm test
-
-# Run tests in watch mode
 npm test -- --watch
-
-# Run tests with coverage report
 npm test -- --coverage
 ```
 
-## Test Structure
+------------------------------------------------------------------------
 
-We follow the AAA (Arrange-Act-Assert) pattern:
+# Testing Strategy Going Forward
 
-```javascript
-describe('emailLooksValid', () => {
-  it('should return true for valid email formats', () => {
-    // Arrange & Act
-    const result = emailLooksValid('test@example.com');
-    
-    // Assert
-    expect(result).toBe(true);
-  });
-});
-```
+## Unit Tests
 
-## Notes
+We will continue writing unit tests for:
 
-- All test files are located in the `__tests__/` directory
-- Test files follow the naming convention `*.test.js`
-- Validation utilities use CommonJS (`module.exports`) for Jest compatibility
+-   Utility functions
+-   Validation logic
+-   Business-rule helpers (deadlines, seat calculations, permission
+    logic)
+
+## Integration/Component Tests
+
+We plan to expand integration testing to cover:
+
+-   Join Ride flow
+-   Ride cancellation flow
+-   Messaging screen basic functionality
+-   Critical navigation flows
+
+## Future Consideration: End-to-End (E2E)
+
+We may adopt Detox for device-level E2E testing in the future once the
+app stabilizes. For now, React Native Testing Library provides the best
+balance of speed, maintainability, and coverage for our course timeline.
+
+------------------------------------------------------------------------
+
+# Summary
+
+-   Unit tests implemented with Jest (validation utilities)
+-   Integration/component test implemented with React Native Testing
+    Library (Notifications screen)
+-   Tests runnable via `npm test`
+-   Clear path forward for expanded testing coverage
