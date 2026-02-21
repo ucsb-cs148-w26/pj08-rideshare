@@ -239,8 +239,8 @@ export default function ChatScreen() {
     prevMessage.senderId !== item.senderId;
 
   const senderDisplayName =
-    item.senderName ||
     conversationData?.participantNames?.[item.senderId] ||
+    item.senderName ||
     'Unknown';
 
   return (

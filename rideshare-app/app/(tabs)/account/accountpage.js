@@ -18,7 +18,16 @@ import { router } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch, } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -117,6 +126,34 @@ export default function AccountPage() {
     setDraft(saved);
     setIsEditing(false);
   };
+  const syncNameEverywhere = async (uid, newName) => {
+    // conversations
+    const convSnap = await getDocs(query(collection(db, 'conversations'), where('participants', 'array-contains', uid)));
+    for (const convo of convSnap.docs) {
+      await updateDoc(doc(db, 'conversations', convo.id), {
+        [`participantNames.${uid}`]: newName,
+      });
+
+      const msgSnap = await getDocs(query(collection(db, 'conversations', convo.id, 'messages'), where('senderId', '==', uid)));
+      for (const msg of msgSnap.docs) {
+        await updateDoc(doc(db, 'conversations', convo.id, 'messages', msg.id), {
+          senderName: newName,
+        });
+      }
+    }
+
+    // rides collection
+    const ridesSnap = await getDocs(query(collection(db, 'rides'), where('ownerId', '==', uid)));
+    for (const ride of ridesSnap.docs) {
+      await updateDoc(doc(db, 'rides', ride.id), { ownerName: newName });
+    }
+
+    // users/{uid}/rides subcollection
+    const userRidesSnap = await getDocs(collection(db, 'users', uid, 'rides'));
+    for (const ride of userRidesSnap.docs) {
+      await updateDoc(doc(db, 'users', uid, 'rides', ride.id), { ownerName: newName });
+    }
+  };
   const handleSave = async () => {
     if (!user?.uid) return;
 
@@ -160,6 +197,11 @@ export default function AccountPage() {
     setIsSaving(true);
     try {
       await setDoc(doc(db, 'users', user.uid), payload, { merge: true });
+      try {
+        await syncNameEverywhere(user.uid, trimmed.name);
+      } catch (e) {
+        console.error('Name sync failed:', e);
+      }
       setSaved((prev) => ({ ...prev, ...trimmed }));
       setIsEditing(false);
     } catch (error) {
