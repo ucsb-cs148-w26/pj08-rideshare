@@ -18,12 +18,23 @@ import { router } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch, } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { auth, db, storage } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
+
+const MAX_NAME_LENGTH = 30;
 
 const emptyAccount = {
   name: '',
@@ -57,6 +68,8 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(emptyAccount);
   const [photoURL, setPhotoURL] = useState(null);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [nameError, setNameError] = useState('');
+
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -107,6 +120,14 @@ export default function AccountPage() {
 
   const handleChange = (key, value) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+    if (key === 'name') {
+      const trimmed = value.trim();
+      if (trimmed.length > MAX_NAME_LENGTH) {
+        setNameError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+      } else {
+        setNameError('');
+      }
+    }
   };
 
   const handleEdit = () => setIsEditing(true);
@@ -114,8 +135,43 @@ export default function AccountPage() {
     setDraft(saved);
     setIsEditing(false);
   };
+  const syncNameEverywhere = async (uid, newName) => {
+    // conversations
+    const convSnap = await getDocs(query(collection(db, 'conversations'), where('participants', 'array-contains', uid)));
+    for (const convo of convSnap.docs) {
+      await updateDoc(doc(db, 'conversations', convo.id), {
+        [`participantNames.${uid}`]: newName,
+      });
+
+      const msgSnap = await getDocs(query(collection(db, 'conversations', convo.id, 'messages'), where('senderId', '==', uid)));
+      for (const msg of msgSnap.docs) {
+        await updateDoc(doc(db, 'conversations', convo.id, 'messages', msg.id), {
+          senderName: newName,
+        });
+      }
+    }
+
+    // rides collection
+    const ridesSnap = await getDocs(query(collection(db, 'rides'), where('ownerId', '==', uid)));
+    for (const ride of ridesSnap.docs) {
+      await updateDoc(doc(db, 'rides', ride.id), { ownerName: newName });
+    }
+
+    // users/{uid}/rides subcollection
+    const userRidesSnap = await getDocs(collection(db, 'users', uid, 'rides'));
+    for (const ride of userRidesSnap.docs) {
+      await updateDoc(doc(db, 'users', uid, 'rides', ride.id), { ownerName: newName });
+    }
+  };
   const handleSave = async () => {
     if (!user?.uid) return;
+
+    const trimmedName = draft.name.trim();
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      setNameError(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+      return;
+    }
+
     const trimmed = {
       name: draft.name.trim(),
       email: draft.email.trim(),
@@ -158,6 +214,11 @@ export default function AccountPage() {
     setIsSaving(true);
     try {
       await setDoc(doc(db, 'users', user.uid), payload, { merge: true });
+      try {
+        await syncNameEverywhere(user.uid, trimmed.name);
+      } catch (e) {
+        console.error('Name sync failed:', e);
+      }
       setSaved((prev) => ({ ...prev, ...trimmed }));
       setIsEditing(false);
     } catch (error) {
@@ -327,7 +388,11 @@ const uploadImage = async (uri) => {
                 value={draft.name}
                 onChangeText={(value) => handleChange('name', value)}
                 editable={isEditing}
+                maxLength={MAX_NAME_LENGTH}
               />
+              <Text style={styles.charHint}>
+                {draft.name.trim().length}/{MAX_NAME_LENGTH}
+              </Text>
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
@@ -722,4 +787,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.secondary || '#1A1A1A',
   },
+  charHint: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+  },
+  error: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#B91C1C',
+  },
+  inputError: {
+    borderColor: '#B91C1C',
+  },
+
 });
