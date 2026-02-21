@@ -139,7 +139,7 @@ export default function Homepage({ user }) {
 
   const [leaveRideModalVisible, setLeaveRideModalVisible] = useState(false);
   const [leavingRide, setLeavingRide] = useState(false);
-  const cancellationFee = 5.00;
+  const cancellationFee = selectedRide ? Number(selectedRide.price) * 0.25 : 0;
   const cancellationFeeText = formatCurrency(cancellationFee);
   const cancellationDeadline = selectedRide?.cancellationDeadline
     ? new Date(selectedRide.cancellationDeadline)
@@ -591,7 +591,7 @@ export default function Homepage({ user }) {
 
                     <View style={styles.cancellationNotice}>
                       <Text style={styles.cancellationNoticeText}>
-                        ⚠️ Warning: Leaving after the cancellation deadline incurs a {cancellationFeeText} cancellation fee.
+                        ⚠️ Warning: Leaving after the cancellation deadline incurs a cancellation fee (25% of the ride price).
                       </Text>
                     </View>
 
@@ -645,7 +645,7 @@ export default function Homepage({ user }) {
                       </Text>
                       {'\n\n'}
                       <Text>
-                        A cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> is due.
+                        A cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> is due (25% of the ride price).
                       </Text>
                       {'\n\n'}
                       <Text>
@@ -666,7 +666,7 @@ export default function Homepage({ user }) {
                     <>
                       <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
                       {'\n\n'}
-                      • Cancellations made after the deadline will incur a {cancellationFeeText} fee 
+                      • Cancellations made after the deadline will incur a <Text style={{ fontWeight: 'bold' }}>fee calculated at 25% of the posted price</Text>
                       {'\n\n'}
                       • If a waitlist exists for this ride, you must rejoin through the waitlist
                       {'\n\n'}
