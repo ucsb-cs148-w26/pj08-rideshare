@@ -26,7 +26,51 @@ import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../../src/firebase";
 import { colors } from "../../../ui/styles/colors";
 
-export default function NotificationsScreen() {
+
+// -------------------- Test Helpers --------------------
+function defaultGetUserId(authObj) {
+  return authObj?.currentUser?.uid ?? null;
+}
+
+function defaultSubscribeToNotifications(dbObj, userId, onData, onError) {
+  const notifRef = collection(dbObj, "notifications");
+  const q = query(
+    notifRef,
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      onData(items);
+    },
+    onError
+  );
+}
+
+async function defaultMarkNotificationRead(dbObj, notifId) {
+  await updateDoc(doc(dbObj, "notifications", notifId), {
+    readAt: serverTimestamp(),
+  });
+}
+
+async function defaultDeleteNotification(dbObj, notifId) {
+  await deleteDoc(doc(dbObj, "notifications", notifId));
+}
+
+export default function NotificationsScreen({
+  authOverride,
+  dbOverride,
+  getUserId = defaultGetUserId,
+  subscribeToNotifications = defaultSubscribeToNotifications,
+  markNotificationRead = defaultMarkNotificationRead,
+  deleteNotificationDoc = defaultDeleteNotification,
+}) {
+  const authToUse = authOverride ?? auth;
+  const dbToUse = dbOverride ?? db;
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,23 +78,17 @@ export default function NotificationsScreen() {
   const [selectedNotif, setSelectedNotif] = useState(null);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    const userId = getUserId(authToUse);
+
+    if (!userId) {
       setLoading(false);
       return;
     }
 
-    const notifRef = collection(db, "notifications");
-    const q = query(
-      notifRef,
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const unsubscribe = subscribeToNotifications(
+      dbToUse,
+      userId,
+      (items) => {
         setNotifications(items);
         setLoading(false);
       },
@@ -60,8 +98,8 @@ export default function NotificationsScreen() {
       }
     );
 
-    return () => unsubscribe();
-  }, []);
+    return () => unsubscribe?.();
+  }, [authToUse, dbToUse, getUserId, subscribeToNotifications]);
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -79,21 +117,16 @@ export default function NotificationsScreen() {
   };
 
   const onPressNotification = async (item) => {
-    // Mark read (best-effort)
     try {
       if (item?.id && !item.readAt) {
-        await updateDoc(doc(db, "notifications", item.id), {
-          readAt: serverTimestamp(),
-        });
+        await markNotificationRead(dbToUse, item.id);
       }
     } catch (e) {
       console.warn("Failed to mark notification read:", e);
     }
 
-    // always shows modal, contents will depend on why type of notif
     setSelectedNotif(item);
     setDetailsModalVisible(true);
-
   };
 
   const renderNotifDetails = (n) => {
@@ -252,6 +285,7 @@ export default function NotificationsScreen() {
       >
         <View style={styles.swipeContainer}>
           <TouchableOpacity
+            testID={`notif-row-${item.id}`}
             style={styles.row}
             onPress={() => onPressNotification(item)}
             activeOpacity={0.8}
@@ -293,6 +327,7 @@ export default function NotificationsScreen() {
     return (
       <View style={styles.rightActions}>
         <RectButton
+          testID={`notif-delete-${item.id}`}
           style={styles.deleteAction}
           onPress={() => deleteNotification(item.id)}
         >
@@ -309,22 +344,14 @@ export default function NotificationsScreen() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
 
     try {
-      await deleteDoc(doc(db, "notifications", id));
+      await deleteNotificationDoc(dbToUse, id);
     } catch (e) {
       console.error("Failed to delete notification:", e);
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="notifications-screen">
       <Text style={styles.screenTitle}>Notifications</Text>
       {/* Notification Details Modal */}
       <Modal
@@ -333,9 +360,10 @@ export default function NotificationsScreen() {
         visible={detailsModalVisible}
         onRequestClose={() => setDetailsModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalOverlay} testID="notif-details-modal">
           <View style={styles.modalContent}>
             <TouchableOpacity
+              testID="notif-details-close"
               style={styles.closeButton}
               onPress={() => setDetailsModalVisible(false)}
             >
@@ -372,6 +400,7 @@ export default function NotificationsScreen() {
         </View>
       ) : (
         <FlatList
+          testID="notifications-list"
           data={notifications}
           keyExtractor={(item) => item.id}
           renderItem={renderNotification}
