@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 15,
-    color: colors.secondary || '#1A1A1A',
+    color: colors.textSecondary || '#666666', // changed to gray for profile popups
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   bioValue: {
     fontSize: 15,
-    color: colors.secondary || '#1A1A1A',
+    color: colors.textSecondary || '#666666', // changed to gray for profile popups
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     paddingHorizontal: 12,
