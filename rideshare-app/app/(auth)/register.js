@@ -5,7 +5,6 @@ import { useAuth } from "../../src/auth/AuthProvider";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../src/firebase";
 
-
 import {
  View,
  Text,
@@ -17,12 +16,9 @@ import {
  Platform,
 } from "react-native";
 
-
 import { router } from "expo-router";
 
-
 const MAX_NAME_LENGTH = 30;
-
 
 const emailLooksValid = (email) =>
  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -46,20 +42,23 @@ const formatPhone = (value) => {
 
 
 export default function Register() {
- const { setSuppressAuthRedirect } = useAuth();
- // Required fields
- const [name, setName] = useState("");
- const [bio, setBio] = useState("");
- const [payHandle, setPayHandle] = useState("");
- const [phone, setPhone] = useState("");
- const [email, setEmail] = useState("");
- const [password, setPassword] = useState("");
- const [confirmPassword, setConfirmPassword] = useState("");
+  const { setSuppressAuthRedirect } = useAuth();
+  // Required fields
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [yearsAtUCSB, setYearsAtUCSB] = useState("");
+  const [major, setMajor] = useState("");
+  const [clubs, setClubs] = useState("");
+  const [bio, setBio] = useState("");
+  const [payHandle, setPayHandle] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-
- const [vehicles, setVehicles] = useState([{ make: "", model: "", plate: "" }]);
- const [touched, setTouched] = useState({});
-
+  const [vehicles, setVehicles] = useState([{ make: "", model: "", plate: "" }]);
+  const [touched, setTouched] = useState({});
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
  const passwordHasMinLength = password.trim().length >= 8;
  const passwordHasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
@@ -69,11 +68,14 @@ export default function Register() {
  const errors = useMemo(() => {
    const e = {};
 
-
-   if (name.trim().length > MAX_NAME_LENGTH) e.name = "Name must be 30 characters or less.";
-   if (!name.trim() || name.trim().length < 2) e.name = "Enter your name.";
-   if (!bio.trim() || bio.trim().length < 5)
-     e.bio = "Add a short fun fact (min 5 chars).";
+    if (name.trim().length > MAX_NAME_LENGTH) e.name = "Name must be 30 characters or less.";
+    if (!name.trim() || name.trim().length < 2) e.name = "Enter your name.";
+    if (!role) e.role = "Please select your role.";
+    if (!yearsAtUCSB.trim()) e.yearsAtUCSB = "Years at UCSB is required.";
+    if (!major.trim()) e.major = "Major is required.";
+    if (!clubs.trim()) e.clubs = "Please list at least one club or interest.";
+    if (!bio.trim() || bio.trim().length < 5)
+      e.bio = "Add a short fun fact (min 5 chars).";
 
 
    if (!payHandle.trim()) e.payHandle = "Venmo/Zelle is required.";
@@ -121,9 +123,8 @@ export default function Register() {
    });
 
 
-   return e;
- }, [name, bio, payHandle, phone, email, password, confirmPassword, passwordHasMinLength, passwordHasSpecial, passwordHasUppercase, vehicles]);
-
+    return e;
+  }, [name, role, yearsAtUCSB, major, clubs, bio, payHandle, phone, email, password, confirmPassword, passwordHasMinLength, passwordHasSpecial, passwordHasUppercase, vehicles]);
 
  const isValid = Object.keys(errors).length === 0;
 
@@ -149,33 +150,32 @@ export default function Register() {
  };
 
 
- const handleSubmit = async () => {
-   const trimmedName = name.trim();
-
-
-   if (trimmedName.length > MAX_NAME_LENGTH) {
-     setTouched((t) => ({ ...t, name: true }));
-     alert(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
-     return;
-   }
-
-
-   const payload = {
-     name: name.trim(),
-     bio: bio.trim(),
-     payHandle: payHandle.trim(),
-     phone: digitsOnly(phone),
-     email: email.trim().toLowerCase(),
-     password: password,
-     vehicles: vehicles
-       .map((v) => ({
-         make: v.make.trim(),
-         model: v.model.trim(),
-         plate: v.plate.trim(),
-       }))
-       .filter((v) => v.make || v.model || v.plate),
-   };
-
+  const handleSubmit = async () => {
+    const trimmedName = name.trim();
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      setTouched((t) => ({ ...t, name: true }));
+      alert(`Name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+      return;
+    }
+    const payload = {
+      name: name.trim(),
+      role: role,
+      yearsAtUCSB: yearsAtUCSB.trim(),
+      major: major.trim(),
+      clubs: clubs.trim(),
+      bio: bio.trim(),
+      payHandle: payHandle.trim(),
+      phone: digitsOnly(phone),
+      email: email.trim().toLowerCase(),
+      password: password,
+      vehicles: vehicles
+        .map((v) => ({
+          make: v.make.trim(),
+          model: v.model.trim(),
+          plate: v.plate.trim(),
+        }))
+        .filter((v) => v.make || v.model || v.plate),
+    };
 
    try {
      setSuppressAuthRedirect(true);
@@ -186,16 +186,19 @@ export default function Register() {
      );
 
 
-     await setDoc(doc(db, "users", cred.user.uid), {
-       name: payload.name,
-       bio: payload.bio,
-       payHandle: payload.payHandle,
-       phone: payload.phone,
-       email: payload.email,
-       vehicles: payload.vehicles,
-       createdAt: serverTimestamp(),
-     });
-
+      await setDoc(doc(db, "users", cred.user.uid), {
+        name: payload.name,
+        role: payload.role,
+        yearsAtUCSB: payload.yearsAtUCSB,
+        major: payload.major,
+        clubs: payload.clubs,
+        bio: payload.bio,
+        payHandle: payload.payHandle,
+        phone: payload.phone,
+        email: payload.email,
+        vehicles: payload.vehicles,
+        createdAt: serverTimestamp(),
+      });
 
      await signOut(auth);
      alert("Account created! Now go log in.");
@@ -247,22 +250,105 @@ export default function Register() {
        {showError("name") ? <Text style={styles.error}>{errors.name}</Text> : null}
 
 
-       <Text style={styles.label}>Fun facts UCSB (Bio)</Text>
-       <TextInput
-         style={[
-           styles.input,
-           styles.multiline,
-           showError("bio") && styles.inputError,
-         ]}
-         value={bio}
-         onChangeText={setBio}
-         onBlur={() => markTouched("bio")}
-         placeholder="Ex: 3rd year CS, love hikes, coffee addict…"
-         placeholderTextColor="#999"
-         multiline
-       />
-       {showError("bio") ? <Text style={styles.error}>{errors.bio}</Text> : null}
+        <Text style={styles.label}>Role</Text>
+        <TouchableOpacity 
+          style={[styles.input, styles.dropdownButton, showError("role") && styles.inputError]}
+          onPress={() => setRoleDropdownOpen(!roleDropdownOpen)}
+        >
+          <Text style={role ? styles.dropdownText : styles.dropdownPlaceholder}>
+            {role ? role.charAt(0).toUpperCase() + role.slice(1) : "Select your role..."}
+          </Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
+        </TouchableOpacity>
+        {roleDropdownOpen && (
+          <View style={styles.dropdownOptions}>
+            <TouchableOpacity 
+              style={styles.dropdownOption}
+              onPress={() => {
+                setRole("undergraduate");
+                setRoleDropdownOpen(false);
+                markTouched("role");
+              }}
+            >
+              <Text style={styles.dropdownOptionText}>Undergraduate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.dropdownOption}
+              onPress={() => {
+                setRole("graduate");
+                setRoleDropdownOpen(false);
+                markTouched("role");
+              }}
+            >
+              <Text style={styles.dropdownOptionText}>Graduate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.dropdownOption}
+              onPress={() => {
+                setRole("faculty");
+                setRoleDropdownOpen(false);
+                markTouched("role");
+              }}
+            >
+              <Text style={styles.dropdownOptionText}>Faculty</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {showError("role") ? <Text style={styles.error}>{errors.role}</Text> : null}
 
+        <Text style={styles.label}>Years at UCSB</Text>
+        <TextInput
+          style={[styles.input, showError("yearsAtUCSB") && styles.inputError]}
+          value={yearsAtUCSB}
+          onChangeText={setYearsAtUCSB}
+          onBlur={() => markTouched("yearsAtUCSB")}
+          placeholder="Ex: 2, 3rd year, 1st year, etc."
+          placeholderTextColor="#999"
+        />
+        {showError("yearsAtUCSB") ? <Text style={styles.error}>{errors.yearsAtUCSB}</Text> : null}
+
+        <Text style={styles.label}>Major</Text>
+        <TextInput
+          style={[styles.input, showError("major") && styles.inputError]}
+          value={major}
+          onChangeText={setMajor}
+          onBlur={() => markTouched("major")}
+          placeholder="Ex: Computer Science, Biology, etc."
+          placeholderTextColor="#999"
+        />
+        {showError("major") ? <Text style={styles.error}>{errors.major}</Text> : null}
+
+        <Text style={styles.label}>Clubs / Interests</Text>
+        <TextInput
+          style={[
+            styles.input,
+            styles.multiline,
+            showError("clubs") && styles.inputError,
+          ]}
+          value={clubs}
+          onChangeText={setClubs}
+          onBlur={() => markTouched("clubs")}
+          placeholder="Ex: Data Science Club, Soccer, Hiking, etc."
+          placeholderTextColor="#999"
+          multiline
+        />
+        {showError("clubs") ? <Text style={styles.error}>{errors.clubs}</Text> : null}
+
+        <Text style={styles.label}>Fun Fact</Text>
+        <TextInput
+          style={[
+            styles.input,
+            styles.multiline,
+            showError("bio") && styles.inputError,
+          ]}
+          value={bio}
+          onChangeText={setBio}
+          onBlur={() => markTouched("bio")}
+          placeholder="Ex: 3rd year CS, love hikes, coffee addict…"
+          placeholderTextColor="#999"
+          multiline
+        />
+        {showError("bio") ? <Text style={styles.error}>{errors.bio}</Text> : null}
 
        <Text style={styles.label}>Venmo / Zelle</Text>
        <TextInput
@@ -564,16 +650,72 @@ const styles = StyleSheet.create({
  },
 
 
- input: {
-   backgroundColor: "#f5f5f5",
-   borderRadius: 10,
-   padding: 14,
-   borderWidth: 1,
-   borderColor: "#e0e0e0",
-   marginBottom: 6,
-   fontSize: 15,
- },
+  input: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    marginBottom: 6,
+    fontSize: 15,
+  },
 
+  pickerContainer: {
+    padding: 0,
+    paddingHorizontal: 8,
+    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  picker: {
+    backgroundColor: "transparent",
+    flex: 1,
+  },
+
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  dropdownText: {
+    fontSize: 15,
+    color: "#000",
+  },
+
+  dropdownPlaceholder: {
+    fontSize: 15,
+    color: "#999",
+  },
+
+  dropdownArrow: {
+    color: "#003660",
+    fontSize: 16,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+
+  dropdownOptions: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    marginBottom: 6,
+    marginTop: -6,
+    overflow: "hidden",
+  },
+
+  dropdownOption: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+
+  dropdownOptionText: {
+    fontSize: 15,
+    color: "#003660",
+  },
 
  multiline: {
    minHeight: 84,

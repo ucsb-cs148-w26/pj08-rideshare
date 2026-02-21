@@ -141,6 +141,12 @@ export default function Homepage({ user }) {
   const [leavingRide, setLeavingRide] = useState(false);
   const cancellationFee = selectedRide ? Number(selectedRide.price) * 0.25 : 0;
   const cancellationFeeText = formatCurrency(cancellationFee);
+  const cancellationDeadline = selectedRide?.cancellationDeadline
+    ? new Date(selectedRide.cancellationDeadline)
+    : null;
+  const isLateCancellation = Boolean(cancellationDeadline && new Date() > cancellationDeadline);
+  const paymentRecipientName = driverInfo?.name || selectedRide?.ownerName || 'the driver';
+  const paymentHandle = (driverInfo?.payHandle || '').trim();
 
   const [cancelRideModalVisible, setCancelRideModalVisible] = useState(false);
   const [cancellingRide, setCancellingRide] = useState(false);
@@ -525,10 +531,30 @@ export default function Homepage({ user }) {
                     <Text style={styles.modalInfoLabel}>Pay Handle:</Text>
                     <Text style={styles.modalInfoValue}>{driverInfo?.payHandle || 'Not provided'}</Text>
                   </View>
-                  <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Bio:</Text>
-                    <Text style={styles.modalInfoValue}>{driverInfo?.bio || 'Not provided'}</Text>
-                  </View>
+                  {driverInfo?.role && (
+                    <View style={styles.modalInfoRow}>
+                      <Text style={styles.modalInfoLabel}>Role:</Text>
+                      <Text style={styles.modalInfoValue}>{driverInfo.role.charAt(0).toUpperCase() + driverInfo.role.slice(1)}</Text>
+                    </View>
+                  )}
+                  {driverInfo?.yearsAtUCSB && (
+                    <View style={styles.modalInfoRow}>
+                      <Text style={styles.modalInfoLabel}>Years at UCSB:</Text>
+                      <Text style={styles.modalInfoValue}>{driverInfo.yearsAtUCSB}</Text>
+                    </View>
+                  )}
+                  {driverInfo?.major && (
+                    <View style={styles.modalInfoRow}>
+                      <Text style={styles.modalInfoLabel}>Major:</Text>
+                      <Text style={styles.modalInfoValue}>{driverInfo.major}</Text>
+                    </View>
+                  )}
+                  {driverInfo?.clubs && (
+                    <View style={styles.modalInfoRow}>
+                      <Text style={styles.modalInfoLabel}>Clubs:</Text>
+                      <Text style={styles.modalInfoValue}>{driverInfo.clubs}</Text>
+                    </View>
+                  )}
                 </View>
 
                 {selectedRide.driverNotes && (
@@ -585,7 +611,7 @@ export default function Homepage({ user }) {
 
                     <View style={styles.cancellationNotice}>
                       <Text style={styles.cancellationNoticeText}>
-                        ⚠️ Warning: Leaving after the cancellation deadline may result in penalties.
+                        ⚠️ Warning: Leaving after the cancellation deadline incurs a fee (25% of ride price).
                       </Text>
                     </View>
 
@@ -628,18 +654,49 @@ export default function Homepage({ user }) {
           {leaveRideModalVisible && (
             <View style={styles.confirmModalOverlay}>
               <View style={styles.confirmModalContent}>
-                <Text style={styles.confirmModalTitle}>Leave this ride?</Text>
-                <Text style={styles.confirmModalMessage}>
-                  <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
-                  {'\n\n'}
-                  • Cancellations made after the deadline will incur a {cancellationFeeText} fee
-                  {'\n\n'}
-                  • Fee calculation: 25% of ride price
-                  {'\n\n'}
-                  • If a waitlist exists for this ride, you must rejoin through the waitlist
-                  {'\n\n'}
-                  <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                <Text style={styles.confirmModalTitle}>
+                  {isLateCancellation ? 'Late Cancellation Notice' : 'Leave this ride?'}
                 </Text>
+
+                {isLateCancellation ? (
+                  <>
+                    <View style={styles.lateDeadlineBanner}>
+                      <Text style={styles.lateDeadlineBannerText}>
+                        You are leaving after the cancellation deadline.
+                      </Text>
+                    </View>
+
+                    <Text style={styles.confirmModalMessage}>
+                      <Text>
+                        A cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> is due (25% of the ride price).
+                      </Text>
+                      {'\n\n'}
+                      <Text>
+                        Please venmo/zelle <Text style={{ fontWeight: 'bold' }}>{paymentRecipientName}</Text>{' '}
+                        {paymentHandle
+                          ? (
+                            <>
+                              at <Text style={{ fontWeight: 'bold' }}>{paymentHandle}</Text>
+                            </>
+                          )
+                          : ' using their listed pay handle'}{' '}
+                        the cancellation fee of <Text style={{ fontWeight: 'bold' }}>{cancellationFeeText}</Text> now.
+                      </Text>
+                      {'\n\n'}
+                      <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.confirmModalMessage}>
+                    <Text style={{ fontWeight: 'bold' }}>Please review our cancellation policy:</Text>
+                    {'\n\n'}
+                    • Cancellations made after the deadline will incur a fee calculated at 25% of the posted price
+                    {'\n\n'}
+                    • If a waitlist exists for this ride, you must rejoin through the waitlist
+                    {'\n\n'}
+                    <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
+                  </Text>
+                )}
                 
                 <View style={styles.confirmModalButtons}>
                   <TouchableOpacity 
@@ -1342,6 +1399,24 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'left',
     lineHeight: 22,
+  },
+  lateDeadlineBanner: {
+    width: '100%',
+    alignSelf: 'center',
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+  lateDeadlineBannerText: {
+    textAlign: 'center',
+    fontSize: 18,
+    lineHeight: 20,
+    fontWeight: '700',
+    color: '#991b1b',
   },
   confirmModalButtons: {
     flexDirection: 'row',

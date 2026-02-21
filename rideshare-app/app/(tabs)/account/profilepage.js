@@ -46,6 +46,10 @@ export default function ProfileViewPage() {
             name: data.name || '',
             email: data.email || '',
             phone: data.phone || '',
+            role: data.role || '',
+            yearsAtUCSB: data.yearsAtUCSB || '',
+            major: data.major || '',
+            clubs: data.clubs || '',
             bio: data.bio || '',
             payHandle: data.payHandle || '',
             vehicleMake: primaryVehicle.make || '',
@@ -151,6 +155,27 @@ export default function ProfileViewPage() {
               <Text style={styles.value}>{formatPhoneNumber(profile.phone) || '—'}</Text>
             </View>
 
+            {profile.role ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Role</Text>
+                <Text style={styles.value}>{profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}</Text>
+              </View>
+            ) : null}
+
+            {profile.yearsAtUCSB ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Years at UCSB</Text>
+                <Text style={styles.value}>{profile.yearsAtUCSB}</Text>
+              </View>
+            ) : null}
+
+            {profile.major ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Major</Text>
+                <Text style={styles.value}>{profile.major}</Text>
+              </View>
+            ) : null}
+
             {profile.payHandle ? (
               <View style={styles.field}>
                 <Text style={styles.label}>Pay Handle</Text>
@@ -158,6 +183,16 @@ export default function ProfileViewPage() {
               </View>
             ) : null}
           </View>
+
+          {/* Clubs */}
+          {profile.clubs ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Clubs & Interests</Text>
+              <View style={styles.field}>
+                <Text style={styles.bioValue}>{profile.clubs}</Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Bio */}
           {profile.bio ? (
@@ -308,7 +343,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 15,
-    color: colors.secondary || '#1A1A1A',
+    color: colors.textSecondary || '#666666', // changed to gray for profile popups
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -317,7 +352,7 @@ const styles = StyleSheet.create({
   },
   bioValue: {
     fontSize: 15,
-    color: colors.secondary || '#1A1A1A',
+    color: colors.textSecondary || '#666666', // changed to gray for profile popups
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     paddingHorizontal: 12,
