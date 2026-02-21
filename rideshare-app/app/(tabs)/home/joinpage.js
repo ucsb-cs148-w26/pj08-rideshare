@@ -689,10 +689,30 @@ export default function JoinPage() {
                         <Text style={styles.modalInfoLabel}>Pay Handle:</Text>
                         <Text style={styles.modalInfoValue}>{driverInfo?.payHandle || "Not provided"}</Text>
                       </View>
-                      <View style={styles.modalInfoRow}>
-                        <Text style={styles.modalInfoLabel}>Bio:</Text>
-                        <Text style={styles.modalInfoValue}>{driverInfo?.bio || "Not provided"}</Text>
-                      </View>
+                      {driverInfo?.role && (
+                        <View style={styles.modalInfoRow}>
+                          <Text style={styles.modalInfoLabel}>Role:</Text>
+                          <Text style={styles.modalInfoValue}>{driverInfo.role.charAt(0).toUpperCase() + driverInfo.role.slice(1)}</Text>
+                        </View>
+                      )}
+                      {driverInfo?.yearsAtUCSB && (
+                        <View style={styles.modalInfoRow}>
+                          <Text style={styles.modalInfoLabel}>Years at UCSB:</Text>
+                          <Text style={styles.modalInfoValue}>{driverInfo.yearsAtUCSB}</Text>
+                        </View>
+                      )}
+                      {driverInfo?.major && (
+                        <View style={styles.modalInfoRow}>
+                          <Text style={styles.modalInfoLabel}>Major:</Text>
+                          <Text style={styles.modalInfoValue}>{driverInfo.major}</Text>
+                        </View>
+                      )}
+                      {driverInfo?.clubs && (
+                        <View style={styles.modalInfoRow}>
+                          <Text style={styles.modalInfoLabel}>Clubs:</Text>
+                          <Text style={styles.modalInfoValue}>{driverInfo.clubs}</Text>
+                        </View>
+                      )}
                     </View>
 
                     <View style={styles.sectionDivider} />

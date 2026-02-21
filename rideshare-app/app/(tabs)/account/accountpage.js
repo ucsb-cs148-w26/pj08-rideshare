@@ -29,6 +29,10 @@ const emptyAccount = {
   name: '',
   email: '',
   phone: '',
+  role: '',
+  yearsAtUCSB: '',
+  major: '',
+  clubs: '',
   bio: '',
   payHandle: '',
   vehicleMake: '',
@@ -52,6 +56,7 @@ export default function AccountPage() {
   const [draft, setDraft] = useState(emptyAccount);
   const [saved, setSaved] = useState(emptyAccount);
   const [photoURL, setPhotoURL] = useState(null);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -71,6 +76,10 @@ export default function AccountPage() {
           name: data.name || user.displayName || '',
           email: data.email || user.email || '',
           phone: data.phone || user.phoneNumber || '',
+          role: data.role || '',
+          yearsAtUCSB: data.yearsAtUCSB || '',
+          major: data.major || '',
+          clubs: data.clubs || '',
           bio: data.bio || '',
           payHandle: data.payHandle || '',
           vehicleMake: primaryVehicle.make || '',
@@ -111,6 +120,10 @@ export default function AccountPage() {
       name: draft.name.trim(),
       email: draft.email.trim(),
       phone: draft.phone.trim(),
+      role: draft.role.trim(),
+      yearsAtUCSB: draft.yearsAtUCSB.trim(),
+      major: draft.major.trim(),
+      clubs: draft.clubs.trim(),
       bio: draft.bio.trim(),
       payHandle: draft.payHandle.trim(),
       vehicleMake: draft.vehicleMake.trim(),
@@ -133,6 +146,10 @@ export default function AccountPage() {
       name: trimmed.name,
       email: trimmed.email,
       phone: trimmed.phone,
+      role: trimmed.role,
+      yearsAtUCSB: trimmed.yearsAtUCSB,
+      major: trimmed.major,
+      clubs: trimmed.clubs,
       bio: trimmed.bio,
       payHandle: trimmed.payHandle,
       vehicles,
@@ -335,6 +352,77 @@ const uploadImage = async (uri) => {
               />
             </View>
             <View style={styles.field}>
+              <Text style={styles.label}>Role</Text>
+              {isEditing ? (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.input, styles.dropdownButton]}
+                    onPress={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                  >
+                    <Text style={draft.role ? styles.dropdownText : styles.dropdownPlaceholder}>
+                      {draft.role ? draft.role.charAt(0).toUpperCase() + draft.role.slice(1) : "Select your role..."}
+                    </Text>
+                    <Text style={styles.dropdownArrow}>▼</Text>
+                  </TouchableOpacity>
+                  {roleDropdownOpen && (
+                    <View style={styles.dropdownOptions}>
+                      <TouchableOpacity 
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          handleChange('role', 'undergraduate');
+                          setRoleDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownOptionText}>Undergraduate</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          handleChange('role', 'graduate');
+                          setRoleDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownOptionText}>Graduate</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          handleChange('role', 'faculty');
+                          setRoleDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownOptionText}>Faculty</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <TextInput
+                  style={[styles.input, styles.inputDisabled]}
+                  value={draft.role ? draft.role.charAt(0).toUpperCase() + draft.role.slice(1) : ''}
+                  editable={false}
+                />
+              )}
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Years at UCSB</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={draft.yearsAtUCSB}
+                onChangeText={(value) => handleChange('yearsAtUCSB', value)}
+                editable={isEditing}
+              />
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Major</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={draft.major}
+                onChangeText={(value) => handleChange('major', value)}
+                editable={isEditing}
+              />
+            </View>
+            <View style={styles.field}>
               <Text style={styles.label}>Pay Handle</Text>
               <TextInput
                 style={[styles.input, !isEditing && styles.inputDisabled]}
@@ -346,7 +434,21 @@ const uploadImage = async (uri) => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
+            <Text style={styles.sectionTitle}>Clubs & Interests</Text>
+            <View style={styles.field}>
+              <TextInput
+                style={[styles.input, styles.textArea, !isEditing && styles.inputDisabled]}
+                value={draft.clubs}
+                onChangeText={(value) => handleChange('clubs', value)}
+                editable={isEditing}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fun Fact</Text>
             <View style={styles.field}>
               <Text style={styles.label}>Bio</Text>
               <TextInput
@@ -583,4 +685,41 @@ const styles = StyleSheet.create({
   height: 64,
   borderRadius: 32,
 },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: colors.secondary || '#1A1A1A',
+  },
+  dropdownPlaceholder: {
+    fontSize: 14,
+    color: '#999',
+  },
+  dropdownArrow: {
+    color: colors.accent || '#007AFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  dropdownOptions: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border || '#E5E7EB',
+    marginTop: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  dropdownOption: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border || '#E5E7EB',
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: colors.secondary || '#1A1A1A',
+  },
 });
