@@ -350,7 +350,11 @@ export default function JoinPage() {
             <View style={[styles.driverIcon, disabled && styles.driverIconDisabled]}>
               <Text style={[styles.driverIconText, disabled && styles.textDisabled]}>👤</Text>
             </View>
-            <Text style={[styles.driverName, disabled && styles.textDisabled]}>
+            <Text 
+              style={[styles.driverName, disabled && styles.textDisabled]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {item.ownerName}
             </Text>
           </View>
@@ -831,6 +835,8 @@ const styles = StyleSheet.create({
   driverNameSection: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
+    minWidth: 0,
   },
   tagBox: {
     width: 16,
@@ -853,11 +859,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   driverName: {
+    flexShrink: 1,
     fontSize: 18,
     fontWeight: "bold",
     color: colors.textPrimary,
   },
   ridePrice: {
+    flexShrink: 0,
     fontSize: 24,
     fontWeight: "bold",
     color: colors.primary,
