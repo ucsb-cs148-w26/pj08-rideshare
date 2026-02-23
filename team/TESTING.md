@@ -51,56 +51,9 @@ npm install --save-dev @testing-library/react-native @testing-library/jest-nativ
 
 ------------------------------------------------------------------------
 
-# Jest Configuration
-
-We use the `jest-expo` preset.
-
-## package.json
-
-``` json
-"scripts": {
-  "test": "jest"
-},
-"jest": {
-  "preset": "jest-expo",
-  "testMatch": ["**/__tests__/**/*.test.js"],
-  "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
-  "transformIgnorePatterns": [
-    "node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo(nent)?|expo-router|@expo(nent)?/.*|react-native-gesture-handler|react-native-reanimated|react-native-screens|react-native-safe-area-context|@firebase|firebase)/"
-  ]
-}
-```
-
-## jest.setup.js
-
-``` js
-import "@testing-library/jest-native/extend-expect";
-jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper");
-```
-
-------------------------------------------------------------------------
-
-# Project Structure
-
-    rideshare-app/
-    ├── __tests__/
-    │   ├── validation.test.js
-    │   └── notifications.integration.test.js
-    ├── src/
-    │   └── utils/
-    │       └── validation.js
-    ├── app/
-    │   └── (tabs)/
-    │       └── notifications/
-    │           └── index.js
-    └── team/
-        └── TESTING.md
-
-------------------------------------------------------------------------
-
 # 1️⃣ Unit Tests (Lab 05 Requirement)
 
-### File: **tests**/validation.test.js
+### File: **tests**/unit/validation.unit.test.js
 
 This file contains unit tests for the validation utilities in
 `src/utils/validation.js`.
@@ -120,7 +73,7 @@ testing.
 
 # 2️⃣ Higher-Level Testing (Lab 06 Requirement)
 
-## File: **tests**/notifications.integration.test.js
+## File: **tests**/integration/notificationspage.integration.test.js
 
 We implemented a component/integration test using React Native Testing
 Library.
@@ -154,7 +107,9 @@ verifies UI + business logic integration.
 # Running Tests
 
 ``` bash
-npm test
+npm test # for all tests
+npm test unit # for unit tests only
+npm test integration # for integration tests only
 npm test -- --watch
 npm test -- --coverage
 ```

@@ -1,9 +1,22 @@
 import React from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react-native";
-
-import NotificationsScreen from "../app/(tabs)/home/notificationspage";
+import { render, fireEvent, waitFor, within } from "@testing-library/react-native";
 
 // --- Mocks to keep the test stable in Jest ---
+jest.mock("../../src/firebase", () => ({
+  db: {},
+  auth: { currentUser: { uid: "user-1" } },
+}));
+
+jest.mock("firebase/firestore", () => ({
+  collection: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  onSnapshot: jest.fn(),
+  doc: jest.fn(),
+  updateDoc: jest.fn(),
+  deleteDoc: jest.fn(),
+}));
+
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
@@ -13,7 +26,12 @@ jest.mock("react-native-gesture-handler", () => {
   const { View, TouchableOpacity } = require("react-native");
 
   return {
-    Swipeable: ({ children }) => <View>{children}</View>,
+    Swipeable: ({ children, renderRightActions }) => (
+      <View>
+        {children}
+        {typeof renderRightActions === "function" ? renderRightActions() : null}
+      </View>
+    ),
     RectButton: ({ children, onPress, testID, style }) => (
       <TouchableOpacity testID={testID} onPress={onPress} style={style}>
         {children}
@@ -21,6 +39,9 @@ jest.mock("react-native-gesture-handler", () => {
     ),
   };
 });
+
+const NotificationsScreen =
+  require("../../app/(tabs)/home/notificationspage").default;
 
 describe("NotificationsScreen integration", () => {
   test("renders notifications, opens details modal (marks read), and deletes", async () => {
@@ -89,7 +110,8 @@ describe("NotificationsScreen integration", () => {
     });
 
     // Modal shows title (sanity check)
-    expect(getByText("Ride Cancellation Notice")).toBeTruthy();
+    const modal = getByTestId("notif-details-modal");
+    expect(within(modal).getByText("Ride Cancellation Notice")).toBeTruthy();
 
     // Close modal
     fireEvent.press(getByTestId("notif-details-close"));
