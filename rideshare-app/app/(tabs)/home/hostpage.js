@@ -69,6 +69,10 @@ export default function HostPage() {
   const [showCancelDatePicker, setShowCancelDatePicker] = useState(false);
   const [showCancelTimePicker, setShowCancelTimePicker] = useState(false);
   const [cancelTempDate, setCancelTempDate] = useState(new Date());
+  const [seatsError, setSeatsError] = useState("");
+
+  const MAX_RIDE_PRICE = 999.99;
+  const MAX_SEATS = 50;
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -268,6 +272,7 @@ export default function HostPage() {
   };
 
   const handleSubmit = async () => {
+
     if (!price || !toAddress || !fromAddress || !rideDate || !seats || !selectedTag) {
       Alert.alert("Missing info", "Please fill out all required fields.");
       return;
@@ -294,12 +299,29 @@ export default function HostPage() {
       return;
     }
 
+    if (seatsNum > MAX_SEATS) {
+      Alert.alert("Invalid seats", `Seats cannot exceed ${MAX_SEATS}.`);
+      return;
+    }
+
+    const parsedPrice = Number(price);
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      Alert.alert("Invalid price", "Enter a valid price greater than 0.");
+      return;
+    }
+
+    if (parsedPrice > MAX_RIDE_PRICE) {
+      Alert.alert("Invalid price", `Price cannot exceed $${MAX_RIDE_PRICE.toFixed(2)}.`);
+      return;
+    }
+
     try {
       setIsSaving(true);
       const ridesRef = doc(collection(db, "rides"));
       const userRideRef = doc(collection(db, "users", user.uid, "rides"));
       const ridePayload = {
-        price: price.trim(),
+        price: parsedPrice,
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
         rideDate: rideDate.toISOString(),
@@ -377,10 +399,15 @@ export default function HostPage() {
             <Text style={styles.pricePrefix}>$</Text>
             <TextInput
               style={styles.priceInput}
-              placeholder="0"
+              placeholder="0.00"
               value={price}
-              onChangeText={setPrice}
+              onChangeText={(t) => {
+                if (/^\d{0,3}(\.\d{0,2})?$/.test(t)) {
+                  setPrice(t);
+                }
+              }}
               keyboardType="numeric"
+              maxLength={6}
             />
           </View>
         </View>
@@ -505,9 +532,22 @@ export default function HostPage() {
             style={styles.input}
             placeholder="Number of seats"
             value={seats}
-            onChangeText={setSeats}
+            onChangeText={(t) => {
+              if (!/^\d{0,2}$/.test(t)) return;
+
+              setSeats(t);
+
+              const n = Number(t);
+              if (t !== "" && Number.isFinite(n) && n > MAX_SEATS) {
+                setSeatsError(`Seats cannot exceed ${MAX_SEATS}.`);
+              } else {
+                setSeatsError("");
+              }
+            }}
             keyboardType="numeric"
+            maxLength={2}
           />
+          {seatsError ? <Text style={styles.inlineError}>{seatsError}</Text> : null}
         </View>
 
         <View style={styles.fieldGroup}>
@@ -854,4 +894,9 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     backgroundColor: "#fff",
   },
+  inlineError: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#d11a2a",
+  }
 });
