@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { router } from "expo-router";
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   StyleSheet,
@@ -152,6 +152,16 @@ export default function Homepage({ user }) {
   const [cancellingRide, setCancellingRide] = useState(false);
   const [cancelNote, setCancelNote] = useState('');
   const [cancelNoteError, setCancelNoteError] = useState(''); 
+  const reopenModalRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (reopenModalRef.current) {
+        reopenModalRef.current = false;
+        setDetailsModalVisible(true);
+      }
+    }, [])
+  );
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -469,7 +479,17 @@ export default function Homepage({ user }) {
                   <View style={styles.modalDriverIcon}>
                     <Text style={styles.modalDriverIconText}>👤</Text>
                   </View>
-                  <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                  {selectedRide.ownerId !== auth.currentUser?.uid ? (
+                    <TouchableOpacity onPress={() => {
+                      setDetailsModalVisible(false);
+                      reopenModalRef.current = true;
+                      router.push({ pathname: '/(tabs)/account/profilepage', params: { userId: selectedRide.ownerId } });
+                    }} activeOpacity={0.7}>
+                      <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                  )}
                 </View>
 
                 <Text style={styles.modalSectionTitle}>Ride Info</Text>

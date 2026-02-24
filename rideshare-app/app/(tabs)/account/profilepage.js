@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
@@ -52,6 +53,7 @@ export default function ProfileViewPage() {
             clubs: data.clubs || '',
             bio: data.bio || '',
             payHandle: data.payHandle || '',
+            photoURL: data.photoURL || null,
             vehicleMake: primaryVehicle.make || '',
             vehicleModel: primaryVehicle.model || '',
             vehiclePlate: primaryVehicle.plate || '',
@@ -128,7 +130,11 @@ export default function ProfileViewPage() {
           {/* Avatar + Name */}
           <View style={styles.headerRow}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
+              {profile.photoURL ? (
+                <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{initials}</Text>
+              )}
             </View>
             <View style={styles.headerText}>
               <Text style={styles.name}>{profile.name}</Text>
@@ -194,10 +200,10 @@ export default function ProfileViewPage() {
             </View>
           ) : null}
 
-          {/* Bio */}
+          {/* Fun Fact */}
           {profile.bio ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.sectionTitle}>Fun Fact</Text>
               <View style={styles.field}>
                 <Text style={styles.label}>Bio</Text>
                 <Text style={styles.bioValue}>{profile.bio}</Text>
@@ -209,12 +215,16 @@ export default function ProfileViewPage() {
           {hasVehicle ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Vehicle</Text>
-              {profile.vehicleMake || profile.vehicleModel ? (
+              {profile.vehicleMake ? (
                 <View style={styles.field}>
-                  <Text style={styles.label}>Vehicle</Text>
-                  <Text style={styles.value}>
-                    {[profile.vehicleMake, profile.vehicleModel].filter(Boolean).join(' ')}
-                  </Text>
+                  <Text style={styles.label}>Vehicle Make</Text>
+                  <Text style={styles.value}>{profile.vehicleMake}</Text>
+                </View>
+              ) : null}
+              {profile.vehicleModel ? (
+                <View style={styles.field}>
+                  <Text style={styles.label}>Vehicle Model</Text>
+                  <Text style={styles.value}>{profile.vehicleModel}</Text>
                 </View>
               ) : null}
               {profile.vehiclePlate ? (
@@ -309,6 +319,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '700',
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   name: {
     fontSize: 20,

@@ -16,6 +16,7 @@ export default function TabsLayout() {
   }
 
   const isChatScreen = segments.includes("messages") && segments.includes("chat");
+  const isProfilePage = segments.includes("account") && segments.includes("profilepage");
 
   return (
     <View style={commonStyles.container}>
@@ -32,7 +33,7 @@ export default function TabsLayout() {
         </Tabs>
       </View>
 
-      {!isChatScreen && <NavBar />}
+      {!isChatScreen && !isProfilePage && <NavBar />}
     </View>
   );
 }
