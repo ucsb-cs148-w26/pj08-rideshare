@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -70,6 +70,16 @@ export default function JoinPage() {
   
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState(new Set());
+  const reopenModalRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (reopenModalRef.current) {
+        reopenModalRef.current = false;
+        setModalVisible(true);
+      }
+    }, [])
+  );
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -631,7 +641,13 @@ export default function JoinPage() {
                       <View style={styles.modalDriverIcon}>
                         <Text style={styles.modalDriverIconText}>👤</Text>
                       </View>
-                      <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                      <TouchableOpacity onPress={() => {
+                        setModalVisible(false);
+                        reopenModalRef.current = true;
+                        router.push({ pathname: '/(tabs)/account/profilepage', params: { userId: selectedRide.ownerId } });
+                      }} activeOpacity={0.7}>
+                        <Text style={styles.modalDriverTitle}>{selectedRide.ownerName}</Text>
+                      </TouchableOpacity>
                     </View>
 
                     <Text style={styles.modalSectionTitle}>Ride Info</Text>

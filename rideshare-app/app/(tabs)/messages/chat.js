@@ -207,12 +207,11 @@ export default function ChatScreen() {
     return (String(name).trim().charAt(0) || 'U').toUpperCase();
   };
 
-  const navigateToProfile = (userId) => {
+  const openProfilePopup = (userId) => {
+    const myUid = auth.currentUser?.uid;
+    if (!userId || userId === myUid) return;
     setShowParticipants(false);
-    router.push({
-      pathname: '/(tabs)/account/profilepage',
-      params: { userId, conversationId },
-    });
+    router.push({ pathname: '/(tabs)/account/profilepage', params: { userId } });
   };
 
   const handleHeaderPress = () => {
@@ -221,7 +220,7 @@ export default function ChatScreen() {
     const otherParticipants = participants.filter((uid) => uid !== myUid);
 
     if (otherParticipants.length === 1) {
-      navigateToProfile(otherParticipants[0]);
+      openProfilePopup(otherParticipants[0]);
     } else if (otherParticipants.length > 1) {
       setShowParticipants(true);
     }
@@ -258,11 +257,13 @@ export default function ChatScreen() {
         ]}
       >
         {!isMyMessage && isFirstInGroup && (
-          <View style={styles.msgAvatar}>
-            <Text style={styles.msgAvatarText}>
-              {getAvatarInitial(item.senderId, senderDisplayName)}
-            </Text>
-          </View>
+          <TouchableOpacity onPress={() => openProfilePopup(item.senderId)} activeOpacity={0.7}>
+            <View style={styles.msgAvatar}>
+              <Text style={styles.msgAvatarText}>
+                {getAvatarInitial(item.senderId, senderDisplayName)}
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {!isMyMessage && !isFirstInGroup && (
@@ -435,11 +436,25 @@ export default function ChatScreen() {
               {(conversationData?.participants || []).map((uid) => {
                 const isMe = uid === auth.currentUser?.uid;
                 const name = conversationData?.participantNames?.[uid] || 'Unknown';
+                if (isMe) {
+                  return (
+                    <View key={uid} style={styles.participantRow}>
+                      <View style={styles.participantAvatar}>
+                        <Text style={styles.participantAvatarText}>
+                          {(name.charAt(0) || 'U').toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={styles.participantName}>
+                        {name} (You)
+                      </Text>
+                    </View>
+                  );
+                }
                 return (
                   <TouchableOpacity
                     key={uid}
                     style={styles.participantRow}
-                    onPress={() => navigateToProfile(uid)}
+                    onPress={() => openProfilePopup(uid)}
                     activeOpacity={0.6}
                   >
                     <View style={styles.participantAvatar}>
@@ -448,7 +463,7 @@ export default function ChatScreen() {
                       </Text>
                     </View>
                     <Text style={styles.participantName}>
-                      {name}{isMe ? ' (You)' : ''}
+                      {name}
                     </Text>
                     <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
