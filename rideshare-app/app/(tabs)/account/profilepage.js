@@ -205,7 +205,6 @@ export default function ProfileViewPage() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Fun Fact</Text>
               <View style={styles.field}>
-                <Text style={styles.label}>Bio</Text>
                 <Text style={styles.bioValue}>{profile.bio}</Text>
               </View>
             </View>

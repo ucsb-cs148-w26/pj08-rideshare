@@ -515,7 +515,6 @@ const uploadImage = async (uri) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Fun Fact</Text>
             <View style={styles.field}>
-              <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea, !isEditing && styles.inputDisabled]}
                 value={draft.bio}

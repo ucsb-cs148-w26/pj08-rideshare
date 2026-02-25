@@ -344,7 +344,7 @@ export default function Register() {
           value={bio}
           onChangeText={setBio}
           onBlur={() => markTouched("bio")}
-          placeholder="Ex: 3rd year CS, love hikes, coffee addict…"
+          placeholder="Ex: Love hikes, coffee addict…"
           placeholderTextColor="#999"
           multiline
         />
