@@ -211,7 +211,7 @@ export default function ChatScreen() {
     const myUid = auth.currentUser?.uid;
     if (!userId || userId === myUid) return;
     setShowParticipants(false);
-    router.push({ pathname: '/(tabs)/account/profilepage', params: { userId } });
+    router.push({ pathname: '/(tabs)/account/profilepage', params: { userId, conversationId } });
   };
 
   const handleHeaderPress = () => {
