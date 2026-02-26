@@ -13,6 +13,7 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
+  Image,
 } from "react-native";
 import {
   collection,
@@ -72,6 +73,8 @@ export default function JoinPage() {
   const [selectedTags, setSelectedTags] = useState(new Set());
   const reopenModalRef = useRef(false);
 
+  const [ownerPhotos, setOwnerPhotos] = useState({});
+
   useFocusEffect(
     useCallback(() => {
       if (reopenModalRef.current) {
@@ -108,6 +111,18 @@ export default function JoinPage() {
           );
 
         setRides(ridesData);
+
+        ridesData.forEach(async (ride) => {
+          if (ride.ownerId && !ownerPhotos[ride.ownerId]) {
+            const userDoc = await getDoc(doc(db, 'users', ride.ownerId));
+            if (userDoc.exists()) {
+              setOwnerPhotos(prev => ({
+                ...prev,
+                [ride.ownerId]: userDoc.data().photoURL || null,
+              }));
+            }
+          }
+        });
         setLoading(false);
       },
       (err) => {
@@ -358,7 +373,14 @@ export default function JoinPage() {
               <View style={[styles.tagBox, { backgroundColor: tagColor }]} />
             )}
             <View style={[styles.driverIcon, disabled && styles.driverIconDisabled]}>
-              <Text style={[styles.driverIconText, disabled && styles.textDisabled]}>👤</Text>
+              {ownerPhotos[item.ownerId] ? (
+                <Image
+                  source={{ uri: ownerPhotos[item.ownerId] }}
+                  style={{ width: 45, height: 45, borderRadius: 22.5 }}
+                />
+              ) : (
+                <Text style={[styles.driverIconText, disabled && styles.textDisabled]}>👤</Text>
+              )}
             </View>
             <Text 
               style={[styles.driverName, disabled && styles.textDisabled]}
@@ -639,7 +661,14 @@ export default function JoinPage() {
                   <>
                     <View style={styles.modalHeader}>
                       <View style={styles.modalDriverIcon}>
-                        <Text style={styles.modalDriverIconText}>👤</Text>
+                        {driverInfo?.photoURL ? (
+                          <Image
+                            source={{ uri: driverInfo.photoURL }}
+                            style={{ width: 56, height: 56, borderRadius: 28 }}
+                          />
+                        ) : (
+                          <Text style={styles.modalDriverIconText}>👤</Text>
+                        )}
                       </View>
                       <TouchableOpacity onPress={() => {
                         setModalVisible(false);

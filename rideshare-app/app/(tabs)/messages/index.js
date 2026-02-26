@@ -57,21 +57,20 @@ export default function MessagesScreen() {
     setConversations(convos);
 
     snapshot.docs.forEach(async (docSnap) => {
-      const data = docSnap.data();
-      const otherUserId = data.participants.find(
-        uid => uid !== auth.currentUser?.uid
-      );
-
-      if (otherUserId) {
-        const userDoc = await getDoc(doc(db, 'users', otherUserId));
-        if (userDoc.exists()) {
-          setUserPhotos(prev => ({
-            ...prev,
-            [otherUserId]: userDoc.data().photoURL || null,
-          }));
-        }
-      }
-    });
+  const data = docSnap.data();
+  
+const avatarUserId = data.hostId || data.driverId || data.ownerId ||
+    data.participants.find(uid => uid !== auth.currentUser?.uid);
+  if (avatarUserId) {
+    const userDoc = await getDoc(doc(db, 'users', avatarUserId));
+    if (userDoc.exists()) {
+      setUserPhotos(prev => ({
+        ...prev,
+        [avatarUserId]: userDoc.data().photoURL || null,
+      }));
+    }
+  }
+});
 
     setLoading(false);
   });
@@ -106,6 +105,9 @@ export default function MessagesScreen() {
   const renderConversation = ({ item }) => {
     const hasMessages = item.hasMessages || item.lastMessage;
 
+    const avatarUserId = item.hostId || item.driverId || item.ownerId ||
+  item.participants.find(uid => uid !== auth.currentUser?.uid);
+
     const myUid = auth.currentUser?.uid;
     const lastReadAt = myUid ? item.lastReadAt?.[myUid] : null;
 
@@ -132,9 +134,9 @@ export default function MessagesScreen() {
       >
         {/* Avatar */}
         <View style={styles.avatar}>
-          {userPhotos[item.participants.find(uid => uid !== auth.currentUser?.uid)] ? (
+          {userPhotos[avatarUserId] ? (
             <Image
-              source={{ uri: userPhotos[item.participants.find(uid => uid !== auth.currentUser?.uid)] }}
+              source={{ uri: userPhotos[avatarUserId] }}
               style={styles.avatarImage}
             />
           ) : (
@@ -143,6 +145,8 @@ export default function MessagesScreen() {
             </Text>
           )}
         </View>
+
+
 
         {/* Content */}
         <View style={styles.conversationContent}>
@@ -270,6 +274,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
+    borderWidth: 1,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -359,8 +364,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   avatarImage: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: 32,
   },
 });

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, } from 'react';
 import { setTypingStatus, getTitle, getSubtitle } from '../../../src/utils/messaging';
 import TypingIndicator from '../../../app/components/typingIndicator';
 import {
@@ -41,21 +41,33 @@ export default function ChatScreen() {
   const flatListRef = useRef(null);
   const isTypingRef = useRef(false);
   const safetyTimeoutRef = useRef(null);
+  const [hostPhoto, setHostPhoto] = useState(null);
 
   const [title, setTitle] = useState('Chat');
   const [subtitle, setSubtitle] = useState('');
   const [typingNames, setTypingNames] = useState([]);
   const [showParticipants, setShowParticipants] = useState(false);
   const [participantPhotos, setParticipantPhotos] = useState({});
+  
 
   useEffect(() => {
         if (!conversationId) return;
 
         const convoRef = doc(db, 'conversations', conversationId);
-        const unsubscribeConvo = onSnapshot(convoRef, (snapshot) => {
+        const unsubscribeConvo = onSnapshot(convoRef, async (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 setConversationData(data);
+
+                const hostId = data.hostId || data.driverId || data.ownerId ||
+                  data.participants?.find(uid => uid !== auth.currentUser?.uid);
+
+                if (hostId) {
+                  const hostDoc = await getDoc(doc(db, 'users', hostId));
+                  if (hostDoc.exists()) {
+                    setHostPhoto(hostDoc.data().photoURL || null);
+                  }
+                }
 
                 if (data.participants) {  
                   data.participants.forEach(async (uid) => {  
@@ -415,9 +427,16 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerTappable} onPress={handleHeaderPress} activeOpacity={0.6}>
           <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>
-              {(title || 'C').charAt(0).toUpperCase()}
-            </Text>
+            {hostPhoto ? (
+              <Image
+                source={{ uri: hostPhoto }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+              />
+            ) : (
+              <Text style={styles.headerAvatarText}>
+                {(title || 'C').charAt(0).toUpperCase()}
+              </Text>
+            )}
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.headerName} numberOfLines={1}>
@@ -483,9 +502,13 @@ export default function ChatScreen() {
                     activeOpacity={0.6}
                   >
                     <View style={styles.participantAvatar}>
-                      <Text style={styles.participantAvatarText}>
-                        {(name.charAt(0) || 'U').toUpperCase()}
-                      </Text>
+                      {participantPhotos[uid] ? (
+                        <Image source={{ uri: participantPhotos[uid] }} style={styles.participantAvatarImage} />
+                      ) : (
+                        <Text style={styles.participantAvatarText}>
+                          {(name.charAt(0) || 'U').toUpperCase()}
+                        </Text>
+                      )}
                     </View>
                     <Text style={styles.participantName}>
                       {name}
