@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -15,6 +16,8 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import {
   getTitle,
@@ -27,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function MessagesScreen() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userPhotos, setUserPhotos] = useState({});
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -42,16 +46,35 @@ export default function MessagesScreen() {
       orderBy('lastMessageTime', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const convos = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .filter((convo) => !convo.cancelled);
-      setConversations(convos);
-      setLoading(false);
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const convos = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((convo) => !convo.cancelled);
+
+    setConversations(convos);
+
+    snapshot.docs.forEach(async (docSnap) => {
+      const data = docSnap.data();
+      const otherUserId = data.participants.find(
+        uid => uid !== auth.currentUser?.uid
+      );
+
+      if (otherUserId) {
+        const userDoc = await getDoc(doc(db, 'users', otherUserId));
+        if (userDoc.exists()) {
+          setUserPhotos(prev => ({
+            ...prev,
+            [otherUserId]: userDoc.data().photoURL || null,
+          }));
+        }
+      }
     });
+
+    setLoading(false);
+  });
 
     return () => unsubscribe();
   }, []);
@@ -109,9 +132,16 @@ export default function MessagesScreen() {
       >
         {/* Avatar */}
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {title.charAt(0).toUpperCase()}
-          </Text>
+          {userPhotos[item.participants.find(uid => uid !== auth.currentUser?.uid)] ? (
+            <Image
+              source={{ uri: userPhotos[item.participants.find(uid => uid !== auth.currentUser?.uid)] }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {title.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
 
         {/* Content */}
@@ -327,5 +357,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 32,
   },
 });

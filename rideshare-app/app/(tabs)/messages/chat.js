@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
@@ -45,6 +46,7 @@ export default function ChatScreen() {
   const [subtitle, setSubtitle] = useState('');
   const [typingNames, setTypingNames] = useState([]);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [participantPhotos, setParticipantPhotos] = useState({});
 
   useEffect(() => {
         if (!conversationId) return;
@@ -54,6 +56,18 @@ export default function ChatScreen() {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 setConversationData(data);
+
+                if (data.participants) {  
+                  data.participants.forEach(async (uid) => {  
+                    const userDoc = await getDoc(doc(db, 'users', uid));  
+                    if (userDoc.exists()) {  
+                      setParticipantPhotos(prev => ({  
+                        ...prev,  
+                        [uid]: userDoc.data().photoURL || null,  
+                      }));
+                    }
+                  });
+                }
 
                 const currentUid = auth.currentUser?.uid;
 
@@ -259,9 +273,16 @@ export default function ChatScreen() {
         {!isMyMessage && isFirstInGroup && (
           <TouchableOpacity onPress={() => openProfilePopup(item.senderId)} activeOpacity={0.7}>
             <View style={styles.msgAvatar}>
-              <Text style={styles.msgAvatarText}>
-                {getAvatarInitial(item.senderId, senderDisplayName)}
-              </Text>
+              {participantPhotos[item.senderId] ? (
+                <Image
+                  source={{ uri: participantPhotos[item.senderId] }}
+                  style={styles.msgAvatarImage}
+                />
+              ) : (
+                <Text style={styles.msgAvatarText}>
+                  {getAvatarInitial(item.senderId, senderDisplayName)}
+                </Text>
+              )}
             </View>
           </TouchableOpacity>
         )}
@@ -440,9 +461,13 @@ export default function ChatScreen() {
                   return (
                     <View key={uid} style={styles.participantRow}>
                       <View style={styles.participantAvatar}>
-                        <Text style={styles.participantAvatarText}>
-                          {(name.charAt(0) || 'U').toUpperCase()}
-                        </Text>
+                        {participantPhotos[uid] ? (
+                          <Image source={{ uri: participantPhotos[uid] }} style={styles.participantAvatarImage} />
+                        ) : (
+                          <Text style={styles.participantAvatarText}>
+                            {(name.charAt(0) || 'U').toUpperCase()}
+                          </Text>
+                        )}
                       </View>
                       <Text style={styles.participantName}>
                         {name} (You)
@@ -795,6 +820,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  participantAvatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
   participantAvatarText: {
     color: '#fff',
     fontSize: 16,
@@ -805,5 +835,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: colors.textPrimary,
+  },
+  msgAvatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
 });
