@@ -76,12 +76,54 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) 
               </Text>
             </View>
           </View>
-          <TouchableOpacity 
-            style={styles.joinedViewDetailsButton}
-            onPress={() => onViewDetails && onViewDetails(item)}
-          >
-            <Text style={styles.joinedViewDetailsText}>View Details</Text>
-          </TouchableOpacity>
+          {isHosted ? (
+            <View style={styles.startRideRow}>
+              <TouchableOpacity 
+                style={[styles.joinedViewDetailsButton, { flex: 1 }]}
+                onPress={() => onViewDetails && onViewDetails(item)}
+              >
+                <Text style={styles.joinedViewDetailsText}>View Details</Text>
+              </TouchableOpacity>
+              {new Date() >= new Date(item.rideDate) ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.startRideButtonActive, { flex: 1 }]}
+                    onPress={() => {}}
+                  >
+                    <Text style={styles.startRideTextActive}>Start Ride</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.startRideInfoButton}
+                    onPress={() => alert('Start Ride is now available! Tap to begin your ride.')}
+                  >
+                    <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.startRideButtonDisabled, { flex: 1 }]}
+                    onPress={() => alert('Start Ride will be available once the scheduled ride time begins.')}
+                  >
+                    <Text style={styles.startRideTextDisabled}>Start Ride</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.startRideInfoButton}
+                    onPress={() => alert('Start Ride will be available once the scheduled ride time begins.')}
+                  >
+                    <Ionicons name="information-circle-outline" size={20} color="#555" />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={styles.joinedViewDetailsButton}
+              onPress={() => onViewDetails && onViewDetails(item)}
+            >
+              <Text style={styles.joinedViewDetailsText}>View Details</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     />
@@ -180,7 +222,8 @@ export default function Homepage({ user }) {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled');
+        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled')
+        .sort((a, b) => new Date(a.rideDate) - new Date(b.rideDate));
       setHostedRides(rides);
       setLoading(false);
     }, (error) => {
@@ -380,7 +423,7 @@ export default function Homepage({ user }) {
                 <RideList
                   rides={hostedRides}
                   emptyText={"No hosted rides yet.\nTap Host to create a ride."}
-                  isHosted={false}
+                  isHosted={true}
                   onViewDetails={async (ride) => {
                     setSelectedRide(ride);
                     setDetailsModalVisible(true);
@@ -1161,7 +1204,7 @@ const styles = StyleSheet.create({
   },
   joinedCardRight: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: -32,
   },
   joinedCardLabel: {
     fontSize: 12,
@@ -1195,6 +1238,45 @@ const styles = StyleSheet.create({
   },
   joinedViewDetailsText: {
     color: colors.accent,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  startRideButtonDisabled: {
+    backgroundColor: '#d4d4d4',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bbb',
+    alignItems: 'center',
+    opacity: 0.6,
+  },
+  startRideTextDisabled: {
+    color: '#555',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  startRideRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  startRideInfoButton: {
+    padding: 4,
+  },
+  startRideButtonActive: {
+    backgroundColor: colors.accent,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    alignItems: 'center',
+  },
+  startRideTextActive: {
+    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
   },
