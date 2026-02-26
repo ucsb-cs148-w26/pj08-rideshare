@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { router } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../src/firebase";
 
 import { colors } from "../../ui/styles/colors";
@@ -71,7 +71,7 @@ export default function Login() {
     setLoading(false);
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     if (!email.trim()) {
       Alert.alert(
         "Enter Email",
@@ -79,10 +79,24 @@ export default function Login() {
       );
       return;
     }
-    Alert.alert(
-      "Reset Password",
-      `Password reset functionality coming soon for ${email.trim()}`
-    );
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      Alert.alert(
+        "Check Your Email",
+        `A password reset link has been sent to ${email.trim()}.`
+      );
+    } catch (err) {
+      switch (err.code) {
+        case "auth/invalid-email":
+          Alert.alert("Error", "Please enter a valid email address.");
+          break;
+        case "auth/user-not-found":
+          Alert.alert("Error", "No account found with this email.");
+          break;
+        default:
+          Alert.alert("Error", "Failed to send reset email. Please try again.");
+      }
+    }
   };
 
   return (
