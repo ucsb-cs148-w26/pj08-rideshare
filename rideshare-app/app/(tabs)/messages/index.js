@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -15,6 +16,8 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import {
   getTitle,
@@ -27,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function MessagesScreen() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userPhotos, setUserPhotos] = useState({});
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -42,16 +46,34 @@ export default function MessagesScreen() {
       orderBy('lastMessageTime', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const convos = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .filter((convo) => !convo.cancelled);
-      setConversations(convos);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const convos = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((convo) => !convo.cancelled);
+
+    setConversations(convos);
+
+    snapshot.docs.forEach(async (docSnap) => {
+  const data = docSnap.data();
+  
+const avatarUserId = data.hostId || data.driverId || data.ownerId ||
+    data.participants.find(uid => uid !== auth.currentUser?.uid);
+  if (avatarUserId) {
+    const userDoc = await getDoc(doc(db, 'users', avatarUserId));
+    if (userDoc.exists()) {
+      setUserPhotos(prev => ({
+        ...prev,
+        [avatarUserId]: userDoc.data().photoURL || null,
+      }));
+    }
+  }
+});
+
+    setLoading(false);
+  });
 
     return () => unsubscribe();
   }, []);
@@ -83,6 +105,9 @@ export default function MessagesScreen() {
   const renderConversation = ({ item }) => {
     const hasMessages = item.hasMessages || item.lastMessage;
 
+    const avatarUserId = item.hostId || item.driverId || item.ownerId ||
+  item.participants.find(uid => uid !== auth.currentUser?.uid);
+
     const myUid = auth.currentUser?.uid;
     const lastReadAt = myUid ? item.lastReadAt?.[myUid] : null;
 
@@ -109,10 +134,19 @@ export default function MessagesScreen() {
       >
         {/* Avatar */}
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {title.charAt(0).toUpperCase()}
-          </Text>
+          {userPhotos[avatarUserId] ? (
+            <Image
+              source={{ uri: userPhotos[avatarUserId] }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {title.charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
+
+
 
         {/* Content */}
         <View style={styles.conversationContent}>
@@ -240,6 +274,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
+    borderWidth: 1,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -327,5 +362,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 32,
   },
 });

@@ -477,7 +477,14 @@ export default function Homepage({ user }) {
               <ScrollView style={styles.modalScrollContent}>
                 <View style={styles.modalHeader}>
                   <View style={styles.modalDriverIcon}>
-                    <Text style={styles.modalDriverIconText}>👤</Text>
+                    {driverInfo?.photoURL ? (
+                      <Image
+                        source={{ uri: driverInfo.photoURL }}
+                        style={{ width: 60, height: 60, borderRadius: 30 }}
+                      />
+                    ) : (
+                      <Text style={styles.modalDriverIconText}>👤</Text>
+                    )}
                   </View>
                   {selectedRide.ownerId !== auth.currentUser?.uid ? (
                     <TouchableOpacity onPress={() => {
