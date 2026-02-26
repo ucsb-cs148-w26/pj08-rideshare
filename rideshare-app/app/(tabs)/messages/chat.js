@@ -381,9 +381,16 @@ export default function ChatScreen() {
     <View style={styles.emptyChatContainer}>
       <View style={styles.emptyChatCard}>
         <View style={styles.emptyChatAvatar}>
-          <Text style={styles.emptyChatAvatarText}>
-            {(title || 'C').charAt(0).toUpperCase()}
-          </Text>
+          {hostPhoto ? (
+            <Image
+              source={{ uri: hostPhoto }}
+              style={{ width: 80, height: 80, borderRadius: 40 }}
+            />
+          ) : (
+            <Text style={styles.emptyChatAvatarText}>
+              {(title || 'C').charAt(0).toUpperCase()}
+            </Text>
+          )}
         </View>
         <Text style={styles.emptyChatName}>{title}</Text>
         
