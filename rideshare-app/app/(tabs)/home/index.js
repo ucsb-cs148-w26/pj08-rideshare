@@ -21,6 +21,7 @@ import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, 
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
+import { generateRidePIN, shouldShowPIN } from '../../../src/utils/pin';
 
 const tagColors = {
   'Downtown': '#e11d48',
@@ -534,6 +535,19 @@ export default function Homepage({ user }) {
                       <Text style={styles.cancellationBoxLabel}>Cancellation Deadline</Text>
                       <Text style={styles.cancellationBoxText}>
                         {formatDate(selectedRide.cancellationDeadline)} at {formatTime(selectedRide.cancellationDeadline)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Rider Verification PIN — visible 30 min before ride */}
+                  {selectedRide.ownerId !== auth.currentUser?.uid && shouldShowPIN(selectedRide.rideDate) && (
+                    <View style={styles.pinContainer}>
+                      <Text style={styles.pinLabel}>Your Verification PIN</Text>
+                      <Text style={styles.pinCode}>
+                        {generateRidePIN(selectedRide.id, auth.currentUser?.uid)}
+                      </Text>
+                      <Text style={styles.pinHint}>
+                        Share this PIN with your driver when you meet to confirm your identity.
                       </Text>
                     </View>
                   )}
@@ -1523,5 +1537,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
+  },
+  // Ride verification PIN styles
+  pinContainer: {
+    marginTop: 14,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1.5,
+    borderColor: colors.secondary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  pinLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 6,
+  },
+  pinCode: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 8,
+    marginBottom: 6,
+  },
+  pinHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
