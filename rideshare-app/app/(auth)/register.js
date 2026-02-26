@@ -19,6 +19,12 @@ import {
 import { router } from "expo-router";
 
 const MAX_NAME_LENGTH = 30;
+const MAX_YEARS_LENGTH = 30;
+const MAX_MAJOR_LENGTH = 50;
+const MAX_CLUBS_LENGTH = 300;
+const MAX_BIO_LENGTH = 300;
+const MAX_PAY_LENGTH = 50;
+const MAX_EMAIL_LENGTH = 50;
 
 const emailLooksValid = (email) =>
  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -304,7 +310,11 @@ export default function Register() {
           onBlur={() => markTouched("yearsAtUCSB")}
           placeholder="Ex: 2, 3rd year, 1st year, etc."
           placeholderTextColor="#999"
+          maxLength={MAX_YEARS_LENGTH}
         />
+        <Text style={styles.charHint}>
+          {yearsAtUCSB.trim().length}/{MAX_YEARS_LENGTH}
+        </Text>
         {showError("yearsAtUCSB") ? <Text style={styles.error}>{errors.yearsAtUCSB}</Text> : null}
 
         <Text style={styles.label}>Major</Text>
@@ -315,7 +325,11 @@ export default function Register() {
           onBlur={() => markTouched("major")}
           placeholder="Ex: Computer Science, Biology, etc."
           placeholderTextColor="#999"
+          maxLength={MAX_MAJOR_LENGTH}
         />
+        <Text style={styles.charHint}>
+          {major.trim().length}/{MAX_MAJOR_LENGTH}
+        </Text>
         {showError("major") ? <Text style={styles.error}>{errors.major}</Text> : null}
 
         <Text style={styles.label}>Clubs / Interests</Text>
@@ -331,7 +345,11 @@ export default function Register() {
           placeholder="Ex: Data Science Club, Soccer, Hiking, etc."
           placeholderTextColor="#999"
           multiline
+          maxLength={MAX_CLUBS_LENGTH}
         />
+        <Text style={styles.charHint}>
+          {clubs.trim().length}/{MAX_CLUBS_LENGTH}
+        </Text>
         {showError("clubs") ? <Text style={styles.error}>{errors.clubs}</Text> : null}
 
         <Text style={styles.label}>Fun Fact</Text>
@@ -347,7 +365,11 @@ export default function Register() {
           placeholder="Ex: Love hikes, coffee addict…"
           placeholderTextColor="#999"
           multiline
+          maxLength={MAX_BIO_LENGTH}
         />
+        <Text style={styles.charHint}>
+          {bio.trim().length}/{MAX_BIO_LENGTH}
+        </Text>
         {showError("bio") ? <Text style={styles.error}>{errors.bio}</Text> : null}
 
        <Text style={styles.label}>Venmo / Zelle</Text>
@@ -358,7 +380,11 @@ export default function Register() {
          onBlur={() => markTouched("payHandle")}
          placeholder="Ex: @johndoe (or phone/email for Zelle)"
          placeholderTextColor="#999"
+         maxLength={MAX_PAY_LENGTH}
        />
+       <Text style={styles.charHint}>
+         {payHandle.trim().length}/{MAX_PAY_LENGTH}
+       </Text>
        {showError("payHandle") ? (
          <Text style={styles.error}>{errors.payHandle}</Text>
        ) : null}
@@ -389,7 +415,11 @@ export default function Register() {
          placeholderTextColor="#999"
          autoCapitalize="none"
          keyboardType="email-address"
+         maxLength={MAX_EMAIL_LENGTH}
        />
+       <Text style={styles.charHint}>
+         {email.trim().length}/{MAX_EMAIL_LENGTH}
+       </Text>
        {showError("email") ? <Text style={styles.error}>{errors.email}</Text> : null}
 
 
