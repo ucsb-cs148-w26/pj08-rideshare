@@ -65,6 +65,7 @@ export default function JoinPage() {
 
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [confirmRide, setConfirmRide] = useState(null);
+  const [showCancellationWarning, setShowCancellationWarning] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
 
   const [joinedRideIds, setJoinedRideIds] = useState(new Set());
@@ -238,6 +239,7 @@ export default function JoinPage() {
   const closeJoinConfirm = () => {
     setConfirmVisible(false);
     setConfirmRide(null);
+    setShowCancellationWarning(false);
   };
 
   const toggleTagFilter = (tag) => {
@@ -280,7 +282,16 @@ export default function JoinPage() {
     }
 
     setConfirmRide(ride);
+    setShowCancellationWarning(false);
     setConfirmVisible(true);
+  };
+
+  const openCancellationWarning = () => {
+    setShowCancellationWarning(true);
+  };
+
+  const backToConfirmDetails = () => {
+    setShowCancellationWarning(false);
   };
 
   const handleConfirmJoin = async () => {
@@ -568,77 +579,119 @@ export default function JoinPage() {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.confirmCard}>
-              <Text style={styles.confirmTitle}>Confirm your ride</Text>
-
-              {confirmRide && (
+              {!showCancellationWarning ? (
                 <>
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmLabel}>Driver</Text>
-                    <Text style={styles.confirmValue}>{confirmRide.ownerName}</Text>
+                  <Text style={styles.confirmTitle}>Confirm your ride</Text>
+
+                  {confirmRide && (
+                    <>
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmLabel}>Driver</Text>
+                        <Text style={styles.confirmValue}>{confirmRide.ownerName}</Text>
+                      </View>
+
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmLabel}>When</Text>
+                        <Text style={styles.confirmValue}>
+                          {formatDate(confirmRide.rideDate)} • {formatTime(confirmRide.rideDate)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmLabel}>From</Text>
+                        <Text style={styles.confirmValue} numberOfLines={2}>
+                          {confirmRide.fromAddress}
+                        </Text>
+                      </View>
+
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmLabel}>To</Text>
+                        <Text style={styles.confirmValue} numberOfLines={2}>
+                          {confirmRide.toAddress}
+                        </Text>
+                      </View>
+
+                      <View style={styles.confirmDivider} />
+
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmLabel}>Ride price</Text>
+                        <Text style={styles.confirmValue}>
+                          ${toNumber(confirmRide.price).toFixed(2)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.confirmRow}>
+                        <Text style={styles.confirmTotalLabel}>Total</Text>
+                        <Text style={styles.confirmTotalValue}>
+                          ${toNumber(confirmRide.price).toFixed(2)}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.confirmTinyNote}>
+                        By confirming, you agree to pay the total amount shown.
+                      </Text>
+                    </>
+                  )}
+
+                  <View style={styles.confirmActions}>
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={closeJoinConfirm}
+                      disabled={isJoining}
+                    >
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
+                      onPress={openCancellationWarning}
+                      disabled={isJoining}
+                    >
+                      <Text style={styles.payBtnText}>Confirm</Text>
+                    </TouchableOpacity>
                   </View>
+                </>
+              ) : (
+                <>
+                  {confirmRide && (
+                    <>
+                      <Text style={styles.policyInfoText}>
+                        Additional fees may incur if you leave this ride after the cancellation deadline.
+                      </Text>
 
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmLabel}>When</Text>
-                    <Text style={styles.confirmValue}>
-                      {formatDate(confirmRide.rideDate)} • {formatTime(confirmRide.rideDate)}
-                    </Text>
+                      <View style={styles.policyDeadlineBox}>
+                        <Text style={styles.policyDeadlineLabel}>Cancellation Deadline</Text>
+                        <Text style={styles.policyDeadlineText}>
+                          {confirmRide.cancellationDeadline
+                            ? `${formatDate(confirmRide.cancellationDeadline)} • ${formatTime(confirmRide.cancellationDeadline)}`
+                            : "No deadline set for this ride."}
+                        </Text>
+                      </View>
+
+                    </>
+                  )}
+
+                  <View style={styles.confirmActions}>
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={backToConfirmDetails}
+                      disabled={isJoining}
+                    >
+                      <Text style={styles.cancelBtnText}>Back</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
+                      onPress={handleConfirmJoin}
+                      disabled={isJoining}
+                    >
+                      <Text style={styles.payBtnText}>
+                        {isJoining ? "Confirming..." : "Continue"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmLabel}>From</Text>
-                    <Text style={styles.confirmValue} numberOfLines={2}>
-                      {confirmRide.fromAddress}
-                    </Text>
-                  </View>
-
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmLabel}>To</Text>
-                    <Text style={styles.confirmValue} numberOfLines={2}>
-                      {confirmRide.toAddress}
-                    </Text>
-                  </View>
-
-                  <View style={styles.confirmDivider} />
-
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmLabel}>Ride price</Text>
-                    <Text style={styles.confirmValue}>
-                      ${toNumber(confirmRide.price).toFixed(2)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.confirmRow}>
-                    <Text style={styles.confirmTotalLabel}>Total</Text>
-                    <Text style={styles.confirmTotalValue}>
-                      ${toNumber(confirmRide.price).toFixed(2)}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.confirmTinyNote}>
-                    By confirming, you agree to pay the total amount shown.
-                  </Text>
                 </>
               )}
-
-              <View style={styles.confirmActions}>
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={closeJoinConfirm}
-                  disabled={isJoining}
-                >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.payBtn, isJoining && { opacity: 0.7 }]}
-                  onPress={handleConfirmJoin}
-                  disabled={isJoining}
-                >
-                  <Text style={styles.payBtnText}>
-                    {isJoining ? "Confirming..." : "Confirm"} 
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
         </Modal>
@@ -1217,6 +1270,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 16,
+  },
+  policyInfoText: {
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.primary,
+    fontWeight: "700",
+  },
+  policyDeadlineBox: {
+    marginTop: 12,
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: colors.errorBg,
+    borderWidth: 2,
+    borderColor: colors.error,
+  },
+  policyDeadlineLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: colors.error,
+    marginBottom: 4,
+  },
+  policyDeadlineText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: colors.error,
+  },
+  confirmPromptText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontWeight: "700",
+    lineHeight: 20,
   },
   confirmActions: {
     flexDirection: "row",
