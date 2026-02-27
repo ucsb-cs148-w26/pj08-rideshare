@@ -16,11 +16,13 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Pressable,
+  Alert,
 } from 'react-native';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
+import { useActiveRide } from '../../../src/context/ActiveRideContext';
 
 const tagColors = {
   'Downtown': '#e11d48',
@@ -45,7 +47,7 @@ function formatDateTime(isoString) {
   });
 }
 
-function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) {
+function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, onStartRide = null }) {
   if (!rides || rides.length === 0) {
     return (
       <View style={commonStyles.emptyState}>
@@ -88,13 +90,13 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) 
                 <>
                   <TouchableOpacity
                     style={[styles.startRideButtonActive, { flex: 1 }]}
-                    onPress={() => {}}
+                    onPress={() => onStartRide && onStartRide(item)}
                   >
                     <Text style={styles.startRideTextActive}>Start Ride</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.startRideInfoButton}
-                    onPress={() => alert('Start Ride is now available! Tap to begin your ride.')}
+                    onPress={() => Alert.alert('Ready to Go!', 'Start Ride is now available! Tap to begin your ride.')}
                   >
                     <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
                   </TouchableOpacity>
@@ -103,13 +105,13 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null }) 
                 <>
                   <TouchableOpacity
                     style={[styles.startRideButtonDisabled, { flex: 1 }]}
-                    onPress={() => alert('Start Ride will be available once the scheduled ride time begins.')}
+                    onPress={() => Alert.alert('Not Yet Available', 'Start Ride will be available once the scheduled ride time begins.')}
                   >
                     <Text style={styles.startRideTextDisabled}>Start Ride</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.startRideInfoButton}
-                    onPress={() => alert('Start Ride will be available once the scheduled ride time begins.')}
+                    onPress={() => Alert.alert('Not Yet Available', 'Start Ride will be available once the scheduled ride time begins.')}
                   >
                     <Ionicons name="information-circle-outline" size={20} color="#555" />
                   </TouchableOpacity>
@@ -166,6 +168,7 @@ function formatCurrency(value) {
 }
 
 export default function Homepage({ user }) {
+  const { setActiveRide } = useActiveRide();
   const [hostedRides, setHostedRides] = useState([]);
   const [joinedRides, setJoinedRides] = useState([]);
 
@@ -424,6 +427,20 @@ export default function Homepage({ user }) {
                   rides={hostedRides}
                   emptyText={"No hosted rides yet.\nTap Host to create a ride."}
                   isHosted={true}
+                  onStartRide={(item) => {
+                    const rideParams = {
+                      rideId: item.id,
+                      fromAddress: item.fromAddress,
+                      toAddress: item.toAddress,
+                      rideDate: item.rideDate,
+                      ownerName: item.ownerName,
+                    };
+                    setActiveRide(rideParams);
+                    router.push({
+                      pathname: '/(tabs)/home/duringride',
+                      params: rideParams,
+                    });
+                  }}
                   onViewDetails={async (ride) => {
                     setSelectedRide(ride);
                     setDetailsModalVisible(true);

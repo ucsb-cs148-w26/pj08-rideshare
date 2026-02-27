@@ -2,10 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
+import { useActiveRide } from '../../src/context/ActiveRideContext';
 
 export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { activeRide } = useActiveRide();
 
   const navItems = [
     {
@@ -20,6 +22,18 @@ export default function NavBar() {
       iconOutline: 'home-outline',
       route: '/(tabs)/home',
     },
+    // Dynamic "Ride" tab — only present when a ride is in progress
+    ...(activeRide
+      ? [
+          {
+            name: 'Ride',
+            icon: 'car-sport',
+            iconOutline: 'car-sport-outline',
+            route: '/(tabs)/home/duringride',
+            accentColor: '#22c55e',
+          },
+        ]
+      : []),
     {
       name: 'Profile',
       icon: 'person',
@@ -36,15 +50,20 @@ export default function NavBar() {
       return pathname.includes('/messages');
     }
     
-    // Check for Home - ONLY active on home index, NOT on hostpage or joinpage
+    // Check for during-ride page
+    if (route === '/(tabs)/home/duringride') {
+      return pathname.includes('duringride');
+    }
+    
+    // Check for Home - ONLY active on home index, NOT on hostpage, joinpage, or duringride
     if (route === '/(tabs)/home') {
-      // Check if we're on the actual home page (not host or join pages)
       const isOnHomePage = (pathname === '/(tabs)/home' || 
                             pathname === '/home' ||
                             pathname === '/(tabs)/home/' ||
                             pathname === '/home/') &&
                            !pathname.includes('hostpage') && 
-                           !pathname.includes('joinpage');
+                           !pathname.includes('joinpage') &&
+                           !pathname.includes('duringride');
       return isOnHomePage;
     }
     
@@ -57,9 +76,19 @@ export default function NavBar() {
   };
   
   const handlePress = (route) => {
+    // For during-ride, navigate with stored params
+    if (route === '/(tabs)/home/duringride') {
+      if (!isActive(route) && activeRide) {
+        router.push({
+          pathname: '/(tabs)/home/duringride',
+          params: activeRide,
+        });
+      }
+      return;
+    }
+
     // For home, check if we're already there before navigating
     if (route === '/(tabs)/home') {
-      // Only navigate if we're NOT already on the home page
       if (!isActive(route)) {
         router.push('/home');
       }
@@ -76,6 +105,7 @@ export default function NavBar() {
       <View style={styles.navbar}>
         {navItems.map((item, index) => {
           const active = isActive(item.route);
+          const activeColor = item.accentColor || '#007AFF';
           return (
             <TouchableOpacity
               key={index}
@@ -86,11 +116,14 @@ export default function NavBar() {
               <Ionicons
                 name={active ? item.icon : item.iconOutline}
                 size={24}
-                color={active ? '#007AFF' : '#8E8E93'}
+                color={active ? activeColor : '#8E8E93'}
               />
-              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+              <Text style={[styles.navLabel, active && { color: activeColor }]}>
                 {item.name}
               </Text>
+              {item.accentColor && (
+                <View style={styles.liveBadge} />
+              )}
             </TouchableOpacity>
           );
         })}
@@ -135,5 +168,14 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     color: '#007AFF',
+  },
+  liveBadge: {
+    position: 'absolute',
+    top: 4,
+    right: '25%',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
   },
 });
