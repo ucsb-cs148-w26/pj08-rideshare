@@ -240,25 +240,26 @@ export default function Homepage({ user }) {
       return;
     }
 
-    // Fetch all rides and check which ones the user has joined
-    const ridesRef = collection(db, 'rides');
+    // Only listen to upcoming rides, then check joins in parallel
+    const ridesRef = query(
+      collection(db, 'rides'),
+      where('rideDate', '>=', new Date().toISOString())
+    );
     const unsubscribe = onSnapshot(ridesRef, async (snapshot) => {
       try {
-        const joinedRidesData = [];
+        const results = await Promise.all(
+          snapshot.docs.map(async (rideDoc) => {
+            const joinSnap = await getDoc(
+              doc(db, 'rides', rideDoc.id, 'joins', currentUser.uid)
+            );
+            if (joinSnap.exists()) {
+              return { id: rideDoc.id, ...rideDoc.data() };
+            }
+            return null;
+          })
+        );
 
-        for (const rideDoc of snapshot.docs) {
-          const joinRef = doc(db, 'rides', rideDoc.id, 'joins', currentUser.uid);
-          const joinSnap = await getDoc(joinRef);
-
-          if (joinSnap.exists()) {
-            joinedRidesData.push({
-              id: rideDoc.id,
-              ...rideDoc.data(),
-            });
-          }
-        }
-
-        // Sort by ride date (soonest first)
+        const joinedRidesData = results.filter(Boolean);
         joinedRidesData.sort((a, b) => {
           const dateA = new Date(a.rideDate || 0);
           const dateB = new Date(b.rideDate || 0);
