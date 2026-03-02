@@ -32,3 +32,8 @@ Wyatt’s check-in:
 - mapbox api react tutorial issues… pivoting
 - Working on “ride history” page
 - no blockers
+
+Kenisha’s checkin:
+- worked on the user feedback eval response documentation
+- making user stories for all the bug fixes and working on them
+- no blockers
