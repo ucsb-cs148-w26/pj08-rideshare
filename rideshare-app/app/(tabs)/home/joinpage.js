@@ -26,15 +26,20 @@ import {
   runTransaction,
   serverTimestamp,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../../../src/firebase";
+import { useStripe } from "@stripe/stripe-react-native";
 import { db } from "../../../src/firebase";
 import { useAuth } from "../../../src/auth/AuthProvider";
 import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
 import { getOrCreateRideConversation } from '../../../src/utils/messaging';
+import STRIPE_CONFIG from "../../../src/stripeConfig";
 
 export default function JoinPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const tagOptions = [
     "Groceries/Shopping",
@@ -304,6 +309,40 @@ export default function JoinPage() {
     try {
       setIsJoining(true);
 
+      // Call Cloud Function to create PaymentIntent
+      const createPaymentIntent = httpsCallable(functions, "createPaymentIntent");
+      const { data } = await createPaymentIntent({
+        amount: Math.round(Number(confirmRide.price) * 100), // convert dollars to cents
+        rideId: confirmRide.id,
+      });
+      const { clientSecret, paymentIntentId } = data;
+
+      // Initialize the Stripe Payment Sheet 
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: STRIPE_CONFIG.MERCHANT_NAME,
+        paymentIntentClientSecret: clientSecret,
+
+        // enable apple pay and google pay later when app is deployed
+      });
+
+      if (initError) {
+        throw new Error(initError.message);
+      }
+
+      // Present the Payment Sheet
+      const { error: paymentError } = await presentPaymentSheet();
+
+      if (paymentError) {
+        // User cancelled or payment failed — don't join the ride
+        if (paymentError.code === "Canceled") {
+          // User tapped outside or pressed "X" — silent cancel
+          setIsJoining(false);
+          return;
+        }
+        throw new Error(paymentError.message);
+      }
+
+      // Payment succeeded - run Firestore transaction
       const rideRef = doc(db, "rides", confirmRide.id);
       const joinRef = doc(db, "rides", confirmRide.id, "joins", user.uid);
 
@@ -322,13 +361,14 @@ export default function JoinPage() {
 
         tx.update(rideRef, {
           seats: seatsNum - 1,
-          total_seats: rideData.total_seats ?? seatsNum, // ensures field exists
+          total_seats: rideData.total_seats ?? seatsNum,
         });
         tx.set(joinRef, {
           riderId: user.uid,
           riderEmail: user.email ?? "",
           joinedAt: serverTimestamp(),
           pricePaid: Number(rideData.price) || 0,
+          paymentIntentId: paymentIntentId, // store for refund reference
         });
       });
 
@@ -348,7 +388,7 @@ export default function JoinPage() {
       closeJoinConfirm();
       Alert.alert(
         "Ride Joined!",
-        "You can now message everyone in this ride from your Messages tab.",
+        "Payment successful! You can now message everyone in this ride from your Messages tab.",
         [{ text: "OK", onPress: () => router.push("/(tabs)/home") }]
       );
     } catch (e) {
@@ -686,7 +726,7 @@ export default function JoinPage() {
                       disabled={isJoining}
                     >
                       <Text style={styles.payBtnText}>
-                        {isJoining ? "Confirming..." : "Continue"}
+                        {isJoining ? "Processing..." : "Pay & Join"}
                       </Text>
                     </TouchableOpacity>
                   </View>
