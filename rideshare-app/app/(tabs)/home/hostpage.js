@@ -645,54 +645,52 @@ export default function HostPage() {
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Tags</Text>
-          <TouchableOpacity onPress={() => setShowTagPicker(true)}>
-            <TextInput
-              style={styles.input}
-              placeholder="Select a tag"
-              value={selectedTag}
-              editable={false}
-              pointerEvents="none"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {showTagPicker && (
-          <Modal transparent animationType="fade">
-            <View style={styles.modalBackdrop}>
-              <View style={styles.tagModalCard}>
-                <Text style={styles.tagModalTitle}>Popular tags</Text>
-                <ScrollView style={styles.tagList}>
-                  {tagOptions.map((tag) => (
-                    <Pressable
-                      key={tag}
-                      style={styles.tagOption}
-                      onPress={() => {
-                        setSelectedTag(tag);
-                        setShowTagPicker(false);
-                      }}
-                    >
-                      <View style={styles.tagOptionRow}>
-                        <View
-                          style={[
-                            styles.tagDot,
-                            { backgroundColor: tagColors[tag] || "#9ca3af" },
-                          ]}
-                        />
-                        <Text style={styles.tagOptionText}>{tag}</Text>
-                      </View>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-                <Pressable
-                  onPress={() => setShowTagPicker(false)}
-                  style={styles.tagCloseButton}
-                >
-                  <Text style={styles.tagCloseText}>Close</Text>
-                </Pressable>
-              </View>
+          <TouchableOpacity onPress={() => setShowTagPicker(!showTagPicker)}>
+            <View style={[styles.input, styles.dropdownTrigger]}>
+              {selectedTag ? (
+                <View style={styles.tagOptionRow}>
+                  <View
+                    style={[
+                      styles.tagDot,
+                      { backgroundColor: tagColors[selectedTag] || "#9ca3af" },
+                    ]}
+                  />
+                  <Text style={{ fontSize: 16, color: "#111827" }}>{selectedTag}</Text>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 16, color: "#9ca3af" }}>Select a tag</Text>
+              )}
+              <Text style={{ fontSize: 12, color: "#9ca3af" }}>
+                {showTagPicker ? "▲" : "▼"}
+              </Text>
             </View>
-          </Modal>
-        )}
+          </TouchableOpacity>
+
+          {showTagPicker && (
+            <View style={styles.dropdownMenu}>
+              {tagOptions.map((tag) => (
+                <Pressable
+                  key={tag}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedTag(tag);
+                    setShowTagPicker(false);
+                  }}
+                >
+                  <View style={styles.tagOptionRow}>
+                    <View
+                      style={[
+                        styles.tagDot,
+                        { backgroundColor: tagColors[tag] || "#9ca3af" },
+                      ]}
+                    />
+                    <Text style={styles.tagOptionText}>{tag}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Driver Notes (optional)</Text>
@@ -834,50 +832,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  tagModalCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 24,
-    borderRadius: 16,
-    padding: 16,
-    maxHeight: "70%",
-  },
-  tagModalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.primary,
-    marginBottom: 12,
-  },
-  tagList: {
-    maxHeight: 280,
-  },
-  tagOption: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  tagOptionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  tagDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  tagOptionText: {
-    fontSize: 16,
-    color: "#111827",
-  },
-  tagCloseButton: {
-    alignSelf: "flex-end",
-    paddingTop: 12,
-  },
-  tagCloseText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.primary,
-  },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -894,9 +848,47 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     backgroundColor: "#fff",
   },
+  tagOptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tagDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  tagOptionText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  dropdownTrigger: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dropdownMenu: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    marginTop: 4,
+    paddingVertical: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
   inlineError: {
     marginTop: 4,
     fontSize: 12,
     color: "#d11a2a",
-  }
+  },
 });
