@@ -37,3 +37,8 @@ Kenisha’s checkin:
 - worked on the user feedback eval response documentation
 - making user stories for all the bug fixes and working on them
 - no blockers
+
+Ruben's checkin:
+- last worked on looking into how to implement pin system
+- currently working on pin system
+- no blockers
