@@ -1,5 +1,7 @@
 import { Stack, Redirect } from "expo-router";
 import { useAuth } from "../../src/auth/AuthProvider";
+import { StripeProvider } from "@stripe/stripe-react-native";
+import STRIPE_CONFIG from "../../src/stripeConfig";
 
 export default function AuthLayout() {
   const { user, initializing, suppressAuthRedirect } = useAuth();
@@ -10,5 +12,9 @@ export default function AuthLayout() {
     return <Redirect href="/(tabs)/home" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <StripeProvider publishableKey={STRIPE_CONFIG.PUBLISHABLE_KEY}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </StripeProvider>
+  );
 }
