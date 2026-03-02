@@ -12,17 +12,6 @@ import { colors } from "../../ui/styles/colors";
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "";
 
-/**
- * AddressAutocomplete – a drop-in replacement for TextInput that shows
- * Mapbox address suggestions as the user types.
- *
- * Props:
- *   value        – current text value (controlled)
- *   onChangeText – called with the selected full address string
- *   placeholder  – input placeholder
- *   style        – extra styles for the outer wrapper (optional)
- *   inputStyle   – extra styles merged onto the TextInput (optional)
- */
 export default function AddressAutocomplete({
   value,
   onChangeText,
@@ -37,10 +26,7 @@ export default function AddressAutocomplete({
   const debounceRef = useRef(null);
   const sessionTokenRef = useRef(generateSessionToken());
 
-  // ---- helpers ----
-
   function generateSessionToken() {
-    // Simple UUID-v4-like token for Mapbox session billing
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
       const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -84,16 +70,14 @@ export default function AddressAutocomplete({
 
   const handleChangeText = (text) => {
     setQuery(text);
-    onChangeText(text); // keep parent in sync while typing
+    onChangeText(text);
     setShowSuggestions(true);
 
-    // Debounce API calls (300 ms)
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(text), 300);
   };
 
   const handleSelect = async (suggestion) => {
-    // Use the retrieve endpoint to get the full formatted address
     try {
       const url =
         `https://api.mapbox.com/search/searchbox/v1/retrieve/${suggestion.mapbox_id}` +
@@ -118,7 +102,6 @@ export default function AddressAutocomplete({
       setQuery(fullAddress);
       onChangeText(fullAddress);
     } catch {
-      // Fallback: use the suggestion text directly
       const fallback = suggestion.full_address || suggestion.name || "";
       setQuery(fallback);
       onChangeText(fallback);
@@ -126,7 +109,6 @@ export default function AddressAutocomplete({
 
     setSuggestions([]);
     setShowSuggestions(false);
-    // Rotate session token after a successful retrieve (Mapbox best practice)
     sessionTokenRef.current = generateSessionToken();
   };
 
@@ -141,7 +123,6 @@ export default function AddressAutocomplete({
           if (suggestions.length > 0) setShowSuggestions(true);
         }}
         onBlur={() => {
-          // Small delay so the user can tap a suggestion before it disappears
           setTimeout(() => setShowSuggestions(false), 200);
         }}
       />
