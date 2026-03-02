@@ -26,6 +26,7 @@ import {
 import { auth, db } from "../../../src/firebase";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { commonStyles } from "../../../ui/styles/commonStyles";
+import AddressAutocomplete from "../../components/AddressAutocomplete";
 
 export default function HostPage() {
   const router = useRouter();
@@ -412,23 +413,21 @@ export default function HostPage() {
           </View>
         </View>
 
-        <View style={styles.fieldGroup}>
+        <View style={[styles.fieldGroup, { zIndex: 20 }]}>
           <Text style={styles.label}>To (destination address)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Where are you going?"
+          <AddressAutocomplete
             value={toAddress}
             onChangeText={setToAddress}
+            placeholder="Where are you going?"
           />
         </View>
 
-        <View style={styles.fieldGroup}>
+        <View style={[styles.fieldGroup, { zIndex: 10 }]}>
           <Text style={styles.label}>From (pickup address)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Pickup address"
+          <AddressAutocomplete
             value={fromAddress}
             onChangeText={setFromAddress}
+            placeholder="Pickup address"
           />
         </View>
 
