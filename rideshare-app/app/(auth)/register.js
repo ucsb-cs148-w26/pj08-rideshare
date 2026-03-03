@@ -108,7 +108,7 @@ export default function Register() {
    if (!password.trim()) {
      e.password = "Password is required.";
    } else if (!passwordHasMinLength) {
-     e.password = "Password must be at least 7 characters.";
+     e.password = "Password must be at least 8 characters.";
    } else if (!passwordHasSpecial) {
      e.password = "Password must include at least one special character.";
    } else if (!passwordHasUppercase) {
