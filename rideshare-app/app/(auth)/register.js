@@ -26,6 +26,10 @@ const MAX_BIO_LENGTH = 300;
 const MAX_PAY_LENGTH = 50;
 const MAX_EMAIL_LENGTH = 50;
 
+const RequiredLabel = ({ text, style }) => (
+  <Text style={style}>{text}<Text style={{ color: "#d11a2a" }}> *</Text></Text>
+);
+
 const emailLooksValid = (email) =>
  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
@@ -138,6 +142,15 @@ export default function Register() {
  const markTouched = (key) => setTouched((t) => ({ ...t, [key]: true }));
  const showError = (key) => touched[key] && errors[key];
 
+ const markAllTouched = () => {
+  const allKeys = ["name","role","yearsAtUCSB","major","clubs","bio",
+    "payHandle","phone","email","password","confirmPassword",
+    ...vehicles.flatMap((_,idx) => [
+      `vehicle_${idx}_make`,`vehicle_${idx}_model`,`vehicle_${idx}_plate`
+    ])];
+  setTouched(t => { const n={...t}; allKeys.forEach(k=>n[k]=true); return n; });
+};
+
 
  const updateVehicle = (idx, field, value) => {
    setVehicles((prev) =>
@@ -157,6 +170,8 @@ export default function Register() {
 
 
   const handleSubmit = async () => {
+    markAllTouched();
+    if (!isValid) return;
     const trimmedName = name.trim();
     if (trimmedName.length > MAX_NAME_LENGTH) {
       setTouched((t) => ({ ...t, name: true }));
@@ -240,7 +255,7 @@ export default function Register() {
        <Text style={styles.sectionTitle}>Profile</Text>
 
 
-       <Text style={styles.label}>Name</Text>
+       <RequiredLabel text="Name" style={styles.label} />
        <TextInput
          style={[styles.input, showError("name") && styles.inputError]}
          value={name}
@@ -256,7 +271,7 @@ export default function Register() {
        {showError("name") ? <Text style={styles.error}>{errors.name}</Text> : null}
 
 
-        <Text style={styles.label}>Role</Text>
+        <RequiredLabel text="Role" style={styles.label} />
         <TouchableOpacity 
           style={[styles.input, styles.dropdownButton, showError("role") && styles.inputError]}
           onPress={() => setRoleDropdownOpen(!roleDropdownOpen)}
@@ -302,7 +317,7 @@ export default function Register() {
         )}
         {showError("role") ? <Text style={styles.error}>{errors.role}</Text> : null}
 
-        <Text style={styles.label}>Years at UCSB</Text>
+        <RequiredLabel text="Years at UCSB" style={styles.label} />
         <TextInput
           style={[styles.input, showError("yearsAtUCSB") && styles.inputError]}
           value={yearsAtUCSB}
@@ -317,7 +332,7 @@ export default function Register() {
         </Text>
         {showError("yearsAtUCSB") ? <Text style={styles.error}>{errors.yearsAtUCSB}</Text> : null}
 
-        <Text style={styles.label}>Major</Text>
+        <RequiredLabel text="Major" style={styles.label} />
         <TextInput
           style={[styles.input, showError("major") && styles.inputError]}
           value={major}
@@ -332,7 +347,7 @@ export default function Register() {
         </Text>
         {showError("major") ? <Text style={styles.error}>{errors.major}</Text> : null}
 
-        <Text style={styles.label}>Clubs / Interests</Text>
+        <RequiredLabel text="Clubs / Interests" style={styles.label} />
         <TextInput
           style={[
             styles.input,
@@ -352,7 +367,7 @@ export default function Register() {
         </Text>
         {showError("clubs") ? <Text style={styles.error}>{errors.clubs}</Text> : null}
 
-        <Text style={styles.label}>Fun Fact</Text>
+        <RequiredLabel text="Fun Fact" style={styles.label} />
         <TextInput
           style={[
             styles.input,
@@ -372,7 +387,7 @@ export default function Register() {
         </Text>
         {showError("bio") ? <Text style={styles.error}>{errors.bio}</Text> : null}
 
-       <Text style={styles.label}>Venmo / Zelle</Text>
+       <RequiredLabel text="Venmo / Zelle" style={styles.label} />
        <TextInput
          style={[styles.input, showError("payHandle") && styles.inputError]}
          value={payHandle}
@@ -389,9 +404,8 @@ export default function Register() {
          <Text style={styles.error}>{errors.payHandle}</Text>
        ) : null}
 
+       <RequiredLabel text="Phone Number" style={styles.label} />
 
-       <Text style={styles.label}>Phone Number</Text>
-      
        <TextInput
        style={[styles.input, showError("phone") && styles.inputError]}
        value={phone}
@@ -405,7 +419,7 @@ export default function Register() {
 
 
 
-       <Text style={styles.label}>Email</Text>
+       <RequiredLabel text="Email" style={styles.label} />
        <TextInput
          style={[styles.input, showError("email") && styles.inputError]}
          value={email}
@@ -423,7 +437,7 @@ export default function Register() {
        {showError("email") ? <Text style={styles.error}>{errors.email}</Text> : null}
 
 
-       <Text style={styles.label}>Password</Text>
+       <RequiredLabel text="Password" style={styles.label} />
        <TextInput
          style={[styles.input, showError("password") && styles.inputError]}
          value={password}
