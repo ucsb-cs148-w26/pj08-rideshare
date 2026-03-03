@@ -18,6 +18,8 @@ export default function AddressAutocomplete({
   placeholder,
   style,
   inputStyle,
+  onSubmitEditing,
+  onAddressSelected,
 }) {
   const [query, setQuery] = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
@@ -101,10 +103,12 @@ export default function AddressAutocomplete({
 
       setQuery(fullAddress);
       onChangeText(fullAddress);
+      if (onAddressSelected) onAddressSelected(fullAddress);
     } catch {
       const fallback = suggestion.full_address || suggestion.name || "";
       setQuery(fallback);
       onChangeText(fallback);
+      if (onAddressSelected) onAddressSelected(fallback);
     }
 
     setSuggestions([]);
@@ -119,6 +123,8 @@ export default function AddressAutocomplete({
         placeholder={placeholder}
         value={query}
         onChangeText={handleChangeText}
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType={onSubmitEditing ? "search" : "default"}
         onFocus={() => {
           if (suggestions.length > 0) setShowSuggestions(true);
         }}
