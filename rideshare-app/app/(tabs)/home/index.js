@@ -19,7 +19,8 @@ import {
   Alert,
 } from 'react-native';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../../../src/firebase';
+import { auth, db, functions } from '../../../src/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
@@ -805,33 +806,11 @@ export default function Homepage({ user }) {
                         const currentUser = auth.currentUser;
                         if (!currentUser) return;
 
-                        const rideRef = doc(db, 'rides', selectedRide.id);
-                        const joinRef = doc(db, 'rides', selectedRide.id, 'joins', currentUser.uid);
+                        await currentUser.getIdToken(true);
 
-                        await runTransaction(db, async (tx) => {
-                          const [rideSnap, joinSnap] = await Promise.all([
-                            tx.get(rideRef),
-                            tx.get(joinRef),
-                          ]);
+                        const leaveRideAndPromote = httpsCallable(functions, 'leaveRideAndPromote');
+                        await leaveRideAndPromote({ rideId: selectedRide.id });
 
-                          if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
-                          if (!joinSnap.exists()) throw new Error('You have not joined this ride.');
-
-                          const rideData = rideSnap.data() || {};
-                          const seatsNumRaw = Number(rideData.seats);
-                          const seatsNum = Number.isFinite(seatsNumRaw) ? seatsNumRaw : 0;
-                          const totalSeatsRaw = Number(rideData.total_seats ?? seatsNum);
-                          const totalSeats = Number.isFinite(totalSeatsRaw) ? totalSeatsRaw : null;
-                          const nextSeats = totalSeats !== null
-                            ? Math.min(seatsNum + 1, totalSeats)
-                            : seatsNum + 1;
-
-                          tx.update(rideRef, {
-                            seats: nextSeats,
-                            total_seats: rideData.total_seats ?? seatsNum,
-                          });
-                          tx.delete(joinRef);
-                        });
                         // Send notifications
                         try {
                           const now = new Date();

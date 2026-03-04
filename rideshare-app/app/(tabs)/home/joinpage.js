@@ -25,6 +25,8 @@ import {
   onSnapshot,
   runTransaction,
   serverTimestamp,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../../src/firebase";
@@ -75,6 +77,7 @@ export default function JoinPage() {
   const [isJoining, setIsJoining] = useState(false);
 
   const [joinedRideIds, setJoinedRideIds] = useState(new Set());
+  const [joinedLoaded, setJoinedLoaded] = useState(false);
   
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState(new Set());
@@ -84,6 +87,42 @@ export default function JoinPage() {
   const reopenModalRef = useRef(false);
 
   const [ownerPhotos, setOwnerPhotos] = useState({});
+  const [waitlistedRideIds, setWaitlistedRideIds] = useState(new Set());
+  const [waitlistPositions, setWaitlistPositions] = useState({});
+  const [waitlistModalVisible, setWaitlistModalVisible] = useState(false);
+  const [waitlistModalRide, setWaitlistModalRide] = useState(null);
+  const [waitlistConfirmVisible, setWaitlistConfirmVisible] = useState(false);
+  const [waitlistConfirmRide, setWaitlistConfirmRide] = useState(null);
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+
+  const openWaitlistModal = (ride) => {
+    setWaitlistModalRide(ride);
+    setWaitlistModalVisible(true);
+  };
+
+  const closeWaitlistModal = () => {
+    setWaitlistModalVisible(false);
+    setTimeout(() => setWaitlistModalRide(null), 300);
+  };
+
+  const openWaitlistConfirm = (ride) => {
+    if (!user?.uid) {
+      Alert.alert("Not signed in", "Please sign in to join the waitlist.");
+      return;
+    }
+    if (joinedRideIds.has(ride.id)) return;
+    if (isDepartureTooSoon(ride)) {
+      Alert.alert("Too Late", "You cannot join the waitlist within 24 hours of departure.");
+      return;
+    }
+    setWaitlistConfirmRide(ride);
+    setWaitlistConfirmVisible(true);
+  };
+
+  const closeWaitlistConfirm = () => {
+    setWaitlistConfirmVisible(false);
+    setWaitlistConfirmRide(null);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -117,7 +156,8 @@ export default function JoinPage() {
             (ride) =>
               ride.ownerId !== user.uid &&
               ride.status !== "cancelled" &&
-              ride.status !== "canceled"
+              ride.status !== "canceled" &&
+              new Date(ride.rideDate).getTime() > Date.now()
           );
 
         setRides(ridesData);
@@ -147,6 +187,7 @@ export default function JoinPage() {
   useEffect(() => {
     if (!user?.uid) {
       setJoinedRideIds(new Set());
+      setJoinedLoaded(true);
       return;
     }
 
@@ -166,10 +207,52 @@ export default function JoinPage() {
       } catch (e) {
         console.warn("Failed to compute joinedRideIds:", e?.message ?? e);
         setJoinedRideIds(new Set());
+      } finally {
+        setJoinedLoaded(true);
       }
     });
 
     return () => unsub();
+  }, [user?.uid]);
+
+  // Track waitlisted rides and positions
+  useEffect(() => {
+    if (!user?.uid) {
+      setWaitlistedRideIds(new Set());
+      setWaitlistPositions({});
+      return;
+    }
+
+    const unsub2 = onSnapshot(collection(db, "rides"), async (snap) => {
+      try {
+        const ids = new Set();
+        const positions = {};
+
+        await Promise.all(
+          snap.docs.map(async (rideDoc) => {
+            const rideId = rideDoc.id;
+            const waitlistSnap = await getDoc(doc(db, "rides", rideId, "waitlist", user.uid));
+            if (waitlistSnap.exists()) {
+              ids.add(rideId);
+              // Compute position by counting how many waitlist entries have an earlier joinedAt
+              const allWaitlistSnap = await getDocs(
+                query(collection(db, "rides", rideId, "waitlist"), orderBy("joinedAt", "asc"))
+              );
+              const allWaitlist = allWaitlistSnap.docs.map((d) => d.id);
+              const pos = allWaitlist.indexOf(user.uid);
+              positions[rideId] = pos >= 0 ? pos + 1 : null;
+            }
+          })
+        );
+
+        setWaitlistedRideIds(ids);
+        setWaitlistPositions(positions);
+      } catch (e) {
+        console.warn("Failed to compute waitlist info:", e?.message ?? e);
+      }
+    });
+
+    return () => unsub2();
   }, [user?.uid]);
 
   const fetchRides = async () => {
@@ -185,7 +268,8 @@ export default function JoinPage() {
         if (
           ride.ownerId !== user?.uid &&
           ride.status !== "cancelled" &&
-          ride.status !== "canceled"
+          ride.status !== "canceled" &&
+          new Date(ride.rideDate).getTime() > Date.now()
         ) {
           ridesData.push({
             ...ride,
@@ -307,6 +391,105 @@ export default function JoinPage() {
     return Number.isFinite(n) ? n : 0;
   };
 
+  const isDepartureTooSoon = (ride) => {
+    if (!ride?.rideDate) return false;
+    const departure = new Date(ride.rideDate).getTime();
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    return departure - now < twentyFourHours;
+  };
+
+  const handleJoinWaitlist = async (ride) => {
+    if (!user?.uid) return;
+    try {
+      setIsJoiningWaitlist(true);
+
+      const waitlistRef = doc(db, "rides", ride.id, "waitlist", user.uid);
+      const existing = await getDoc(waitlistRef);
+      if (existing.exists()) {
+        closeWaitlistConfirm();
+        return;
+      }
+
+      const createWaitlistHold = httpsCallable(functions, "createWaitlistHold");
+      const { data } = await createWaitlistHold({
+        amount: Math.round(Number(ride.price) * 100),
+        rideId: ride.id,
+      });
+      const { clientSecret, paymentIntentId } = data;
+
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: STRIPE_CONFIG.MERCHANT_NAME,
+        paymentIntentClientSecret: clientSecret,
+      });
+
+      if (initError) throw new Error(initError.message);
+
+      const { error: paymentError } = await presentPaymentSheet();
+
+      if (paymentError) {
+        if (paymentError.code === "Canceled") {
+          setIsJoiningWaitlist(false);
+          return;
+        }
+        throw new Error(paymentError.message);
+      }
+
+      await setDoc(waitlistRef, {
+        riderId: user.uid,
+        riderEmail: user.email ?? "",
+        joinedAt: serverTimestamp(),
+        paymentIntentId: paymentIntentId,
+      });
+      setWaitlistedRideIds((prev) => new Set(prev).add(ride.id));
+      const allWaitlistSnap = await getDocs(collection(db, "rides", ride.id, "waitlist"));
+      const sorted = allWaitlistSnap.docs
+        .sort((a, b) => (a.data().joinedAt?.toMillis?.() ?? 0) - (b.data().joinedAt?.toMillis?.() ?? 0))
+        .map((d) => d.id);
+      const pos = sorted.indexOf(user.uid);
+      setWaitlistPositions((prev) => ({ ...prev, [ride.id]: pos >= 0 ? pos + 1 : 1 }));
+      closeWaitlistConfirm();
+    } catch (e) {
+      console.error("waitlist error:", e);
+      Alert.alert("Error", e?.message || "Could not join waitlist.");
+    } finally {
+      setIsJoiningWaitlist(false);
+    }
+  };
+
+  const handleLeaveWaitlist = async (ride) => {
+    try {
+      const waitlistRef = doc(db, "rides", ride.id, "waitlist", user.uid);
+      const waitlistSnap = await getDoc(waitlistRef);
+      const paymentIntentId = waitlistSnap.exists() ? waitlistSnap.data().paymentIntentId : null;
+
+      await deleteDoc(waitlistRef);
+
+      if (paymentIntentId) {
+        try {
+          const cancelWaitlistHold = httpsCallable(functions, "cancelWaitlistHold");
+          await cancelWaitlistHold({ paymentIntentId });
+        } catch (cancelErr) {
+          console.warn("Failed to cancel hold:", cancelErr?.message);
+        }
+      }
+
+      setWaitlistedRideIds((prev) => {
+        const next = new Set(prev);
+        next.delete(ride.id);
+        return next;
+      });
+      setWaitlistPositions((prev) => {
+        const next = { ...prev };
+        delete next[ride.id];
+        return next;
+      });
+    } catch (e) {
+      console.error("leave waitlist error:", e);
+      Alert.alert("Error", e?.message || "Could not leave waitlist.");
+    }
+  };
+
   const openJoinConfirm = (ride) => {
     const alreadyJoined = joinedRideIds.has(ride.id);
     const soldOut = Number(ride.seats) <= 0;
@@ -316,7 +499,7 @@ export default function JoinPage() {
       return;
     }
     if (soldOut) {
-      Alert.alert("Sold out", "No seats left for this ride.");
+      // Don't show "Sold out" alert — waitlist button handles this
       return;
     }
 
@@ -343,7 +526,8 @@ export default function JoinPage() {
     try {
       setIsJoining(true);
 
-      // Call Cloud Function to create PaymentIntent
+      await user.getIdToken(true);
+
       const createPaymentIntent = httpsCallable(functions, "createPaymentIntent");
       const { data } = await createPaymentIntent({
         amount: Math.round(Number(confirmRide.price) * 100), // convert dollars to cents
@@ -432,6 +616,11 @@ export default function JoinPage() {
         Alert.alert("Already joined", "You already joined this ride.");
         return;
       }
+      if (msg.toLowerCase().includes("unauthenticated") || e?.code === "functions/unauthenticated") {
+        closeJoinConfirm();
+        Alert.alert("Session Expired", "Please sign in again to join a ride.");
+        return;
+      }
       console.error("join error:", e);
       Alert.alert("Error", msg || "Could not join ride.");
     } finally {
@@ -442,12 +631,14 @@ export default function JoinPage() {
   const renderRideCard = ({ item }) => {
     const alreadyJoined = joinedRideIds.has(item.id);
     const soldOut = Number(item.seats) <= 0;
-    const disabled = alreadyJoined || soldOut;
+    const onWaitlist = waitlistedRideIds.has(item.id);
+    const disabled = alreadyJoined || (soldOut && !onWaitlist);
     const tagColor = item.tag ? tagColors[item.tag] : null;
+    const tooSoon = isDepartureTooSoon(item);
 
     return (
       <TouchableOpacity
-        style={[styles.rideCard, disabled && styles.rideCardDisabled]}
+        style={[styles.rideCard, (alreadyJoined || soldOut) && styles.rideCardDisabled]}
         onPress={() => handleRidePress(item)}
         activeOpacity={0.85}
       >
@@ -513,28 +704,76 @@ export default function JoinPage() {
           </View>
         </View>
 
-        {/* Bottom row: View details and JOIN/JOINED/SOLD OUT button */}
+        {/* Bottom row: View details and JOIN/JOINED/WAITLIST button */}
         <View style={styles.cardBottomRow}>
           <TouchableOpacity
-            style={[styles.viewDetailsButton, disabled && styles.viewDetailsButtonDisabled]}
+            style={[styles.viewDetailsButton, (alreadyJoined) && styles.viewDetailsButtonDisabled]}
             onPress={() => handleRidePress(item)}
             activeOpacity={0.85}
           >
-            <Text style={[styles.viewDetailsButtonText, disabled && styles.textDisabled]}>
+            <Text style={[styles.viewDetailsButtonText, (alreadyJoined) && styles.textDisabled]}>
               View Details
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.joinButton, disabled && styles.joinButtonDisabled]}
-            onPress={() => openJoinConfirm(item)}
-            disabled={disabled}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.joinButtonText, disabled && styles.joinButtonTextDisabled]}>
-              {alreadyJoined ? "Joined" : soldOut ? "Sold Out" : "Join"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.waitlistButtonGroup}>
+            {alreadyJoined ? (
+              <TouchableOpacity
+                style={[styles.joinButton, styles.joinButtonDisabled]}
+                disabled
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.joinButtonText, styles.joinButtonTextDisabled]}>Joined</Text>
+              </TouchableOpacity>
+            ) : soldOut && joinedLoaded ? (
+              onWaitlist ? (
+                <TouchableOpacity
+                  style={[styles.joinButton, styles.waitlistActiveButton]}
+                  onPress={() => openWaitlistModal(item)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.waitlistedInner}>
+                    <Text style={styles.waitlistActiveButtonText}>Waitlisted</Text>
+                    <Text style={styles.waitlistInlineInfo}>ⓘ</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : !tooSoon ? (
+                <TouchableOpacity
+                  style={[styles.joinButton, styles.waitlistButton]}
+                  onPress={() => openWaitlistConfirm(item)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.joinButtonText, styles.waitlistButtonText]}>
+                    Join Waitlist
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.joinButton, styles.joinButtonDisabled]}
+                  disabled
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.joinButtonText, styles.joinButtonTextDisabled]}>Sold Out</Text>
+                </TouchableOpacity>
+              )
+            ) : soldOut && !joinedLoaded ? (
+              <TouchableOpacity
+                style={[styles.joinButton, styles.joinButtonDisabled]}
+                disabled
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.joinButtonText, styles.joinButtonTextDisabled]}>...</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.joinButton}
+                onPress={() => openJoinConfirm(item)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.joinButtonText}>Join</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -604,6 +843,121 @@ export default function JoinPage() {
             onRefresh={fetchRides}
           />
         )}
+
+        {/* Waitlist Confirm Modal */}
+        <Modal
+          animationType="fade"
+          transparent
+          visible={waitlistConfirmVisible}
+          onRequestClose={closeWaitlistConfirm}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.confirmCard}>
+              <Text style={styles.confirmTitle}>Join Waitlist</Text>
+
+              {waitlistConfirmRide && (
+                <>
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>Driver</Text>
+                    <Text style={styles.confirmValue}>{waitlistConfirmRide.ownerName}</Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>When</Text>
+                    <Text style={styles.confirmValue}>
+                      {formatDate(waitlistConfirmRide.rideDate)} • {formatTime(waitlistConfirmRide.rideDate)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>From</Text>
+                    <Text style={styles.confirmValue} numberOfLines={2}>
+                      {waitlistConfirmRide.fromAddress}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>To</Text>
+                    <Text style={styles.confirmValue} numberOfLines={2}>
+                      {waitlistConfirmRide.toAddress}
+                    </Text>
+                  </View>
+
+                  <View style={styles.confirmDivider} />
+
+                  <View style={styles.confirmRow}>
+                    <Text style={styles.confirmLabel}>Hold amount</Text>
+                    <Text style={styles.confirmValue}>
+                      ${toNumber(waitlistConfirmRide.price).toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.confirmTinyNote}>
+                    Your card will be authorized but not charged. The hold will be released if you leave the waitlist.
+                  </Text>
+                </>
+              )}
+
+              <View style={styles.confirmActions}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={closeWaitlistConfirm}
+                  disabled={isJoiningWaitlist}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.payBtn, isJoiningWaitlist && { opacity: 0.7 }]}
+                  onPress={() => handleJoinWaitlist(waitlistConfirmRide)}
+                  disabled={isJoiningWaitlist}
+                >
+                  <Text style={styles.payBtnText}>
+                    {isJoiningWaitlist ? "Processing..." : "Hold & Join Waitlist"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Waitlist Position Modal */}
+        <Modal
+          animationType="fade"
+          transparent
+          visible={waitlistModalVisible}
+          onRequestClose={closeWaitlistModal}
+        >
+          <View style={styles.waitlistModalOverlay}>
+            <View style={styles.waitlistModalCard}>
+              <Text style={styles.waitlistModalTitle}>Waitlist Position</Text>
+              <Text style={styles.waitlistModalPosition}>
+                #{waitlistModalRide ? (waitlistPositions[waitlistModalRide.id] ?? "—") : ""}
+              </Text>
+              <Text style={styles.waitlistModalDesc}>
+                You are #{waitlistModalRide ? (waitlistPositions[waitlistModalRide.id] ?? "—") : ""} on the waitlist for this ride.
+              </Text>
+              <View style={styles.waitlistModalActions}>
+                <TouchableOpacity
+                  style={styles.waitlistModalCloseBtn}
+                  onPress={closeWaitlistModal}
+                >
+                  <Text style={styles.waitlistModalCloseBtnText}>Close</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.waitlistModalLeaveBtn}
+                  onPress={() => {
+                    const ride = waitlistModalRide;
+                    closeWaitlistModal();
+                    handleLeaveWaitlist(ride);
+                  }}
+                >
+                  <Text style={styles.waitlistModalLeaveBtnText}>Leave Waitlist</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Filter Modal */}
         <Modal
@@ -1126,6 +1480,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
   },
   viewDetailsButton: {
     backgroundColor: colors.background,
@@ -1462,6 +1817,131 @@ const styles = StyleSheet.create({
   },
   joinButtonTextDisabled: {
     color: "#111111",
+  },
+  waitlistButtonGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  soldOutStack: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 6,
+  },
+  waitlistedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  waitlistedInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    width: "100%",
+  },
+  waitlistInlineInfo: {
+    fontSize: 17,
+    position: "absolute",
+    right: 0,
+  },
+  waitlistButton: {
+    backgroundColor: "#f59e0b",
+  },
+  waitlistButtonText: {
+    color: colors.white,
+  },
+  waitlistActiveButton: {
+    backgroundColor: "#fbbf24",
+    borderWidth: 1,
+    borderColor: "#d97706",
+    paddingHorizontal: 10,
+    marginLeft: 50,
+  },
+  waitlistActiveButtonText: {
+    color: "#78350f",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  waitlistModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  waitlistModalCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 24,
+    width: "80%",
+    alignItems: "center",
+  },
+  waitlistModalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: colors.textPrimary,
+    marginBottom: 12,
+  },
+  waitlistModalPosition: {
+    fontSize: 48,
+    fontWeight: "bold",
+    color: "#d97706",
+    marginBottom: 8,
+  },
+  waitlistModalDesc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  waitlistModalActions: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  waitlistModalCloseBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+  },
+  waitlistModalCloseBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  waitlistModalLeaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+  },
+  waitlistModalLeaveBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.white,
+  },
+  waitlistInfoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fef3c7",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#f59e0b",
+  },
+  waitlistInfoIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  waitlistPositionText: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#92400e",
   },
   
   // Filter Modal
