@@ -151,7 +151,11 @@ const avatarUserId = data.hostId || data.driverId || data.ownerId ||
         {/* Content */}
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
-            <Text style={[styles.participantName, isUnread && styles.unreadText]}>
+            <Text 
+              style={[styles.participantName, isUnread && styles.unreadText]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {title}
             </Text>
             {hasMessages && (
@@ -165,9 +169,13 @@ const avatarUserId = data.hostId || data.driverId || data.ownerId ||
 
           {/* Ride info badge */}
           {item.rideInfo && (
-            <View style={styles.rideBadge}>
+            <View style={styles.rideBadge} >
               <Ionicons name="car-outline" size={12} color={colors.accent} />
-              <Text style={styles.rideBadgeText}>
+              <Text 
+                style={styles.rideBadgeText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {item.rideInfo} • {formatRideDate(item.rideDate)}
               </Text>
             </View>
@@ -195,7 +203,12 @@ const avatarUserId = data.hostId || data.driverId || data.ownerId ||
         
         {/* Arrow for new conversations */}
         {!hasMessages && (
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textSecondary}
+            style={{ flexShrink: 0, marginLeft: 6 }}
+          />
         )}
       </TouchableOpacity>
     );
@@ -298,21 +311,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 8,
   },
   timestamp: {
     fontSize: 12,
     color: colors.textSecondary,
+    flexShrink: 0,
   },
   rideBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+    flex: 1,
+    flexShrink: 1,
   },
   rideBadgeText: {
     fontSize: 12,
     color: colors.accent,
     marginLeft: 4,
     fontWeight: '500',
+    flex: 1,
+    flexShrink: 1,
   },
   lastMessage: {
     fontSize: 14,
