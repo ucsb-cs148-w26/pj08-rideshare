@@ -69,3 +69,4 @@ node_modules/
 .dataconnect
 
 functions/.env
+functions/.secret.local
