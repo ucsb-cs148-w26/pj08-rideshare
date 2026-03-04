@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -382,7 +383,11 @@ export default function HostPage() {
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.title}>Host a Ride</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={{ paddingRight: 12 }}>
+              <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
 
         {/* Owner Name (pulled from profile) */}
         <View style={[styles.fieldGroup, styles.firstFieldGroup]}>
