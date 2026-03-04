@@ -35,6 +35,7 @@ import { colors } from "../../../ui/styles/colors";
 import { commonStyles } from "../../../ui/styles/commonStyles";
 import { getOrCreateRideConversation } from '../../../src/utils/messaging';
 import STRIPE_CONFIG from "../../../src/stripeConfig";
+import AddressAutocomplete from "../../components/AddressAutocomplete";
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -77,6 +78,9 @@ export default function JoinPage() {
   
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState(new Set());
+  const [locationQuery, setLocationQuery] = useState("");
+  const [submittedLocationQuery, setSubmittedLocationQuery] = useState("");
+  const [searchInputVersion, setSearchInputVersion] = useState(0);
   const reopenModalRef = useRef(false);
 
   const [ownerPhotos, setOwnerPhotos] = useState({});
@@ -259,14 +263,44 @@ export default function JoinPage() {
 
   const clearFilters = () => {
     setSelectedTags(new Set());
+    setLocationQuery("");
+    setSubmittedLocationQuery("");
+    setSearchInputVersion((prev) => prev + 1);
+  };
+
+  const normalizeAddress = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const applyLocationSearch = () => {
+    setSubmittedLocationQuery(locationQuery.trim());
+  };
+
+  const handleLocationSelected = (selectedAddress) => {
+    setLocationQuery(selectedAddress);
+    setSubmittedLocationQuery(String(selectedAddress || "").trim());
   };
 
   const getFilteredRides = () => {
-    if (selectedTags.size === 0) {
-      return rides;
-    }
-    return rides.filter((ride) => selectedTags.has(ride.tag));
+    const normalizedSearch = normalizeAddress(submittedLocationQuery);
+
+    return rides.filter((ride) => {
+      const matchesTag =
+        selectedTags.size === 0 || selectedTags.has(ride.tag);
+
+      if (!matchesTag) return false;
+      if (!normalizedSearch) return true;
+
+      const normalizedToAddress = normalizeAddress(ride.toAddress);
+      return normalizedToAddress.includes(normalizedSearch);
+    });
   };
+
+  const isFilteringActive =
+    selectedTags.size > 0 || normalizeAddress(submittedLocationQuery).length > 0;
 
   const toNumber = (v) => {
     const n = typeof v === "number" ? v : parseFloat(String(v));
@@ -521,21 +555,34 @@ export default function JoinPage() {
           <Text style={styles.headerTitle}>Available Rides</Text>
         </View>
 
-        {/* Search Bar (Placeholder) */}
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Enter Location"
-            placeholderTextColor={colors.textSecondary}
-            editable={false}
-          />
-          <Text style={styles.searchIcon}>🔍</Text>
+          <View style={styles.searchAutocompleteWrap}>
+            <AddressAutocomplete
+              key={`join-search-${searchInputVersion}`}
+              value={locationQuery}
+              onChangeText={setLocationQuery}
+              placeholder="Enter destination"
+              inputStyle={styles.searchInput}
+              onSubmitEditing={applyLocationSearch}
+              onAddressSelected={handleLocationSelected}
+            />
+          </View>
         </View>
 
-        {/* Filter Button (Placeholder) */}
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-          <Text style={styles.filterButtonText}>Filter ▾</Text>
-        </TouchableOpacity>
+        <View style={styles.controlsRow}>
+          {isFilteringActive ? (
+            <TouchableOpacity style={[styles.controlButton, styles.viewAllButton]} onPress={clearFilters}>
+              <Text style={styles.viewAllButtonText}>View all rides</Text>
+            </TouchableOpacity>
+          ) : (
+            <View />
+          )}
+
+          <TouchableOpacity style={[styles.controlButton, styles.filterButton]} onPress={() => setShowFilterModal(true)}>
+            <Text style={styles.filterButtonText}>Filter ▾</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Rides List */}
         {loading ? (
@@ -897,39 +944,53 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.white,
     marginHorizontal: 20,
     marginTop: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    zIndex: 30,
+  },
+  searchAutocompleteWrap: {
+    flex: 1,
   },
   searchInput: {
-    flex: 1,
+    borderRadius: 8,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
     fontSize: 16,
     color: colors.text,
   },
-  searchIcon: {
-    fontSize: 20,
-    marginLeft: 10,
-  },
-  filterButton: {
-    backgroundColor: colors.white,
+  controlsRow: {
     marginHorizontal: 20,
     marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  controlButton: {
+    minWidth: 140,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
+    alignItems: "center",
+  },
+  filterButton: {
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
-    alignSelf: "flex-end",
   },
   filterButtonText: {
     fontSize: 14,
     fontWeight: "600",
     color: colors.text,
+  },
+  viewAllButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+    paddingVertical: 10,
+  },
+  viewAllButtonText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: colors.white,
   },
 
   // list
