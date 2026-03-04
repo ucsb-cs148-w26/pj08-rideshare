@@ -215,6 +215,9 @@ export default function Register() {
         phone: payload.phone,
         email: payload.email,
         vehicles: payload.vehicles,
+        photoURL: null,
+        avatarBgColor: '#FFFFFF',
+        isDefaultAvatar: true,
         createdAt: serverTimestamp(),
       });
 

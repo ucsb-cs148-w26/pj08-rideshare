@@ -24,6 +24,7 @@ import { httpsCallable } from 'firebase/functions';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
+import DefaultAvatar from '../../components/DefaultAvatar';
 
 const tagColors = {
   'Downtown': '#e11d48',
@@ -545,7 +546,7 @@ export default function Homepage({ user }) {
                         style={{ width: 60, height: 60, borderRadius: 30 }}
                       />
                     ) : (
-                      <Text style={styles.modalDriverIconText}>👤</Text>
+                      <DefaultAvatar size={60} bgColor={driverInfo?.avatarBgColor || '#FFFFFF'} avatarType={driverInfo?.avatarPreset || 'default'} />
                     )}
                   </View>
                   {selectedRide.ownerId !== auth.currentUser?.uid ? (

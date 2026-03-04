@@ -15,6 +15,7 @@ import { colors } from '../../../ui/styles/colors';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
+import DefaultAvatar from '../../components/DefaultAvatar';
 
 const formatPhoneNumber = (phoneNumber) => {
   if (!phoneNumber) return '';
@@ -54,6 +55,8 @@ export default function ProfileViewPage() {
             bio: data.bio || '',
             payHandle: data.payHandle || '',
             photoURL: data.photoURL || null,
+            avatarBgColor: data.avatarBgColor || '#FFFFFF',
+            avatarPreset: data.avatarPreset || 'default',
             vehicleMake: primaryVehicle.make || '',
             vehicleModel: primaryVehicle.model || '',
             vehiclePlate: primaryVehicle.plate || '',
@@ -133,7 +136,7 @@ export default function ProfileViewPage() {
               {profile.photoURL ? (
                 <Image source={{ uri: profile.photoURL }} style={styles.avatarImage} />
               ) : (
-                <Text style={styles.avatarText}>{initials}</Text>
+                <DefaultAvatar size={64} bgColor={profile.avatarBgColor || '#FFFFFF'} avatarType={profile.avatarPreset || 'default'} />
               )}
             </View>
             <View style={styles.headerText}>
