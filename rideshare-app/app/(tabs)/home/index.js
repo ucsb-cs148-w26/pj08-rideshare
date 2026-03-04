@@ -19,7 +19,8 @@ import {
   Alert,
 } from 'react-native';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs, updateDoc, runTransaction, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../../../src/firebase';
+import { auth, db, functions } from '../../../src/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { colors } from '../../../ui/styles/colors';
 import { commonStyles } from '../../../ui/styles/commonStyles';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
@@ -360,12 +361,12 @@ export default function Homepage({ user }) {
         >
           {/* Joined Rides Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Joined Rides</Text>
+            <Text style={styles.sectionTitle}>Upcoming Rides</Text>
 
             <View style={styles.card}>
               <RideList
                 rides={joinedRides}
-                emptyText={"No joined rides yet.\nTap Join to find a ride."}
+                emptyText={"No upcoming rides yet.\nTap Join Ride to find a ride."}
                 isHosted={false}
                 onViewDetails={async (ride) => {
                   setSelectedRide(ride);
@@ -412,7 +413,7 @@ export default function Homepage({ user }) {
               style={commonStyles.primaryButton}
               onPress={() => router.push("/(tabs)/home/joinpage")}
             >
-              <Text style={commonStyles.primaryButtonText}>Join</Text>
+              <Text style={commonStyles.primaryButtonText}>Join Ride</Text>
             </TouchableOpacity>
           </View>
 
@@ -426,7 +427,7 @@ export default function Homepage({ user }) {
               ) : (
                 <RideList
                   rides={hostedRides}
-                  emptyText={"No hosted rides yet.\nTap Host to create a ride."}
+                  emptyText={"No hosted rides yet.\nTap Host Ride to create a ride."}
                   isHosted={true}
                   onStartRide={(item) => {
                     const rideParams = {
@@ -501,7 +502,7 @@ export default function Homepage({ user }) {
                   { fontSize: 18 },
                 ]}
               >
-                Host
+                Host Ride
               </Text>
             </TouchableOpacity>
             {!loadingProfile && !hasVehicleInfo && (
@@ -805,33 +806,11 @@ export default function Homepage({ user }) {
                         const currentUser = auth.currentUser;
                         if (!currentUser) return;
 
-                        const rideRef = doc(db, 'rides', selectedRide.id);
-                        const joinRef = doc(db, 'rides', selectedRide.id, 'joins', currentUser.uid);
+                        await currentUser.getIdToken(true);
 
-                        await runTransaction(db, async (tx) => {
-                          const [rideSnap, joinSnap] = await Promise.all([
-                            tx.get(rideRef),
-                            tx.get(joinRef),
-                          ]);
+                        const leaveRideAndPromote = httpsCallable(functions, 'leaveRideAndPromote');
+                        await leaveRideAndPromote({ rideId: selectedRide.id });
 
-                          if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
-                          if (!joinSnap.exists()) throw new Error('You have not joined this ride.');
-
-                          const rideData = rideSnap.data() || {};
-                          const seatsNumRaw = Number(rideData.seats);
-                          const seatsNum = Number.isFinite(seatsNumRaw) ? seatsNumRaw : 0;
-                          const totalSeatsRaw = Number(rideData.total_seats ?? seatsNum);
-                          const totalSeats = Number.isFinite(totalSeatsRaw) ? totalSeatsRaw : null;
-                          const nextSeats = totalSeats !== null
-                            ? Math.min(seatsNum + 1, totalSeats)
-                            : seatsNum + 1;
-
-                          tx.update(rideRef, {
-                            seats: nextSeats,
-                            total_seats: rideData.total_seats ?? seatsNum,
-                          });
-                          tx.delete(joinRef);
-                        });
                         // Send notifications
                         try {
                           const now = new Date();
