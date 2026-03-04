@@ -360,12 +360,12 @@ export default function Homepage({ user }) {
         >
           {/* Joined Rides Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Joined Rides</Text>
+            <Text style={styles.sectionTitle}>Upcoming Rides</Text>
 
             <View style={styles.card}>
               <RideList
                 rides={joinedRides}
-                emptyText={"No joined rides yet.\nTap Join to find a ride."}
+                emptyText={"No upcoming rides yet.\nTap Join Ride to find a ride."}
                 isHosted={false}
                 onViewDetails={async (ride) => {
                   setSelectedRide(ride);
@@ -412,7 +412,7 @@ export default function Homepage({ user }) {
               style={commonStyles.primaryButton}
               onPress={() => router.push("/(tabs)/home/joinpage")}
             >
-              <Text style={commonStyles.primaryButtonText}>Join</Text>
+              <Text style={commonStyles.primaryButtonText}>Join Ride</Text>
             </TouchableOpacity>
           </View>
 
@@ -426,7 +426,7 @@ export default function Homepage({ user }) {
               ) : (
                 <RideList
                   rides={hostedRides}
-                  emptyText={"No hosted rides yet.\nTap Host to create a ride."}
+                  emptyText={"No hosted rides yet.\nTap Host Ride to create a ride."}
                   isHosted={true}
                   onStartRide={(item) => {
                     const rideParams = {
@@ -501,7 +501,7 @@ export default function Homepage({ user }) {
                   { fontSize: 18 },
                 ]}
               >
-                Host
+                Host Ride
               </Text>
             </TouchableOpacity>
             {!loadingProfile && !hasVehicleInfo && (

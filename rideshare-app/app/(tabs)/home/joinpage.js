@@ -518,7 +518,11 @@ export default function JoinPage() {
       <View style={commonStyles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Available Rides</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={{ paddingRight: 12 }}>
+            <Text style={{ fontSize: 28, fontWeight: '600', color: colors.white }}>←</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Available Rides</Text>
+          <View style={{ width: 28 }} />
         </View>
 
         {/* Search Bar (Placeholder) */}
@@ -884,6 +888,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
+    flexDirection: "row", 
     alignItems: "center",
   },
   headerTitle: {

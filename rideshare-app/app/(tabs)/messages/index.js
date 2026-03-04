@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.accent,
+    backgroundColor: '#ef4444',
     marginLeft: 8,
   },
   separator: {

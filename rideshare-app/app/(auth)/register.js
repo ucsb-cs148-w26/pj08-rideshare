@@ -83,9 +83,6 @@ export default function Register() {
     if (!role) e.role = "Please select your role.";
     if (!yearsAtUCSB.trim()) e.yearsAtUCSB = "Years at UCSB is required.";
     if (!major.trim()) e.major = "Major is required.";
-    if (!clubs.trim()) e.clubs = "Please list at least one club or interest.";
-    if (!bio.trim() || bio.trim().length < 5)
-      e.bio = "Add a short fun fact (min 5 chars).";
 
 
    if (!payHandle.trim()) e.payHandle = "Venmo/Zelle is required.";
@@ -347,7 +344,7 @@ export default function Register() {
         </Text>
         {showError("major") ? <Text style={styles.error}>{errors.major}</Text> : null}
 
-        <RequiredLabel text="Clubs / Interests" style={styles.label} />
+        <Text style={styles.label}>Clubs / Interests</Text>
         <TextInput
           style={[
             styles.input,
@@ -367,7 +364,7 @@ export default function Register() {
         </Text>
         {showError("clubs") ? <Text style={styles.error}>{errors.clubs}</Text> : null}
 
-        <RequiredLabel text="Fun Fact" style={styles.label} />
+        <Text style={styles.label}>Fun Fact</Text>
         <TextInput
           style={[
             styles.input,
@@ -420,6 +417,7 @@ export default function Register() {
 
 
        <RequiredLabel text="Email" style={styles.label} />
+       <Text style={styles.helperText}>Must use your @ucsb.edu email address.</Text>
        <TextInput
          style={[styles.input, showError("email") && styles.inputError]}
          value={email}

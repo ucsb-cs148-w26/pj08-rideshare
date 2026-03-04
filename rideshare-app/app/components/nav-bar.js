@@ -1,20 +1,56 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { useActiveRide } from '../../src/context/ActiveRideContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../../src/firebase';
 
 export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { activeRide } = useActiveRide();
 
+  // ✅ hooks at the top level of the component, NOT inside map
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'conversations'),
+      where('participants', 'array-contains', user.uid)
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      let count = 0;
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.cancelled) return;
+        const lastReadAt = data.lastReadAt?.[user.uid];
+        const lastReadDate = lastReadAt?.toDate ? lastReadAt.toDate() : (lastReadAt ? new Date(lastReadAt) : null);
+        const lastMsgDate = data.lastMessageTime?.toDate ? data.lastMessageTime.toDate() : (data.lastMessageTime ? new Date(data.lastMessageTime) : null);
+        const isUnread =
+          !!data.lastMessage &&
+          data.lastMessageSenderId !== user.uid &&
+          (!lastReadDate || (lastMsgDate && lastMsgDate > lastReadDate));
+        if (isUnread) count++;
+      });
+      setUnreadCount(count);
+    });
+
+    return () => unsub();
+  }, []);
+
+  // ✅ navItems defined after hooks, uses unreadCount
   const navItems = [
     {
       name: 'Messages',
       icon: 'chatbubbles',
       iconOutline: 'chatbubbles-outline',
       route: '/(tabs)/messages',
+      badge: unreadCount,
     },
     {
       name: 'Home',
@@ -22,7 +58,6 @@ export default function NavBar() {
       iconOutline: 'home-outline',
       route: '/(tabs)/home',
     },
-    // Dynamic "Ride" tab — only present when a ride is in progress
     ...(activeRide
       ? [
           {
@@ -42,64 +77,44 @@ export default function NavBar() {
     },
   ];
 
-  
-
   const isActive = (route) => {
-    // Check for Messages - only active on messages page
     if (route === '/(tabs)/messages') {
       return pathname.includes('/messages');
     }
-    
-    // Check for during-ride page
     if (route === '/(tabs)/home/duringride') {
       return pathname.includes('duringride');
     }
-    
-    // Check for Home - ONLY active on home index, NOT on hostpage, joinpage, or duringride
     if (route === '/(tabs)/home') {
-      const isOnHomePage = (pathname === '/(tabs)/home' || 
-                            pathname === '/home' ||
-                            pathname === '/(tabs)/home/' ||
-                            pathname === '/home/') &&
-                           !pathname.includes('hostpage') && 
-                           !pathname.includes('joinpage') &&
-                           !pathname.includes('duringride');
-      return isOnHomePage;
+      return (
+        (pathname === '/(tabs)/home' ||
+          pathname === '/home' ||
+          pathname === '/(tabs)/home/' ||
+          pathname === '/home/') &&
+        !pathname.includes('hostpage') &&
+        !pathname.includes('joinpage') &&
+        !pathname.includes('duringride')
+      );
     }
-    
-    // Check for Profile/Account
     if (route === '/(tabs)/account/accountpage') {
       return pathname.includes('/account');
     }
-    
     return pathname === route;
   };
-  
+
   const handlePress = (route) => {
-    // For during-ride, navigate with stored params
     if (route === '/(tabs)/home/duringride') {
       if (!isActive(route) && activeRide) {
-        router.push({
-          pathname: '/(tabs)/home/duringride',
-          params: activeRide,
-        });
+        router.push({ pathname: '/(tabs)/home/duringride', params: activeRide });
       }
       return;
     }
-
-    // For home, check if we're already there before navigating
     if (route === '/(tabs)/home') {
-      if (!isActive(route)) {
-        router.push('/home');
-      }
+      if (!isActive(route)) router.push('/home');
       return;
     }
-    
-    // For other routes, only navigate if not already there
-    if (!isActive(route)) {
-      router.push(route);
-    }
+    if (!isActive(route)) router.push(route);
   };
+
   return (
     <View style={styles.container}>
       <View style={styles.navbar}>
@@ -121,9 +136,16 @@ export default function NavBar() {
               <Text style={[styles.navLabel, active && { color: activeColor }]}>
                 {item.name}
               </Text>
-              {item.accentColor && (
-                <View style={styles.liveBadge} />
+              {/* ✅ unread badge for Messages */}
+              {item.badge > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </Text>
+                </View>
               )}
+              {/* live ride badge */}
+              {item.accentColor && <View style={styles.liveBadge} />}
             </TouchableOpacity>
           );
         })}
@@ -177,5 +199,24 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#22c55e',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 0,
+    right: '20%',
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  unreadBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
   },
 });
