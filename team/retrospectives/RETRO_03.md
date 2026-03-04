@@ -32,8 +32,18 @@
 
 * Measurable action item: All core user stories are implemented and merged before the code cutoff, each merged feature meets its acceptance criteria and is reviewable through PR screenshots and documentation.
 
-## Retro Assessment 
+## Retro Outcomes 
 This retrospective was efficient and goal-oriented, with engagement from all team members. The discussion reflected a shared understanding that the team is transitioning from incremental feature development to full application completion. Communication and responsiveness were identified as ongoing strengths, particularly in coordinating PR reviews and handling scheduling conflicts. The Start, Stop, Continue format helped the team align on practical steps to keep our efforts focused on work that directly contributes to the final product.
 
-## Experiment/Change 
-The team will experiment with shifting focus from smaller bug fixes to completing end-to-end functionality across the app. This includes prioritizing core user stories, organizing the Kanban board around features needed for the final build, and enforcing acceptance criteria to ensure completeness before merge.
+## Report
+#### Successes:
+* Strong communication through the group chat, allowing the team to coordinate PR reviews and resolve issues quickly.
+* Consistent participation from team members during development, with everyone contributing feedback and updates or ideas.
+* A collaborative PR review process where multiple teammates review code before merging, helping catch bugs and improve code quality.
+* Steady progress toward implementing the core functionality of the application and aligning development with the final product goals.
+
+#### Goal:
+Improve development efficiency by focusing on completing the remaining core user stories and ensuring the application is fully implemented and ready before the code cutoff.
+
+#### Commitment:
+As a team, we commit to prioritizing the implementation of the remaining core features and reviewing pull requests quickly so that key functionality can be merged and tested ahead of the final code freeze.
