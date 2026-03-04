@@ -131,7 +131,7 @@ export default function Login() {
           ) : null}
 
           <View style={styles.inputContainer}>
-            <Text style={commonStyles.inputLabel}>Email</Text>
+            <Text style={styles.label}>Email</Text>
             <TextInput
               style={commonStyles.input}
               placeholder="Enter your email"
@@ -148,7 +148,7 @@ export default function Login() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={commonStyles.inputLabel}>Password</Text>
+            <Text style={styles.label}>Password</Text>
             <TextInput
               style={commonStyles.input}
               placeholder="Enter your password"
@@ -245,6 +245,12 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 20,
+  },
+  label: {
+    color: colors.textPrimary,
+    marginBottom: 8,
+    fontWeight: "700",
+    fontSize: 14,
   },
   forgotPasswordContainer: {
     alignSelf: "flex-end",

@@ -117,7 +117,9 @@ export default function JoinPage() {
             (ride) =>
               ride.ownerId !== user.uid &&
               ride.status !== "cancelled" &&
-              ride.status !== "canceled"
+              ride.status !== "canceled" &&
+              ride.status !== "started" &&
+              ride.status !== "completed"
           );
 
         setRides(ridesData);

@@ -589,17 +589,16 @@ const handleRemovePhoto = async () => {
                 </TouchableOpacity>
               </>
             ) : (
-              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
-                <Text style={styles.editText}>Edit Profile</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
+                  <Ionicons name="log-out-outline" size={18} color="#B91C1C" />
+                  <Text style={styles.logoutText}>Log Out</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
+                  <Text style={styles.editText}>Edit Profile</Text>
+                </TouchableOpacity>
+              </>
             )}
-          </View>
-
-          <View style={styles.logoutRow}>
-            <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={18} color="#B91C1C" />
-              <Text style={styles.logoutText}>Log Out</Text>
-            </TouchableOpacity>
           </View>
         </View>
         </ScrollView>
@@ -707,7 +706,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     gap: 12,
     marginTop: 16,
   },
@@ -723,7 +722,6 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: colors.accent || '#007AFF',
-    alignSelf: 'flex-start',
   },
   editText: {
     color: '#FFFFFF',

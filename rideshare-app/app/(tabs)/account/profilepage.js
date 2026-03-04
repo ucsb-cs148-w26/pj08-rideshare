@@ -26,7 +26,7 @@ const formatPhoneNumber = (phoneNumber) => {
 };
 
 export default function ProfileViewPage() {
-  const { userId, conversationId } = useLocalSearchParams();
+  const { userId, conversationId, returnTo, rideId } = useLocalSearchParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,6 +84,11 @@ export default function ProfileViewPage() {
       router.push({
         pathname: '/(tabs)/messages/chat',
         params: { conversationId },
+      });
+    } else if (returnTo === 'history') {
+      router.push({
+        pathname: '/(tabs)/history',
+        params: rideId ? { rideId } : {},
       });
     } else {
       router.back();

@@ -14,7 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../ui/styles/colors';
-import { doc, getDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
 
@@ -63,6 +63,23 @@ export default function DuringRidePage() {
     return () => unsub();
   }, [rideId]);
 
+  // Set ride status to 'started' when component mounts
+  useEffect(() => {
+    if (!rideId) return;
+    const updateRideStatus = async () => {
+      try {
+        const rideRef = doc(db, 'rides', rideId);
+        await updateDoc(rideRef, {
+          status: 'started',
+          startedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error('Error updating ride status to started:', error);
+      }
+    };
+    updateRideStatus();
+  }, [rideId]);
+
   useEffect(() => {
     const startedAt = activeRide?.startedAt;
     if (!startedAt) return;
@@ -104,9 +121,17 @@ export default function DuringRidePage() {
                   status: 'completed',
                   completedAt: new Date().toISOString(),
                 });
+
+                // Delete the conversation associated with this ride
+                const conversationRef = doc(db, 'conversations', rideId);
+                try {
+                  await deleteDoc(conversationRef);
+                } catch (convoError) {
+                  console.warn('Could not delete conversation:', convoError);
+                }
               }
               clearActiveRide();
-              router.back();
+              router.push('/(tabs)/history');
             } catch (error) {
               console.error('Error ending ride:', error);
               Alert.alert('Error', 'Failed to end ride. Please try again.');

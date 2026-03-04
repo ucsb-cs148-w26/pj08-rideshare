@@ -225,7 +225,7 @@ export default function Homepage({ user }) {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled')
+        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled' && ride.status !== 'completed' && ride.status !== 'started')
         .sort((a, b) => new Date(a.rideDate) - new Date(b.rideDate));
       setHostedRides(rides);
       setLoading(false);
