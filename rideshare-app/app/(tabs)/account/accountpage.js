@@ -358,7 +358,7 @@ const handleRemovePhoto = async () => {
         keyboardVerticalOffset={0}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Account</Text>
+          <Text style={styles.title}>Profile</Text>
 
         <View style={styles.card}>
           <View style={styles.headerRow}>
