@@ -28,11 +28,12 @@ import {
   where,
   getDocs,
   writeBatch, } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { auth, db, storage } from '../../../src/firebase';
+import { auth, db } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
+import DefaultAvatar from '../../components/DefaultAvatar';
+import ColorWheel from '../../components/ColorWheel';
 
 const MAX_NAME_LENGTH = 30;
 
@@ -67,8 +68,14 @@ export default function AccountPage() {
   const [draft, setDraft] = useState(emptyAccount);
   const [saved, setSaved] = useState(emptyAccount);
   const [photoURL, setPhotoURL] = useState(null);
+  const [avatarBgColor, setAvatarBgColor] = useState('#FFFFFF');
+  const [avatarPreset, setAvatarPreset] = useState('default');
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
+  const [tempPickerColor, setTempPickerColor] = useState('#FFFFFF');
+  const [tempAvatarPreset, setTempAvatarPreset] = useState('default');
 
 
   useEffect(() => {
@@ -100,6 +107,8 @@ export default function AccountPage() {
           vehiclePlate: primaryVehicle.plate || '',
         };
         setPhotoURL(data.photoURL || null);
+        setAvatarBgColor(data.avatarBgColor || '#FFFFFF');
+        setAvatarPreset(data.avatarPreset || 'default');
         setSaved(next);
         setDraft(next);
       } catch (error) {
@@ -208,6 +217,7 @@ export default function AccountPage() {
       clubs: trimmed.clubs,
       bio: trimmed.bio,
       payHandle: trimmed.payHandle,
+      avatarBgColor,
       vehicles,
     };
 
@@ -250,7 +260,7 @@ const pickImage = async () => {
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ['images'],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.7,
@@ -292,6 +302,9 @@ const takePhoto = async () => {
 const uploadImage = async (uri) => {
   if (!user?.uid) return;
 
+  const previousPhoto = photoURL;
+  setPhotoURL(uri);
+
   try {
     const manipulated = await ImageManipulator.manipulateAsync(
       uri,
@@ -307,41 +320,33 @@ const uploadImage = async (uri) => {
 
     await setDoc(
       doc(db, 'users', user.uid),
-      { photoURL: dataUrl },
+      { photoURL: dataUrl, isDefaultAvatar: false },
       { merge: true }
     );
 
     setPhotoURL(dataUrl);
   } catch (err) {
     console.error('Upload failed:', err);
+    setPhotoURL(previousPhoto);
     Alert.alert('Upload failed', 'Image too large or could not save.');
   }
 };
 
 const chooseImageSource = () => {
-  const isIosSimulator = Platform.OS === 'ios' && !Device.isDevice;
+  setShowPresets(false);
+  setPhotoModalVisible(true);
+};
 
-  if (isIosSimulator) {
-    Alert.alert('Profile Photo', 'Choose a source', [
-      { text: 'Upload', onPress: pickImage },
-      ...(photoURL ? [{ text: 'Remove Photo', style: 'destructive', onPress: handleRemovePhoto }] : []),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-    return;
-  }
-
-  Alert.alert('Profile Photo', 'Choose a source', [
-    { text: 'Camera', onPress: takePhoto },
-    { text: 'Upload', onPress: pickImage },
-    ...(photoURL ? [{ text: 'Remove Photo', style: 'destructive', onPress: handleRemovePhoto }] : []),
-    { text: 'Cancel', style: 'cancel' },
-  ]);
+const launchPicker = (action) => {
+  setPhotoModalVisible(false);
+  if (action === 'camera') takePhoto();
+  else if (action === 'upload') pickImage();
 };
 
 const handleRemovePhoto = async () => {
   if (!user?.uid) return;
   try {
-    await setDoc(doc(db, 'users', user.uid), { photoURL: null }, { merge: true });
+    await setDoc(doc(db, 'users', user.uid), { photoURL: null, isDefaultAvatar: true }, { merge: true });
     setPhotoURL(null);
   } catch (err) {
     console.error('Remove photo failed:', err);
@@ -352,6 +357,156 @@ const handleRemovePhoto = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Profile Photo Overlay */}
+      {photoModalVisible && (
+        <View style={styles.photoModalOverlay} pointerEvents="box-none">
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setPhotoModalVisible(false)}
+          />
+          <View style={[styles.photoModalContent, showPresets && { maxHeight: '80%' }]}>
+            <Text style={styles.photoModalTitle}>Profile Photo</Text>
+            <Text style={styles.photoModalSubtitle}>Choose a source</Text>
+
+            {!showPresets ? (
+              <>
+                {/* Camera */}
+                {(Platform.OS !== 'ios' || Device.isDevice) && (
+                  <TouchableOpacity
+                    style={styles.photoModalOption}
+                    onPress={() => launchPicker('camera')}
+                  >
+                    <Ionicons name="camera-outline" size={22} color={colors.primary || '#003660'} />
+                    <Text style={styles.photoModalOptionText}>Camera</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Upload */}
+                <TouchableOpacity
+                  style={styles.photoModalOption}
+                  onPress={() => launchPicker('upload')}
+                >
+                  <Ionicons name="image-outline" size={22} color={colors.primary || '#003660'} />
+                  <Text style={styles.photoModalOptionText}>Upload</Text>
+                </TouchableOpacity>
+
+                {/* Preset */}
+                <TouchableOpacity
+                  style={styles.photoModalOption}
+                  onPress={() => { setTempPickerColor(avatarBgColor); setTempAvatarPreset(avatarPreset); setShowPresets(true); }}
+                >
+                  <Ionicons name="color-palette-outline" size={22} color={colors.primary || '#003660'} />
+                  <Text style={styles.photoModalOptionText}>Preset</Text>
+                </TouchableOpacity>
+
+                {/* Remove Photo */}
+                {photoURL && (
+                  <TouchableOpacity
+                    style={[styles.photoModalOption, { borderTopWidth: 1, borderTopColor: colors.border || '#E5E7EB', marginTop: 8, paddingTop: 16 }]}
+                    onPress={() => { setPhotoModalVisible(false); handleRemovePhoto(); }}
+                  >
+                    <Ionicons name="trash-outline" size={22} color="#B91C1C" />
+                    <Text style={[styles.photoModalOptionText, { color: '#B91C1C' }]}>Remove Photo</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                <View style={styles.presetSection}>
+                  {/* Avatar variant picker */}
+                  <Text style={styles.presetLabel}>Choose a raccoon</Text>
+                  <View style={styles.avatarVariantRow}>
+                    {[
+                      { key: 'default', label: 'Classic' },
+                      { key: 'safari', label: 'Safari' },
+                      { key: 'spacesuit', label: 'Space' },
+                      { key: 'sporty', label: 'Sporty' },
+                      { key: 'scuba', label: 'Scuba' },
+                    ].map((variant) => (
+                      <TouchableOpacity
+                        key={variant.key}
+                        style={[
+                          styles.avatarVariantOption,
+                          tempAvatarPreset === variant.key && styles.avatarVariantSelected,
+                        ]}
+                        onPress={() => setTempAvatarPreset(variant.key)}
+                      >
+                        <DefaultAvatar size={50} bgColor="#FFFFFF" avatarType={variant.key} />
+                        <Text style={[
+                          styles.avatarVariantLabel,
+                          tempAvatarPreset === variant.key && styles.avatarVariantLabelSelected,
+                        ]}>
+                          {variant.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Color wheel picker */}
+                  <Text style={[styles.presetLabel, { marginTop: 16 }]}>Choose a background color</Text>
+                  <ColorWheel
+                    size={220}
+                    ringWidth={28}
+                    onColorChange={(hex) => setTempPickerColor(hex)}
+                  >
+                    <DefaultAvatar size={80} bgColor={tempPickerColor} avatarType={tempAvatarPreset} />
+                  </ColorWheel>
+
+                  <TouchableOpacity
+                    onPress={() => setTempPickerColor('#FFFFFF')}
+                    style={styles.resetWhiteBtn}
+                  >
+                    <View style={styles.whiteDot} />
+                    <Text style={styles.resetWhiteText}>White (Default)</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.selectColorBtn}
+                    onPress={async () => {
+                      setAvatarBgColor(tempPickerColor);
+                      setAvatarPreset(tempAvatarPreset);
+                      if (user?.uid) {
+                        try {
+                          await setDoc(doc(db, 'users', user.uid), {
+                            avatarBgColor: tempPickerColor,
+                            avatarPreset: tempAvatarPreset,
+                            photoURL: null,
+                            isDefaultAvatar: true,
+                          }, { merge: true });
+                          setPhotoURL(null);
+                        } catch (e) {
+                          console.error('Preset save failed:', e);
+                        }
+                      }
+                      setPhotoModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.selectColorText}>Save Preset</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.photoModalOption}
+                  onPress={() => setShowPresets(false)}
+                >
+                  <Ionicons name="arrow-back" size={22} color={colors.primary || '#003660'} />
+                  <Text style={styles.photoModalOptionText}>Back</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+
+            {/* Cancel */}
+            <TouchableOpacity
+              style={styles.photoModalCancel}
+              onPress={() => setPhotoModalVisible(false)}
+            >
+              <Text style={styles.photoModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -368,7 +523,7 @@ const handleRemovePhoto = async () => {
                   {photoURL ? (
                     <Image source={{ uri: photoURL }} style={styles.avatarImage} />
                   ) : (
-                    <Text style={styles.avatarText}>{initials}</Text>
+                    <DefaultAvatar size={64} bgColor={avatarBgColor} avatarType={avatarPreset} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -815,6 +970,158 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#B91C1C',
+  },
+  colorPickerContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  colorPickerLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.textSecondary || '#666',
+    marginBottom: 6,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  colorSwatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorSwatchSelected: {
+    borderColor: '#333',
+  },
+  photoModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  photoModalContent: {
+    width: '82%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+  },
+  photoModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.secondary || '#1A1A1A',
+    textAlign: 'center',
+  },
+  photoModalSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary || '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  photoModalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    marginBottom: 10,
+  },
+  photoModalOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.secondary || '#1A1A1A',
+    marginLeft: 14,
+  },
+  photoModalCancel: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  photoModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary || '#666',
+  },
+  presetSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  presetPreview: {
+    marginBottom: 16,
+  },
+  presetLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary || '#666',
+    marginBottom: 12,
+  },
+  resetWhiteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  whiteDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginRight: 8,
+  },
+  resetWhiteText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.secondary || '#1A1A1A',
+  },
+  selectColorBtn: {
+    marginTop: 16,
+    backgroundColor: colors.accent || '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  selectColorText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  avatarVariantRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  avatarVariantOption: {
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  avatarVariantSelected: {
+    borderColor: colors.accent || '#007AFF',
+    backgroundColor: '#EFF6FF',
+  },
+  avatarVariantLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary || '#666',
+  },
+  avatarVariantLabelSelected: {
+    color: colors.accent || '#007AFF',
   },
 
 });

@@ -30,6 +30,7 @@ import {
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { Ionicons } from '@expo/vector-icons';
+import DefaultAvatar from '../../components/DefaultAvatar';
 
 export default function ChatScreen() {
   const { conversationId } = useLocalSearchParams();
@@ -42,12 +43,16 @@ export default function ChatScreen() {
   const isTypingRef = useRef(false);
   const safetyTimeoutRef = useRef(null);
   const [hostPhoto, setHostPhoto] = useState(null);
+  const [hostBgColor, setHostBgColor] = useState('#FFFFFF');
+  const [hostAvatarPreset, setHostAvatarPreset] = useState('default');
 
   const [title, setTitle] = useState('Chat');
   const [subtitle, setSubtitle] = useState('');
   const [typingNames, setTypingNames] = useState([]);
   const [showParticipants, setShowParticipants] = useState(false);
   const [participantPhotos, setParticipantPhotos] = useState({});
+  const [participantBgColors, setParticipantBgColors] = useState({});
+  const [participantAvatarPresets, setParticipantAvatarPresets] = useState({});
   
 
   useEffect(() => {
@@ -65,17 +70,29 @@ export default function ChatScreen() {
                 if (hostId) {
                   const hostDoc = await getDoc(doc(db, 'users', hostId));
                   if (hostDoc.exists()) {
-                    setHostPhoto(hostDoc.data().photoURL || null);
+                    const hd = hostDoc.data();
+                    setHostPhoto(hd.photoURL || null);
+                    setHostBgColor(hd.avatarBgColor || '#FFFFFF');
+                    setHostAvatarPreset(hd.avatarPreset || 'default');
                   }
                 }
 
                 if (data.participants) {  
                   data.participants.forEach(async (uid) => {  
                     const userDoc = await getDoc(doc(db, 'users', uid));  
-                    if (userDoc.exists()) {  
+                    if (userDoc.exists()) {
+                      const ud = userDoc.data();
                       setParticipantPhotos(prev => ({  
                         ...prev,  
-                        [uid]: userDoc.data().photoURL || null,  
+                        [uid]: ud.photoURL || null,  
+                      }));
+                      setParticipantBgColors(prev => ({
+                        ...prev,
+                        [uid]: ud.avatarBgColor || '#FFFFFF',
+                      }));
+                      setParticipantAvatarPresets(prev => ({
+                        ...prev,
+                        [uid]: ud.avatarPreset || 'default',
                       }));
                     }
                   });
@@ -291,9 +308,7 @@ export default function ChatScreen() {
                   style={styles.msgAvatarImage}
                 />
               ) : (
-                <Text style={styles.msgAvatarText}>
-                  {getAvatarInitial(item.senderId, senderDisplayName)}
-                </Text>
+                <DefaultAvatar size={32} bgColor={participantBgColors[item.senderId] || '#FFFFFF'} avatarType={participantAvatarPresets[item.senderId] || 'default'} />
               )}
             </View>
           </TouchableOpacity>
@@ -387,9 +402,7 @@ export default function ChatScreen() {
               style={{ width: 80, height: 80, borderRadius: 40 }}
             />
           ) : (
-            <Text style={styles.emptyChatAvatarText}>
-              {(title || 'C').charAt(0).toUpperCase()}
-            </Text>
+            <DefaultAvatar size={80} bgColor={hostBgColor} avatarType={hostAvatarPreset} />
           )}
         </View>
         <Text style={styles.emptyChatName}>{title}</Text>
@@ -440,9 +453,7 @@ export default function ChatScreen() {
                 style={{ width: 40, height: 40, borderRadius: 20 }}
               />
             ) : (
-              <Text style={styles.headerAvatarText}>
-                {(title || 'C').charAt(0).toUpperCase()}
-              </Text>
+              <DefaultAvatar size={40} bgColor={hostBgColor} avatarType={hostAvatarPreset} />
             )}
           </View>
           <View style={styles.headerInfo}>
@@ -490,9 +501,7 @@ export default function ChatScreen() {
                         {participantPhotos[uid] ? (
                           <Image source={{ uri: participantPhotos[uid] }} style={styles.participantAvatarImage} />
                         ) : (
-                          <Text style={styles.participantAvatarText}>
-                            {(name.charAt(0) || 'U').toUpperCase()}
-                          </Text>
+                          <DefaultAvatar size={36} bgColor={participantBgColors[uid] || '#FFFFFF'} avatarType={participantAvatarPresets[uid] || 'default'} />
                         )}
                       </View>
                       <Text style={styles.participantName}>
@@ -512,9 +521,7 @@ export default function ChatScreen() {
                       {participantPhotos[uid] ? (
                         <Image source={{ uri: participantPhotos[uid] }} style={styles.participantAvatarImage} />
                       ) : (
-                        <Text style={styles.participantAvatarText}>
-                          {(name.charAt(0) || 'U').toUpperCase()}
-                        </Text>
+                        <DefaultAvatar size={36} bgColor={participantBgColors[uid] || '#FFFFFF'} avatarType={participantAvatarPresets[uid] || 'default'} />
                       )}
                     </View>
                     <Text style={styles.participantName}>

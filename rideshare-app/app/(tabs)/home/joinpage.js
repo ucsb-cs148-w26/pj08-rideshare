@@ -38,6 +38,7 @@ import { commonStyles } from "../../../ui/styles/commonStyles";
 import { getOrCreateRideConversation } from '../../../src/utils/messaging';
 import STRIPE_CONFIG from "../../../src/stripeConfig";
 import AddressAutocomplete from "../../components/AddressAutocomplete";
+import DefaultAvatar from "../../components/DefaultAvatar";
 
 export default function JoinPage() {
   const { user } = useAuth();
@@ -87,6 +88,9 @@ export default function JoinPage() {
   const reopenModalRef = useRef(false);
 
   const [ownerPhotos, setOwnerPhotos] = useState({});
+  const [ownerBgColors, setOwnerBgColors] = useState({});
+  const [ownerAvatarPresets, setOwnerAvatarPresets] = useState({});
+  const ownerCacheRef = useRef(new Set());
   const [waitlistedRideIds, setWaitlistedRideIds] = useState(new Set());
   const [waitlistPositions, setWaitlistPositions] = useState({});
   const [waitlistModalVisible, setWaitlistModalVisible] = useState(false);
@@ -162,17 +166,37 @@ export default function JoinPage() {
 
         setRides(ridesData);
 
-        ridesData.forEach(async (ride) => {
-          if (ride.ownerId && !ownerPhotos[ride.ownerId]) {
-            const userDoc = await getDoc(doc(db, 'users', ride.ownerId));
-            if (userDoc.exists()) {
-              setOwnerPhotos(prev => ({
-                ...prev,
-                [ride.ownerId]: userDoc.data().photoURL || null,
-              }));
-            }
-          }
-        });
+        const uncachedIds = [
+          ...new Set(
+            ridesData
+              .map((r) => r.ownerId)
+              .filter((id) => id && !ownerCacheRef.current.has(id))
+          ),
+        ];
+
+        if (uncachedIds.length > 0) {
+          uncachedIds.forEach((id) => ownerCacheRef.current.add(id));
+
+          Promise.all(
+            uncachedIds.map((id) => getDoc(doc(db, 'users', id)))
+          ).then((snapshots) => {
+            const photos = {};
+            const bgColors = {};
+            const presets = {};
+            snapshots.forEach((snap, i) => {
+              if (snap.exists()) {
+                const d = snap.data();
+                photos[uncachedIds[i]] = d.photoURL || null;
+                bgColors[uncachedIds[i]] = d.avatarBgColor || '#FFFFFF';
+                presets[uncachedIds[i]] = d.avatarPreset || 'default';
+              }
+            });
+            setOwnerPhotos((prev) => ({ ...prev, ...photos }));
+            setOwnerBgColors((prev) => ({ ...prev, ...bgColors }));
+            setOwnerAvatarPresets((prev) => ({ ...prev, ...presets }));
+          });
+        }
+
         setLoading(false);
       },
       (err) => {
@@ -655,7 +679,7 @@ export default function JoinPage() {
                   style={{ width: 45, height: 45, borderRadius: 22.5 }}
                 />
               ) : (
-                <Text style={[styles.driverIconText, disabled && styles.textDisabled]}>👤</Text>
+                <DefaultAvatar size={45} bgColor={ownerBgColors[item.ownerId] || '#FFFFFF'} avatarType={ownerAvatarPresets[item.ownerId] || 'default'} />
               )}
             </View>
             <Text 
@@ -1165,7 +1189,7 @@ export default function JoinPage() {
                             style={{ width: 56, height: 56, borderRadius: 28 }}
                           />
                         ) : (
-                          <Text style={styles.modalDriverIconText}>👤</Text>
+                          <DefaultAvatar size={56} bgColor={driverInfo?.avatarBgColor || '#FFFFFF'} avatarType={driverInfo?.avatarPreset || 'default'} />
                         )}
                       </View>
                       <TouchableOpacity onPress={() => {

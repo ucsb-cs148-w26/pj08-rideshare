@@ -26,11 +26,14 @@ import {
 import { auth, db } from '../../../src/firebase';
 import { colors } from '../../../ui/styles/colors';
 import { Ionicons } from '@expo/vector-icons';
+import DefaultAvatar from '../../components/DefaultAvatar';
 
 export default function MessagesScreen() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userPhotos, setUserPhotos] = useState({});
+  const [userBgColors, setUserBgColors] = useState({});
+  const [userAvatarPresets, setUserAvatarPresets] = useState({});
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -64,9 +67,18 @@ const avatarUserId = data.hostId || data.driverId || data.ownerId ||
   if (avatarUserId) {
     const userDoc = await getDoc(doc(db, 'users', avatarUserId));
     if (userDoc.exists()) {
+      const ud = userDoc.data();
       setUserPhotos(prev => ({
         ...prev,
-        [avatarUserId]: userDoc.data().photoURL || null,
+        [avatarUserId]: ud.photoURL || null,
+      }));
+      setUserBgColors(prev => ({
+        ...prev,
+        [avatarUserId]: ud.avatarBgColor || '#FFFFFF',
+      }));
+      setUserAvatarPresets(prev => ({
+        ...prev,
+        [avatarUserId]: ud.avatarPreset || 'default',
       }));
     }
   }
@@ -140,9 +152,7 @@ const avatarUserId = data.hostId || data.driverId || data.ownerId ||
               style={styles.avatarImage}
             />
           ) : (
-            <Text style={styles.avatarText}>
-              {title.charAt(0).toUpperCase()}
-            </Text>
+            <DefaultAvatar size={50} bgColor={userBgColors[avatarUserId] || '#FFFFFF'} avatarType={userAvatarPresets[avatarUserId] || 'default'} />
           )}
         </View>
 
