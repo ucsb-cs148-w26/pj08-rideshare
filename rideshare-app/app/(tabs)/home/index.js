@@ -82,7 +82,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
           {isHosted ? (
             <View style={styles.startRideRow}>
               <TouchableOpacity 
-                style={[styles.joinedViewDetailsButton, { flex: 1 }]}
+                style={styles.joinedViewDetailsButton}
                 onPress={() => onViewDetails && onViewDetails(item)}
               >
                 <Text style={styles.joinedViewDetailsText}>View Details</Text>
@@ -90,7 +90,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
               {new Date() >= new Date(item.rideDate) ? (
                 <>
                   <TouchableOpacity
-                    style={[styles.secondaryCardButton, { flex: 1 }]}
+                    style={styles.secondaryCardButton}
                     onPress={() => onStartRide && onStartRide(item)}
                   >
                     <Text style={styles.secondaryCardButtonText}>Start Ride</Text>
@@ -128,7 +128,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
                 <Text style={styles.joinedViewDetailsText}>View Details</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.secondaryCardButton, { flex: 1 }]}
+                style={styles.secondaryCardButton}
                 onPress={() => onViewPin && onViewPin(item)}
               >
                 <Text style={styles.secondaryCardButtonText}>View Pin</Text>
@@ -1323,9 +1323,11 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   joinedViewDetailsButton: {
+    flex: 1,
+    justifyContent: 'center',
     backgroundColor: colors.background,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1353,8 +1355,8 @@ const styles = StyleSheet.create({
   },
   startRideRow: {
     flexDirection: 'row',
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 8,
     gap: 8,
   },
@@ -1362,9 +1364,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   secondaryCardButton: {
+    flex: 1,
+    justifyContent: 'center',
     backgroundColor: colors.accent,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.accent,
