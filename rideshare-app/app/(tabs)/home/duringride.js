@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +42,14 @@ export default function DuringRidePage() {
   const [isEnding, setIsEnding] = useState(false);
   const [pinInputs, setPinInputs] = useState({});
   const [riders, setRiders] = useState([]);
+  const [endModalVisible, setEndModalVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('completed');
+
+  const END_STATUS_OPTIONS = [
+    { key: 'completed', label: 'Completed',  icon: 'checkmark-circle', color: '#22c55e' },
+    { key: 'no_show',   label: 'No-Show',    icon: 'alert-circle',     color: '#f59e0b' },
+    { key: 'cancelled', label: 'Cancelled',   icon: 'close-circle',     color: '#ef4444' },
+  ];
 
   // Fetch riders who joined this ride
   useEffect(() => {
@@ -95,28 +105,34 @@ export default function DuringRidePage() {
         {
           text: 'End Ride',
           style: 'destructive',
-          onPress: async () => {
-            setIsEnding(true);
-            try {
-              if (rideId) {
-                const rideRef = doc(db, 'rides', rideId);
-                await updateDoc(rideRef, {
-                  status: 'completed',
-                  completedAt: new Date().toISOString(),
-                });
-              }
-              clearActiveRide();
-              router.back();
-            } catch (error) {
-              console.error('Error ending ride:', error);
-              Alert.alert('Error', 'Failed to end ride. Please try again.');
-            } finally {
-              setIsEnding(false);
-            }
+          onPress: () => {
+            setSelectedStatus('completed');
+            setEndModalVisible(true);
           },
         },
       ]
     );
+  };
+
+  const handleConfirmEnd = async () => {
+    setIsEnding(true);
+    try {
+      if (rideId) {
+        const rideRef = doc(db, 'rides', rideId);
+        await updateDoc(rideRef, {
+          status: selectedStatus,
+          completedAt: new Date().toISOString(),
+        });
+      }
+      setEndModalVisible(false);
+      clearActiveRide();
+      router.back();
+    } catch (error) {
+      console.error('Error ending ride:', error);
+      Alert.alert('Error', 'Failed to end ride. Please try again.');
+    } finally {
+      setIsEnding(false);
+    }
   };
 
   return (
@@ -247,6 +263,83 @@ export default function DuringRidePage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* ── End Ride Modal ────────────────────────────────── */}
+      <Modal
+        visible={endModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEndModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setEndModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            {/* header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>End Ride</Text>
+              <TouchableOpacity onPress={() => setEndModalVisible(false)}>
+                <Ionicons name="close" size={26} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* status picker */}
+            <Text style={styles.modalSectionLabel}>How did this ride end?</Text>
+            <View style={styles.statusPicker}>
+              {END_STATUS_OPTIONS.map((opt) => {
+                const active = selectedStatus === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.statusOption,
+                      active && { borderColor: opt.color, backgroundColor: opt.color + '15' },
+                    ]}
+                    onPress={() => setSelectedStatus(opt.key)}
+                  >
+                    <Ionicons name={opt.icon} size={24} color={active ? opt.color : '#C7C7CC'} />
+                    <Text
+                      style={[
+                        styles.statusOptionText,
+                        active && { color: opt.color, fontWeight: '700' },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* review placeholder */}
+            <TouchableOpacity
+              style={styles.reviewPlaceholder}
+              onPress={() => { /* TODO: review flow */ }}
+            >
+              <Ionicons name="star-outline" size={20} color={colors.secondary} />
+              <Text style={styles.reviewPlaceholderText}>Leave a Review</Text>
+              <Text style={styles.reviewComingSoon}>Coming soon</Text>
+            </TouchableOpacity>
+
+            {/* confirm button */}
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                isEnding && styles.buttonDisabled,
+              ]}
+              onPress={handleConfirmEnd}
+              disabled={isEnding}
+            >
+              {isEnding ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.modalConfirmText}>Finish & End Ride</Text>
+              )}
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -494,5 +587,96 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+
+  /* end-ride modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '88%',
+    padding: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  modalSectionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  statusPicker: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  statusOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#F9F9F9',
+    gap: 6,
+  },
+  statusOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  reviewPlaceholder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 10,
+  },
+  reviewPlaceholderText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  reviewComingSoon: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#D97706',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  modalConfirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

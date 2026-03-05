@@ -729,33 +729,32 @@ const handleRemovePhoto = async () => {
             </View>
           </View>
 
-          <View style={styles.buttonRow}>
-            {isEditing ? (
-              <>
-                <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.saveButton, isSaving && styles.buttonDisabled]}
-                  onPress={handleSave}
-                  disabled={isSaving}
-                >
-                  <Text style={styles.saveText}>{isSaving ? 'Saving...' : 'Save Changes'}</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
+          {isEditing ? (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.button, styles.cancelButton, styles.actionButton]} onPress={handleCancel}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, styles.actionButton, isSaving && styles.buttonDisabled]}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                <Text style={styles.saveText}>{isSaving ? 'Saving...' : 'Save Changes'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.button, styles.editButton, styles.actionButton]} onPress={handleEdit}>
+                <Ionicons name="create-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.editText}>Edit Profile</Text>
               </TouchableOpacity>
-            )}
-          </View>
+              <TouchableOpacity style={[styles.button, styles.logoutButton, styles.actionButton]} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={18} color="#B91C1C" />
+                <Text style={styles.logoutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          <View style={styles.logoutRow}>
-            <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={18} color="#B91C1C" />
-              <Text style={styles.logoutText}>Log Out</Text>
-            </TouchableOpacity>
-          </View>
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -878,7 +877,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: colors.accent || '#007AFF',
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 8,
   },
   editText: {
     color: '#FFFFFF',
@@ -904,6 +904,16 @@ const styles = StyleSheet.create({
   logoutRow: {
     marginTop: 8,
     alignItems: 'flex-start',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    flexBasis: 0,
   },
   logoutButton: {
     backgroundColor: '#FEE2E2',

@@ -70,6 +70,12 @@ export default function NavBar() {
         ]
       : []),
     {
+      name: 'History',
+      icon: 'time',
+      iconOutline: 'time-outline',
+      route: '/(tabs)/history',
+    },
+    {
       name: 'Profile',
       icon: 'person',
       iconOutline: 'person-outline',
@@ -94,6 +100,9 @@ export default function NavBar() {
         !pathname.includes('joinpage') &&
         !pathname.includes('duringride')
       );
+    }
+    if (route === '/(tabs)/history') {
+      return pathname.includes('/history');
     }
     if (route === '/(tabs)/account/accountpage') {
       return pathname.includes('/account');
