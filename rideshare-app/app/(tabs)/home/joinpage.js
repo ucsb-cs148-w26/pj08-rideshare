@@ -525,7 +525,6 @@ export default function JoinPage() {
 
     try {
       setIsJoining(true);
-
       await user.getIdToken(true);
 
       const createPaymentIntent = httpsCallable(functions, "createPaymentIntent");
@@ -560,34 +559,11 @@ export default function JoinPage() {
         throw new Error(paymentError.message);
       }
 
-      // Payment succeeded - run Firestore transaction
-      const rideRef = doc(db, "rides", confirmRide.id);
-      const joinRef = doc(db, "rides", confirmRide.id, "joins", user.uid);
-
-      await runTransaction(db, async (tx) => {
-        const [rideSnap, joinSnap] = await Promise.all([tx.get(rideRef), tx.get(joinRef)]);
-
-        if (!rideSnap.exists()) throw new Error("This ride no longer exists.");
-        if (joinSnap.exists()) throw new Error("You already joined this ride.");
-
-        const rideData = rideSnap.data();
-        const seatsNum = Number(rideData.seats);
-
-        if (!Number.isFinite(seatsNum) || seatsNum <= 0) {
-          throw new Error("No seats left for this ride.");
-        }
-
-        tx.update(rideRef, {
-          seats: seatsNum - 1,
-          total_seats: rideData.total_seats ?? seatsNum,
-        });
-        tx.set(joinRef, {
-          riderId: user.uid,
-          riderEmail: user.email ?? "",
-          joinedAt: serverTimestamp(),
-          pricePaid: Number(rideData.price) || 0,
-          paymentIntentId: paymentIntentId, // store for refund reference
-        });
+      // Payment succeeded - call Cloud Function to securely handle the DB writes and PIN generation
+      const finalizeJoinRide = httpsCallable(functions, "finalizeJoinRide");
+      await finalizeJoinRide({
+        rideId: confirmRide.id,
+        paymentIntentId: paymentIntentId,
       });
 
       // Create conversation with the host after successful join
