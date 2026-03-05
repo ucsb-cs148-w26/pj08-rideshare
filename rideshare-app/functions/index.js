@@ -52,6 +52,11 @@ exports.createPaymentIntent = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
   }
 });
 
+
+/**
+ * Verifies that the Stripe payment went through
+ * Upon success, saves the user to the ride along with their unique PIN
+ */
 exports.finalizeJoinRide = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (request) => {
   const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
