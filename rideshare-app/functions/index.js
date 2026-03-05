@@ -5,6 +5,14 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 initializeApp();
 const adminDb = getFirestore();
 
+/**
+ * Utility to generate a 4-digit PIN
+ */
+
+const generatePickupPin = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
 exports.createPaymentIntent = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (request) => {
   const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -41,6 +49,88 @@ exports.createPaymentIntent = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
   } catch (error) {
     console.error("Stripe error:", error.message);
     throw new HttpsError("internal", error.message);
+  }
+});
+
+
+/**
+ * Verifies that the Stripe payment went through
+ * Upon success, saves the user to the ride along with their unique PIN
+ */
+exports.finalizeJoinRide = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (request) => {
+  const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be signed in.");
+  }
+
+  const { rideId, paymentIntentId } = request.data;
+  const userId = request.auth.uid;
+  const userEmail = request.auth.token.email || "";
+
+  if (!rideId || !paymentIntentId) {
+    throw new HttpsError("invalid-argument", "Missing rideId or paymentIntentId.");
+  }
+
+  try {
+    // Verify with Stripe that the payment actually succeeded
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (paymentIntent.status !== "succeeded") {
+       throw new HttpsError("failed-precondition", "Payment was not successful.");
+    }
+
+    const rideRef = adminDb.collection("rides").doc(rideId);
+    const joinRef = rideRef.collection("joins").doc(userId);
+
+    // Run the transaction securely on the server
+    await adminDb.runTransaction(async (tx) => {
+      const [rideSnap, joinSnap] = await Promise.all([
+        tx.get(rideRef),
+        tx.get(joinRef)
+      ]);
+
+      if (!rideSnap.exists) {
+        throw new HttpsError("not-found", "This ride no longer exists.");
+      }
+      if (joinSnap.exists) {
+        throw new HttpsError("already-exists", "You already joined this ride.");
+      }
+
+      const rideData = rideSnap.data();
+      const seatsNum = Number(rideData.seats);
+
+      // Prevent race conditions: What if 2 users pay for the last seat at the same time?
+      if (!Number.isFinite(seatsNum) || seatsNum <= 0) {
+        // Refund the user automatically because the seat was taken while they were paying!
+        await stripe.refunds.create({ payment_intent: paymentIntentId });
+        throw new HttpsError("resource-exhausted", "No seats left. Your payment has been refunded.");
+      }
+
+      // Generate the secure PIN
+      const pickupPin = generatePickupPin();
+
+      // Decrement seats
+      tx.update(rideRef, {
+        seats: seatsNum - 1,
+        total_seats: rideData.total_seats ?? seatsNum,
+      });
+
+      // Save the joined user with their unique PIN
+      tx.set(joinRef, {
+        riderId: userId,
+        riderEmail: userEmail,
+        joinedAt: FieldValue.serverTimestamp(),
+        pricePaid: Number(rideData.price) || 0,
+        paymentIntentId: paymentIntentId,
+        pickupPin: pickupPin, 
+        status: "confirmed"
+      });
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Finalize Join Error:", error);
+    throw new HttpsError(error.code || "internal", error.message);
   }
 });
 
