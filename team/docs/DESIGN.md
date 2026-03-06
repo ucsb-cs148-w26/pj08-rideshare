@@ -11,15 +11,12 @@ This document explains how product decisions (scope, UX flow, and priorities) ma
 # System Architecture Overview
 
 <p align="center">
-  <img src="system_architecture_diagram.png" width="700"/>
+  <img src="RideshareSystemArchitecture.png" width="600"/>
 </p>
 
-The rideshare application follows a **client-centric architecture**
-built with Expo / React Native, leveraging Firebase as a
-Backend-as-a-Service (BaaS) and integrating third-party cloud services
-for maps and push notifications. There is no custom backend server;
-instead, the mobile client communicates directly with Firebase and
-external APIs.
+The rideshare application follows a **serverless architecture** built with Expo / React Native, leveraging Firebase as a comprehensive Backend-as-a-Service (BaaS) and integrating third-party cloud services for maps, payments, and push notifications.
+
+While the mobile client handles most direct database queries and UI state management, it delegates highly sensitive operations—such as payment processing and complex database transactions—to secure server-side Firebase Cloud Functions. This hybrid approach ensures a fast, responsive client experience without compromising the security of user data or financial transactions.
 
 ------------------------------------------------------------------------
 
@@ -32,10 +29,11 @@ messaging, and notifications, originate from the client.
 
 The client is responsible for:
 
--   Handling UI and state management\
--   Authenticating users via Firebase Authentication\
--   Reading and writing ride and message data to Firestore\
--   Requesting map data from the Mapbox API\
+-   Handling UI and state management
+-   Authenticating users via Firebase Authentication
+-   Reading and writing ride and message data to Firestore
+-   Requesting map data from the Mapbox API
+-   Processing direct client-side payment sheets via the Stripe API
 -   Sending push notification requests to Expo Push Notifications
 
 Because the system does not include a custom backend, the client
@@ -45,7 +43,7 @@ communicates directly with all cloud services.
 
 ## Firebase Backend (Backend-as-a-Service)
 
-Firebase provides authentication and real-time database functionality.
+Firebase provides authentication, real-time database functionality, and secure server-side execution for the application.
 
 ### Firebase Authentication
 
@@ -62,6 +60,16 @@ authenticated users.
 
 ------------------------------------------------------------------------
 
+### Firebase Cloud Functions
+
+Firebase Cloud Functions act as the secure, server-side backend of the application. They are triggered by the mobile client to perform tasks that cannot be safely executed on the user's device, including:
+
+-  API Secret Management: Securely communicating with the Stripe API using hidden backend keys to generate Payment Intents and verify payment statuses.
+
+-  Database Transactions: Running secure, atomic database transactions (e.g., verifying seat availability, decrementing seat counts, and generating unique pickup PINs) to prevent race         conditions when multiple users attempt to join a ride simultaneously.
+
+------------------------------------------------------------------------
+
 ### Firestore (NoSQL Database)
 
 Cloud Firestore serves as the application's primary data store and
@@ -69,15 +77,15 @@ real-time synchronization layer.
 
 Firestore contains the following core collections:
 
--   **Users** -- profile and account information\
--   **Rides** -- ride postings and ride details\
--   **Notifications** -- stored notification data\
+-   **Users** -- profile and account information
+-   **Rides** -- ride postings and ride details
+-   **Notifications** -- stored notification data
 -   **Messages/Conversations** -- chat messages between users
 
 The mobile app performs:
 
 -   **User Writes**: creating rides, joining rides, sending messages,
-    updating profiles\
+    updating profiles
 -   **User Reads**: fetching ride listings, loading chat conversations,
     retrieving notifications
 
@@ -95,8 +103,8 @@ layer.
 
 The Mapbox API is used to provide:
 
--   Map tile rendering\
--   Route generation and directions\
+-   Map tile rendering
+-   Route generation and directions
 -   Location-based services
 
 The mobile application directly sends requests to Mapbox for route data
@@ -120,11 +128,11 @@ The flow is as follows:
 
 Push notifications are used for events such as:
 
--   New ride updates\
--   New messages\
+-   New ride updates
+-   New messages
 -   Ride cancellations
 
-The system does not use Firebase Cloud Functions; notification requests
+The system does not currently use Firebase Cloud Functions for notifications; notification requests
 are triggered directly from the client.
 
 # Summary of Team Decisions
