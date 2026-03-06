@@ -11,7 +11,7 @@ This document explains how product decisions (scope, UX flow, and priorities) ma
 # System Architecture Overview
 
 <p align="center">
-  <img src="RideshareSystemArchitecture.png" width="800"/>
+  <img src="RideshareSystemArchitecture.png" width="600"/>
 </p>
 
 The rideshare application follows a **serverless architecture** built with Expo / React Native, leveraging Firebase as a comprehensive Backend-as-a-Service (BaaS) and integrating third-party cloud services for maps, payments, and push notifications.
