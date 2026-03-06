@@ -49,7 +49,7 @@ function formatDateTime(isoString) {
   });
 }
 
-function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, onStartRide = null }) {
+function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, onViewPin = null, onStartRide = null }) {
   if (!rides || rides.length === 0) {
     return (
       <View style={commonStyles.emptyState}>
@@ -83,7 +83,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
           {isHosted ? (
             <View style={styles.startRideRow}>
               <TouchableOpacity 
-                style={[styles.joinedViewDetailsButton, { flex: 1 }]}
+                style={styles.joinedViewDetailsButton}
                 onPress={() => onViewDetails && onViewDetails(item)}
               >
                 <Text style={styles.joinedViewDetailsText}>View Details</Text>
@@ -91,10 +91,10 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
               {new Date() >= new Date(item.rideDate) ? (
                 <>
                   <TouchableOpacity
-                    style={[styles.startRideButtonActive, { flex: 1 }]}
+                    style={styles.secondaryCardButton}
                     onPress={() => onStartRide && onStartRide(item)}
                   >
-                    <Text style={styles.startRideTextActive}>Start Ride</Text>
+                    <Text style={styles.secondaryCardButtonText}>Start Ride</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.startRideInfoButton}
@@ -121,12 +121,20 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
               )}
             </View>
           ) : (
-            <TouchableOpacity 
-              style={styles.joinedViewDetailsButton}
-              onPress={() => onViewDetails && onViewDetails(item)}
-            >
-              <Text style={styles.joinedViewDetailsText}>View Details</Text>
-            </TouchableOpacity>
+            <View style={styles.startRideRow}>
+              <TouchableOpacity 
+                style={styles.joinedViewDetailsButton}
+                onPress={() => onViewDetails && onViewDetails(item)}
+              >
+                <Text style={styles.joinedViewDetailsText}>View Details</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.secondaryCardButton}
+                onPress={() => onViewPin && onViewPin(item)}
+              >
+                <Text style={styles.secondaryCardButtonText}>View Pin</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
@@ -179,6 +187,10 @@ export default function Homepage({ user }) {
   const [selectedRide, setSelectedRide] = useState(null);
   const [driverInfo, setDriverInfo] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [pinModalVisible, setPinModalVisible] = useState(false);
+
+  const [ridePins, setRidePins] = useState({}); // Stores all fetched PINs like: {rideID : pin}
+  const [activePinRideId, setActivePinRideId] = useState(null); // Tracks which ride's modal is currently open
 
   const [driverVehicle, setDriverVehicle] = useState(null);
   const [hasVehicleInfo, setHasVehicleInfo] = useState(false);
@@ -405,6 +417,46 @@ export default function Homepage({ user }) {
                   } catch (error) {
                     console.error('Error fetching driver vehicle info:', error);
                     setDriverVehicle(null);
+                  }
+                }}
+
+                onViewPin={async (ride) => {
+                  setActivePinRideId(ride.id);
+                  setPinModalVisible(true);
+
+                  // If we already fetched this ride's PIN earlier, skip the database call ;))
+                  if (ridePins[ride.id]) {
+                    return;
+                  }
+
+                  try {
+                    const currentUserId = auth.currentUser?.uid; 
+                    
+                    if (!currentUserId) {
+                      console.error('Authentication Error: No user logged in.');
+                      setRidePins(prev => ({ ...prev, [ride.id]: 'ERR' }));
+                      return;
+                    }
+
+                    // Look up the join document for this rider
+                    const joinRef = doc(db, 'rides', ride.id, 'joins', currentUserId);
+                    const joinSnap = await getDoc(joinRef);
+
+                    if (joinSnap.exists()) {
+                      const joinData = joinSnap.data();
+                      // Add this specific PIN to our dictionary state
+                      setRidePins(prev => ({ 
+                        ...prev, 
+                        [ride.id]: joinData.pickupPin || 'N/A' 
+                      }));
+                    } else {
+                      console.error('Join record not found.');
+                      setRidePins(prev => ({ ...prev, [ride.id]: 'NONE' }));
+                    }
+
+                  } catch (error) {
+                    console.error('Error fetching PIN securely:', error);
+                    setRidePins(prev => ({ ...prev, [ride.id]: 'ERR' }));
                   }
                 }}
               />
@@ -1080,6 +1132,52 @@ export default function Homepage({ user }) {
           )}
         </View>
       </Modal>
+
+      {/* View Pin Modal */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={pinModalVisible}
+        onRequestClose={() => setPinModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setPinModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.modalScrollContent, { width: '100%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { flex: 0 }]}>
+                  Your Ride PIN
+                </Text>
+              </View>
+
+              <View style={styles.pinContentContainer}>
+                <View style={styles.pinDigitsRow}>
+                  {String(ridePins[activePinRideId] || '----').split('').map((digit, index) => {
+                    return (
+                      <View 
+                        key={index} 
+                        style={styles.pinBox}
+                      >
+                        <Text style={styles.pinDigitText}>{digit}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.pinInstructionText}>
+                  Provide PIN to your driver upon pickup.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1226,9 +1324,11 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   joinedViewDetailsButton: {
+    flex: 1,
+    justifyContent: 'center',
     backgroundColor: colors.background,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1256,24 +1356,26 @@ const styles = StyleSheet.create({
   },
   startRideRow: {
     flexDirection: 'row',
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 8,
     gap: 8,
   },
   startRideInfoButton: {
     padding: 4,
   },
-  startRideButtonActive: {
+  secondaryCardButton: {
+    flex: 1,
+    justifyContent: 'center',
     backgroundColor: colors.accent,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.accent,
     alignItems: 'center',
   },
-  startRideTextActive: {
+  secondaryCardButtonText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
@@ -1313,6 +1415,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     marginTop: 10,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.textPrimary,
   },
   modalDriverIcon: {
     width: 60,
@@ -1610,5 +1718,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
+  },
+  
+  // Pin Modal Styles
+  pinContentContainer: {
+    paddingTop: 10,
+    alignItems: 'center',
+  },
+  pinDigitsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  pinBox: {
+    borderWidth: 1,
+    borderColor: '#b3b3b3',
+    borderRadius: 4,
+    width: 38,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  pinDigitText: {
+    fontSize: 26,
+    fontWeight: '400',
+    color: '#000',
+  },
+  pinInstructionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    marginBottom: 20,
   },
 });
