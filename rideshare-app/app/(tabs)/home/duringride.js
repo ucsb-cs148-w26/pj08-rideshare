@@ -17,7 +17,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../ui/styles/colors';
 import { doc, getDoc, updateDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db } from '../../../src/firebase';
+import { db, functions } from '../../../src/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
 
 function formatTime(dateString) {
@@ -43,7 +44,6 @@ export default function DuringRidePage() {
   const [pinInputs, setPinInputs] = useState({});
   const [riders, setRiders] = useState([]);
   const [noShowRiders, setNoShowRiders] = useState({});
-  const [verifiedRiders, setVerifiedRiders] = useState({});
   const [endModalVisible, setEndModalVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('completed');
   const [noShowModalVisible, setNoShowModalVisible] = useState(false);
@@ -53,6 +53,9 @@ export default function DuringRidePage() {
     { key: 'completed', label: 'Completed',  icon: 'checkmark-circle', color: '#22c55e' },
     { key: 'cancelled', label: 'Cancelled',   icon: 'close-circle',     color: '#ef4444' },
   ];
+
+  const [verifyingPins, setVerifyingPins] = useState({}); // Tracks loading state (when verifying pin)
+  const [verifiedRiders, setVerifiedRiders] = useState({}); // Tracks success state (after verified pin)
 
   // Fetch riders who joined this ride
   useEffect(() => {
@@ -70,7 +73,13 @@ export default function DuringRidePage() {
             name = userSnap.data().name || name;
           }
         } catch (e) {}
-        list.push({ id: joinDoc.id, name });
+
+        list.push({ 
+          id: joinDoc.id, 
+          name: name,
+          status: data.status
+        });
+        
         // Track no show status
         if (data.no_show) {
           noShowMap[joinDoc.id] = true;
@@ -163,11 +172,6 @@ export default function DuringRidePage() {
     setSelectedRiderForNoShow(null);
   };
 
-  const handleVerifyRider = (riderId) => {
-    // Mark rider as verified
-    setVerifiedRiders((prev) => ({ ...prev, [riderId]: true }));
-  };
-
   const handleConfirmEnd = async () => {
     setIsEnding(true);
     try {
@@ -196,6 +200,41 @@ export default function DuringRidePage() {
       Alert.alert('Error', 'Failed to end ride. Please try again.');
     } finally {
       setIsEnding(false);
+    }
+  };
+
+  const handleVerifyPin = async (riderId) => {
+    const enteredPin = pinInputs[riderId];
+
+    if (!enteredPin || enteredPin.length !== 4) {
+      Alert.alert("Invalid Entry", "Please enter a 4-digit PIN.");
+      return;
+    }
+
+    // loading spinner for this specific rider
+    setVerifyingPins((prev) => ({ ...prev, [riderId]: true }));
+
+    try {
+      const verifyPinFunction = httpsCallable(functions, 'verifyRiderPin');
+
+      const result = await verifyPinFunction({
+        rideId: rideId, 
+        riderId: riderId, 
+        pin: enteredPin 
+      });
+
+      if (result.data.verified) {
+        setVerifiedRiders((prev) => ({ ...prev, [riderId]: true }));
+      } else {
+        Alert.alert("Verification Failed", "The PIN is incorrect. Please try again.");
+      }
+      
+    } catch (error) {
+      console.error("Error verifying PIN:", error);
+      Alert.alert("Error", "Could not reach the verification server.");
+    } finally {
+      // stop loading spinner regardless of success or failure
+      setVerifyingPins((prev) => ({ ...prev, [riderId]: false }));
     }
   };
 
@@ -288,31 +327,43 @@ export default function DuringRidePage() {
                   {rider.name} {noShowRiders[rider.id] ? '(No Show)' : verifiedRiders[rider.id] ? '(Verified)' : ''}
                 </Text>
               </View>
+
               <View style={styles.pinRowBottom}>
-                <TextInput
-                  style={styles.pinInput}
-                  placeholder="PIN"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  value={pinInputs[rider.id] || ''}
-                  onChangeText={(t) => setPinInputs((p) => ({ ...p, [rider.id]: t }))}
-                  editable={!noShowRiders[rider.id] && !verifiedRiders[rider.id]}
-                />
-                <TouchableOpacity 
-                  style={[
-                    styles.pinVerifyBtn, 
-                    verifiedRiders[rider.id] && styles.pinVerifyBtnVerified
-                  ]}
-                  onPress={() => handleVerifyRider(rider.id)}
-                  disabled={noShowRiders[rider.id] || verifiedRiders[rider.id]}
-                >
-                  {verifiedRiders[rider.id] ? (
-                    <Ionicons name="checkmark" size={18} color="#fff" />
-                  ) : (
-                    <Text style={styles.pinVerifyText}>Verify</Text>
-                  )}
-                </TouchableOpacity>
+                {verifiedRiders[rider.id] || rider.status === 'veridfied' ? ( // TODO: fix verified
+
+                  // User is verified
+                  <View style={[styles.pinInput, styles.verifiedBadge]}>
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+
+                ) : (
+                  // Verification is pending
+                <>
+                  <TextInput
+                    style={styles.pinInput}
+                    placeholder="PIN"
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    value={pinInputs[rider.id] || ''}
+                    onChangeText={(t) => setPinInputs((p) => ({ ...p, [rider.id]: t }))}
+                    editable={!verifyingPins[rider.id]} // Disable input while loading
+                  />
+                  <TouchableOpacity 
+                    style={styles.pinVerifyBtn}
+                    onPress={() => handleVerifyPin(rider.id)}
+                    disabled={verifyingPins[rider.id]}
+                  >
+                    {verifyingPins[rider.id] ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.pinVerifyText}>Verify</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+                )}
+
+                // NOSHOWSTUFF
                 <TouchableOpacity 
                   style={[styles.noShowBtn, (noShowRiders[rider.id] || verifiedRiders[rider.id]) && styles.noShowBtnDisabled]}
                   onPress={() => openNoShowConfirm(rider)}
@@ -686,9 +737,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  pinVerifyBtnVerified: {
-    backgroundColor: '#22c55e',
-  },
   noShowBtn: {
     backgroundColor: '#f59e0b',
     paddingHorizontal: 10,
@@ -709,6 +757,22 @@ const styles = StyleSheet.create({
   noShowText: {
     opacity: 0.5,
     textDecorationLine: 'line-through',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)', 
+  },
+  verifiedText: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   endRideSection: {
     marginTop: 24,
