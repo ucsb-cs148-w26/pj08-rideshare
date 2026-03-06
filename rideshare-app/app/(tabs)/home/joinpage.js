@@ -161,6 +161,8 @@ export default function JoinPage() {
               ride.ownerId !== user.uid &&
               ride.status !== "cancelled" &&
               ride.status !== "canceled" &&
+              ride.status !== "started" &&
+              ride.status !== "completed" &&
               new Date(ride.rideDate).getTime() > Date.now()
           );
 
@@ -293,6 +295,8 @@ export default function JoinPage() {
           ride.ownerId !== user?.uid &&
           ride.status !== "cancelled" &&
           ride.status !== "canceled" &&
+          ride.status !== "started" &&
+          ride.status !== "completed" &&
           new Date(ride.rideDate).getTime() > Date.now()
         ) {
           ridesData.push({

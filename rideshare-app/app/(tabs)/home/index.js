@@ -227,7 +227,11 @@ export default function Homepage({ user }) {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled')
+        .filter((ride) => 
+          ride.status !== 'cancelled' && 
+          ride.status !== 'canceled' && 
+          ride.status !== 'completed'
+        )
         .sort((a, b) => new Date(a.rideDate) - new Date(b.rideDate));
       setHostedRides(rides);
       setLoading(false);
@@ -265,13 +269,21 @@ export default function Homepage({ user }) {
         );
 
         const joinedRidesData = results.filter(Boolean);
-        joinedRidesData.sort((a, b) => {
+        
+        // Filter out cancelled and completed rides
+        const filteredJoinedRides = joinedRidesData.filter((ride) => 
+          ride.status !== 'cancelled' && 
+          ride.status !== 'canceled' && 
+          ride.status !== 'completed'
+        );
+        
+        filteredJoinedRides.sort((a, b) => {
           const dateA = new Date(a.rideDate || 0);
           const dateB = new Date(b.rideDate || 0);
           return dateA - dateB;
         });
 
-        setJoinedRides(joinedRidesData);
+        setJoinedRides(filteredJoinedRides);
       } catch (error) {
         console.error('Error fetching joined rides:', error);
       }
