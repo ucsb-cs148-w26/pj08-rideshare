@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../ui/styles/colors';
-import { doc, getDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
 
@@ -40,6 +42,17 @@ export default function DuringRidePage() {
   const [isEnding, setIsEnding] = useState(false);
   const [pinInputs, setPinInputs] = useState({});
   const [riders, setRiders] = useState([]);
+  const [noShowRiders, setNoShowRiders] = useState({});
+  const [verifiedRiders, setVerifiedRiders] = useState({});
+  const [endModalVisible, setEndModalVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('completed');
+  const [noShowModalVisible, setNoShowModalVisible] = useState(false);
+  const [selectedRiderForNoShow, setSelectedRiderForNoShow] = useState(null);
+
+  const END_STATUS_OPTIONS = [
+    { key: 'completed', label: 'Completed',  icon: 'checkmark-circle', color: '#22c55e' },
+    { key: 'cancelled', label: 'Cancelled',   icon: 'close-circle',     color: '#ef4444' },
+  ];
 
   // Fetch riders who joined this ride
   useEffect(() => {
@@ -47,6 +60,7 @@ export default function DuringRidePage() {
     const joinsRef = collection(db, 'rides', rideId, 'joins');
     const unsub = onSnapshot(joinsRef, async (snapshot) => {
       const list = [];
+      const noShowMap = {};
       for (const joinDoc of snapshot.docs) {
         const data = joinDoc.data() || {};
         let name = data.riderEmail || joinDoc.id;
@@ -57,8 +71,13 @@ export default function DuringRidePage() {
           }
         } catch (e) {}
         list.push({ id: joinDoc.id, name });
+        // Track no show status
+        if (data.no_show) {
+          noShowMap[joinDoc.id] = true;
+        }
       }
       setRiders(list);
+      setNoShowRiders(noShowMap);
     });
     return () => unsub();
   }, [rideId]);
@@ -87,6 +106,20 @@ export default function DuringRidePage() {
   };
 
   const handleEndRide = () => {
+    // Check if all riders are either verified or marked no-show
+    const processedCount = Object.keys(verifiedRiders).length + Object.keys(noShowRiders).length;
+    const totalRiders = riders.length;
+
+    if (processedCount < totalRiders) {
+      const remaining = totalRiders - processedCount;
+      Alert.alert(
+        'Cannot End Ride',
+        `You must verify or mark all riders as no-show before ending the ride. ${remaining} rider${remaining > 1 ? 's' : ''} still need to be processed.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'End Ride',
       'Are you sure you want to end this ride?',
@@ -95,28 +128,75 @@ export default function DuringRidePage() {
         {
           text: 'End Ride',
           style: 'destructive',
-          onPress: async () => {
-            setIsEnding(true);
-            try {
-              if (rideId) {
-                const rideRef = doc(db, 'rides', rideId);
-                await updateDoc(rideRef, {
-                  status: 'completed',
-                  completedAt: new Date().toISOString(),
-                });
-              }
-              clearActiveRide();
-              router.back();
-            } catch (error) {
-              console.error('Error ending ride:', error);
-              Alert.alert('Error', 'Failed to end ride. Please try again.');
-            } finally {
-              setIsEnding(false);
-            }
+          onPress: () => {
+            setSelectedStatus('completed');
+            setEndModalVisible(true);
           },
         },
       ]
     );
+  };
+
+  const handleMarkNoShow = async (riderId) => {
+    try {
+      const joinRef = doc(db, 'rides', rideId, 'joins', riderId);
+      await updateDoc(joinRef, {
+        no_show: true,
+        markedNoShowAt: new Date().toISOString(),
+      });
+      setNoShowModalVisible(false);
+      setSelectedRiderForNoShow(null);
+      Alert.alert('Marked as No Show', 'This rider has been marked as a no-show.');
+    } catch (error) {
+      console.error('Error marking no show:', error);
+      Alert.alert('Error', 'Failed to mark rider as no show.');
+    }
+  };
+
+  const openNoShowConfirm = (rider) => {
+    setSelectedRiderForNoShow(rider);
+    setNoShowModalVisible(true);
+  };
+
+  const closeNoShowConfirm = () => {
+    setNoShowModalVisible(false);
+    setSelectedRiderForNoShow(null);
+  };
+
+  const handleVerifyRider = (riderId) => {
+    // Mark rider as verified
+    setVerifiedRiders((prev) => ({ ...prev, [riderId]: true }));
+  };
+
+  const handleConfirmEnd = async () => {
+    setIsEnding(true);
+    try {
+      if (rideId) {
+        const rideRef = doc(db, 'rides', rideId);
+        await updateDoc(rideRef, {
+          status: selectedStatus,
+          completedAt: new Date().toISOString(),
+        });
+
+        // Delete the group chat conversation
+        try {
+          const conversationRef = doc(db, 'conversations', rideId);
+          await deleteDoc(conversationRef);
+          console.log('Group chat deleted for ride:', rideId);
+        } catch (chatError) {
+          console.warn('Error deleting conversation:', chatError);
+          // Continue even if chat deletion fails
+        }
+      }
+      setEndModalVisible(false);
+      clearActiveRide();
+      router.push('/(tabs)/history');
+    } catch (error) {
+      console.error('Error ending ride:', error);
+      Alert.alert('Error', 'Failed to end ride. Please try again.');
+    } finally {
+      setIsEnding(false);
+    }
   };
 
   return (
@@ -198,11 +278,17 @@ export default function DuringRidePage() {
 
           {riders.map((rider) => (
             <View key={rider.id} style={styles.pinRow}>
-              <View style={styles.pinRowLeft}>
-                <Ionicons name="person-circle-outline" size={24} color="rgba(255,255,255,0.5)" />
-                <Text style={styles.pinRowName}>{rider.name}</Text>
+              <View style={styles.pinRowTop}>
+                {verifiedRiders[rider.id] ? (
+                  <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={20} color="rgba(255,255,255,0.5)" />
+                )}
+                <Text style={[styles.pinRowName, noShowRiders[rider.id] && styles.noShowText]}>
+                  {rider.name} {noShowRiders[rider.id] ? '(No Show)' : verifiedRiders[rider.id] ? '(Verified)' : ''}
+                </Text>
               </View>
-              <View style={styles.pinRowRight}>
+              <View style={styles.pinRowBottom}>
                 <TextInput
                   style={styles.pinInput}
                   placeholder="PIN"
@@ -211,9 +297,28 @@ export default function DuringRidePage() {
                   maxLength={4}
                   value={pinInputs[rider.id] || ''}
                   onChangeText={(t) => setPinInputs((p) => ({ ...p, [rider.id]: t }))}
+                  editable={!noShowRiders[rider.id] && !verifiedRiders[rider.id]}
                 />
-                <TouchableOpacity style={styles.pinVerifyBtn}>
-                  <Text style={styles.pinVerifyText}>Verify</Text>
+                <TouchableOpacity 
+                  style={[
+                    styles.pinVerifyBtn, 
+                    verifiedRiders[rider.id] && styles.pinVerifyBtnVerified
+                  ]}
+                  onPress={() => handleVerifyRider(rider.id)}
+                  disabled={noShowRiders[rider.id] || verifiedRiders[rider.id]}
+                >
+                  {verifiedRiders[rider.id] ? (
+                    <Ionicons name="checkmark" size={18} color="#fff" />
+                  ) : (
+                    <Text style={styles.pinVerifyText}>Verify</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.noShowBtn, (noShowRiders[rider.id] || verifiedRiders[rider.id]) && styles.noShowBtnDisabled]}
+                  onPress={() => openNoShowConfirm(rider)}
+                  disabled={noShowRiders[rider.id] || verifiedRiders[rider.id]}
+                >
+                  <Text style={styles.noShowBtnText}>No Show</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -247,6 +352,115 @@ export default function DuringRidePage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* ── End Ride Modal ────────────────────────────────── */}
+      <Modal
+        visible={endModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEndModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setEndModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            {/* header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>End Ride</Text>
+              <TouchableOpacity onPress={() => setEndModalVisible(false)}>
+                <Ionicons name="close" size={26} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* status picker */}
+            <Text style={styles.modalSectionLabel}>How did this ride end?</Text>
+            <View style={styles.statusPicker}>
+              {END_STATUS_OPTIONS.map((opt) => {
+                const active = selectedStatus === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.statusOption,
+                      active && { borderColor: opt.color, backgroundColor: opt.color + '15' },
+                    ]}
+                    onPress={() => setSelectedStatus(opt.key)}
+                  >
+                    <Ionicons name={opt.icon} size={24} color={active ? opt.color : '#C7C7CC'} />
+                    <Text
+                      style={[
+                        styles.statusOptionText,
+                        active && { color: opt.color, fontWeight: '700' },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* confirm button */}
+            <TouchableOpacity
+              style={[
+                styles.modalConfirmButton,
+                isEnding && styles.buttonDisabled,
+              ]}
+              onPress={handleConfirmEnd}
+              disabled={isEnding}
+            >
+              {isEnding ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.modalConfirmText}>Finish & End Ride</Text>
+              )}
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* No Show Confirmation Modal */}
+      <Modal
+        visible={noShowModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeNoShowConfirm}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={closeNoShowConfirm}
+        >
+          <Pressable style={styles.confirmModalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.confirmModalHeader}>
+              <Ionicons name="alert-circle" size={48} color="#f59e0b" />
+              <Text style={styles.confirmModalTitle}>Mark as No Show?</Text>
+            </View>
+
+            {selectedRiderForNoShow && (
+              <Text style={styles.confirmModalMessage}>
+                Are you sure you want to mark <Text style={styles.confirmModalRiderName}>{selectedRiderForNoShow.name}</Text> as a no-show? This action cannot be undone.
+              </Text>
+            )}
+
+            <View style={styles.confirmModalActions}>
+              <TouchableOpacity
+                style={styles.confirmModalCancelBtn}
+                onPress={closeNoShowConfirm}
+              >
+                <Text style={styles.confirmModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmModalConfirmBtn}
+                onPress={() => selectedRiderForNoShow && handleMarkNoShow(selectedRiderForNoShow.id)}
+              >
+                <Text style={styles.confirmModalConfirmText}>Mark No Show</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -421,38 +635,38 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   pinRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
-  pinRowLeft: {
+  pinRowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 10,
+    justifyContent: 'center',
+    marginBottom: 10,
+    gap: 6,
   },
   pinRowName: {
     color: colors.white,
     fontSize: 15,
     fontWeight: '600',
-    marginLeft: 8,
   },
-  pinRowRight: {
+  pinRowBottom: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   pinInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    width: 80,
+    flex: 1,
     color: colors.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',
     letterSpacing: 2,
@@ -461,14 +675,40 @@ const styles = StyleSheet.create({
   },
   pinVerifyBtn: {
     backgroundColor: colors.accent,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
   },
   pinVerifyText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+  },
+  pinVerifyBtnVerified: {
+    backgroundColor: '#22c55e',
+  },
+  noShowBtn: {
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  noShowBtnDisabled: {
+    backgroundColor: '#9ca3af',
+    opacity: 0.5,
+  },
+  noShowBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  noShowText: {
+    opacity: 0.5,
+    textDecorationLine: 'line-through',
   },
   endRideSection: {
     marginTop: 24,
@@ -494,5 +734,129 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+
+  /* end-ride modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '88%',
+    padding: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  modalSectionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  statusPicker: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  statusOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#F9F9F9',
+    gap: 6,
+  },
+  statusOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  modalConfirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* no-show confirmation modal */
+  confirmModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '85%',
+    padding: 24,
+    alignItems: 'center',
+  },
+  confirmModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  confirmModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: 12,
+  },
+  confirmModalMessage: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  confirmModalRiderName: {
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  confirmModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  confirmModalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+  },
+  confirmModalCancelText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  confirmModalConfirmBtn: {
+    flex: 1,
+    backgroundColor: '#f59e0b',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  confirmModalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

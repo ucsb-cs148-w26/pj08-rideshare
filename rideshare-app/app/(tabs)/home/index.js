@@ -69,12 +69,12 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
         <View style={styles.joinedRideCard}>
           <View style={styles.joinedCardContent}>
             <View style={styles.joinedCardLeft}>
-              <Text style={styles.joinedCardLabel}>When:</Text>
+              <Text style={styles.joinedCardLabel}>When</Text>
               <Text style={styles.joinedCardDate}>{formatDate(item.rideDate)}</Text>
               <Text style={styles.joinedCardTime}>{formatTime(item.rideDate)}</Text>
             </View>
             <View style={styles.joinedCardRight}>
-              <Text style={styles.joinedCardLabel}>To:</Text>
+              <Text style={styles.joinedCardLabel}>Route</Text>
               <Text style={styles.joinedCardDestination} numberOfLines={2}>
                 {item.fromAddress} → {item.toAddress}
               </Text>
@@ -239,7 +239,11 @@ export default function Homepage({ user }) {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((ride) => ride.status !== 'cancelled' && ride.status !== 'canceled')
+        .filter((ride) => 
+          ride.status !== 'cancelled' && 
+          ride.status !== 'canceled' && 
+          ride.status !== 'completed'
+        )
         .sort((a, b) => new Date(a.rideDate) - new Date(b.rideDate));
       setHostedRides(rides);
       setLoading(false);
@@ -277,13 +281,21 @@ export default function Homepage({ user }) {
         );
 
         const joinedRidesData = results.filter(Boolean);
-        joinedRidesData.sort((a, b) => {
+        
+        // Filter out cancelled and completed rides
+        const filteredJoinedRides = joinedRidesData.filter((ride) => 
+          ride.status !== 'cancelled' && 
+          ride.status !== 'canceled' && 
+          ride.status !== 'completed'
+        );
+        
+        filteredJoinedRides.sort((a, b) => {
           const dateA = new Date(a.rideDate || 0);
           const dateB = new Date(b.rideDate || 0);
           return dateA - dateB;
         });
 
-        setJoinedRides(joinedRidesData);
+        setJoinedRides(filteredJoinedRides);
       } catch (error) {
         console.error('Error fetching joined rides:', error);
       }
