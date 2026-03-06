@@ -116,7 +116,9 @@ export default function DuringRidePage() {
 
   const handleEndRide = () => {
     // Check if all riders are either verified or marked no-show
-    const processedCount = Object.keys(verifiedRiders).length + Object.keys(noShowRiders).length;
+    const processedCount = riders.filter(
+      (rider) => verifiedRiders[rider.id] || rider.status === 'verified' || noShowRiders[rider.id]
+    ).length;
     const totalRiders = riders.length;
 
     if (processedCount < totalRiders) {
@@ -318,18 +320,15 @@ export default function DuringRidePage() {
           {riders.map((rider) => (
             <View key={rider.id} style={styles.pinRow}>
               <View style={styles.pinRowTop}>
-                {verifiedRiders[rider.id] ? (
-                  <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
-                ) : (
-                  <Ionicons name="person-circle-outline" size={20} color="rgba(255,255,255,0.5)" />
-                )}
+                <Ionicons name="person-circle-outline" size={20} color="rgba(255,255,255,0.5)" />
                 <Text style={[styles.pinRowName, noShowRiders[rider.id] && styles.noShowText]}>
-                  {rider.name} {noShowRiders[rider.id] ? '(No Show)' : verifiedRiders[rider.id] ? '(Verified)' : ''}
+                  {rider.name} {noShowRiders[rider.id] ? '(No Show)' : ''}
                 </Text>
               </View>
 
               <View style={styles.pinRowBottom}>
-                {verifiedRiders[rider.id] || rider.status === 'veridfied' ? ( // TODO: fix verified
+                {/*Verification UI logic*/}
+                {verifiedRiders[rider.id] || rider.status === 'verified' ? (
 
                   // User is verified
                   <View style={[styles.pinInput, styles.verifiedBadge]}>
@@ -338,39 +337,44 @@ export default function DuringRidePage() {
 
                 ) : (
                   // Verification is pending
-                <>
-                  <TextInput
-                    style={styles.pinInput}
-                    placeholder="PIN"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    value={pinInputs[rider.id] || ''}
-                    onChangeText={(t) => setPinInputs((p) => ({ ...p, [rider.id]: t }))}
-                    editable={!verifyingPins[rider.id]} // Disable input while loading
-                  />
-                  <TouchableOpacity 
-                    style={styles.pinVerifyBtn}
-                    onPress={() => handleVerifyPin(rider.id)}
-                    disabled={verifyingPins[rider.id]}
-                  >
-                    {verifyingPins[rider.id] ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <Text style={styles.pinVerifyText}>Verify</Text>
-                    )}
-                  </TouchableOpacity>
-                </>
+                  <>
+                    <TextInput
+                      style={styles.pinInput}
+                      placeholder="PIN"
+                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      value={pinInputs[rider.id] || ''}
+                      onChangeText={(t) => setPinInputs((p) => ({ ...p, [rider.id]: t }))}
+                      editable={!verifyingPins[rider.id]} // Disable input while loading
+                    />
+                    <TouchableOpacity 
+                      style={styles.pinVerifyBtn}
+                      onPress={() => handleVerifyPin(rider.id)}
+                      disabled={verifyingPins[rider.id]}
+                    >
+                      {verifyingPins[rider.id] ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Text style={styles.pinVerifyText}>Verify</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
                 )}
 
-                // NOSHOWSTUFF
-                <TouchableOpacity 
-                  style={[styles.noShowBtn, (noShowRiders[rider.id] || verifiedRiders[rider.id]) && styles.noShowBtnDisabled]}
-                  onPress={() => openNoShowConfirm(rider)}
-                  disabled={noShowRiders[rider.id] || verifiedRiders[rider.id]}
-                >
-                  <Text style={styles.noShowBtnText}>No Show</Text>
-                </TouchableOpacity>
+                {/*No Show UI logic*/}
+                {!(verifiedRiders[rider.id] || rider.status === 'verified') && (
+                  <TouchableOpacity 
+                    style={[
+                      styles.noShowBtn, 
+                      noShowRiders[rider.id] && styles.noShowBtnDisabled
+                    ]}
+                    onPress={() => openNoShowConfirm(rider)}
+                    disabled={noShowRiders[rider.id]}
+                  >
+                    <Text style={styles.noShowBtnText}>No Show</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}
