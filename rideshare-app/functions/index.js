@@ -483,3 +483,58 @@ exports.leaveRideAndPromote = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
     throw new HttpsError("internal", error.message);
   }
 });
+
+/**
+ * Securely verifies a rider's pickup PIN.
+ * If successful, marks the rider as verified in the database.
+ */
+exports.verifyRiderPin = onCall(async (request) => {
+  // Ensure the user calling this (the driver) is authenticated
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be signed in.");
+  }
+
+  const { rideId, riderId, pin } = request.data;
+
+  if (!rideId || typeof rideId !== "string") {
+    throw new HttpsError("invalid-argument", "A valid rideId is required.");
+  }
+  if (!riderId || typeof riderId !== "string") {
+    throw new HttpsError("invalid-argument", "A valid riderId is required.");
+  }
+  if (!pin || typeof pin !== "string") {
+    throw new HttpsError("invalid-argument", "A valid PIN string is required.");
+  }
+
+  try {
+    // Fetch the rider's join record
+    const joinRef = adminDb.collection("rides").doc(rideId).collection("joins").doc(riderId);
+    const joinSnap = await joinRef.get();
+
+    if (!joinSnap.exists) {
+      return { verified: false, reason: "Rider has not joined this ride." };
+    }
+
+    const joinData = joinSnap.data();
+    const storedPin = joinData.pickupPin;
+
+    // Compare the pins
+    if (storedPin === pin) {
+      
+      // Update the database so the rider stays verified
+      await joinRef.update({
+        status: "verified",
+        pinVerifiedAt: FieldValue.serverTimestamp(),
+      });
+
+      return { verified: true };
+    } else {
+      // PIN does not match
+      return { verified: false };
+    }
+
+  } catch (error) {
+    console.error("Verify PIN error:", error.message);
+    throw new HttpsError("internal", error.message);
+  }
+});
