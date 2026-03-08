@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
 import DefaultAvatar from '../../components/DefaultAvatar';
+import ReviewsListModal from '../../components/ReviewsListModal';
 
 const formatPhoneNumber = (phoneNumber) => {
   if (!phoneNumber) return '';
@@ -27,9 +28,12 @@ const formatPhoneNumber = (phoneNumber) => {
 };
 
 export default function ProfileViewPage() {
-  const { userId, conversationId } = useLocalSearchParams();
+  const { userId, conversationId, returnRideId } = useLocalSearchParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reviewsModalVisible, setReviewsModalVisible] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,6 +66,21 @@ export default function ProfileViewPage() {
             vehiclePlate: primaryVehicle.plate || '',
           });
         }
+        
+        // Load reviews and calculate average rating
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          where('reviewedUserId', '==', userId)
+        );
+        const reviewsSnap = await getDocs(reviewsQuery);
+        
+        if (!reviewsSnap.empty) {
+          const reviews = reviewsSnap.docs.map(doc => doc.data());
+          const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+          const avg = sum / reviews.length;
+          setAverageRating(avg);
+          setReviewCount(reviews.length);
+        }
       } catch (error) {
         console.error('Error loading profile:', error);
       } finally {
@@ -80,13 +99,16 @@ export default function ProfileViewPage() {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }, [profile?.name]);
 
-  const hasVehicle = profile?.vehicleMake || profile?.vehicleModel || profile?.vehiclePlate;
-
   const handleGoBack = () => {
     if (conversationId) {
       router.push({
         pathname: '/(tabs)/messages/chat',
         params: { conversationId },
+      });
+    } else if (returnRideId) {
+      router.push({
+        pathname: '/(tabs)/history',
+        params: { returnRideId },
       });
     } else {
       router.back();
@@ -141,9 +163,29 @@ export default function ProfileViewPage() {
             </View>
             <View style={styles.headerText}>
               <Text style={styles.name}>{profile.name}</Text>
-              <Text style={styles.meta}>{profile.email}</Text>
+              
+              {/* Rating Display */}
+              {reviewCount > 0 && (
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={16} color="#FBBF24" />
+                  <Text style={styles.ratingText}>
+                    {averageRating.toFixed(1)} ({reviewCount})
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
+          
+          {/* Reviews Button */}
+          {reviewCount > 0 && (
+            <TouchableOpacity
+              style={styles.reviewsButton}
+              onPress={() => setReviewsModalVisible(true)}
+            >
+              <Ionicons name="star-outline" size={18} color={colors.accent} />
+              <Text style={styles.reviewsButtonText}>View Reviews</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Basic Info */}
           <View style={styles.section}>
@@ -152,16 +194,6 @@ export default function ProfileViewPage() {
             <View style={styles.field}>
               <Text style={styles.label}>Full Name</Text>
               <Text style={styles.value}>{profile.name || '—'}</Text>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <Text style={styles.value}>{profile.email || '—'}</Text>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Phone</Text>
-              <Text style={styles.value}>{formatPhoneNumber(profile.phone) || '—'}</Text>
             </View>
 
             {profile.role ? (
@@ -212,33 +244,15 @@ export default function ProfileViewPage() {
               </View>
             </View>
           ) : null}
-
-          {/* Vehicle */}
-          {hasVehicle ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Vehicle</Text>
-              {profile.vehicleMake ? (
-                <View style={styles.field}>
-                  <Text style={styles.label}>Vehicle Make</Text>
-                  <Text style={styles.value}>{profile.vehicleMake}</Text>
-                </View>
-              ) : null}
-              {profile.vehicleModel ? (
-                <View style={styles.field}>
-                  <Text style={styles.label}>Vehicle Model</Text>
-                  <Text style={styles.value}>{profile.vehicleModel}</Text>
-                </View>
-              ) : null}
-              {profile.vehiclePlate ? (
-                <View style={styles.field}>
-                  <Text style={styles.label}>License Plate</Text>
-                  <Text style={styles.value}>{profile.vehiclePlate}</Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
         </View>
       </ScrollView>
+      
+      {/* Reviews List Modal */}
+      <ReviewsListModal
+        visible={reviewsModalVisible}
+        onClose={() => setReviewsModalVisible(false)}
+        userId={userId}
+      />
     </SafeAreaView>
   );
 }
@@ -336,6 +350,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary || '#666666',
     marginTop: 2,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  reviewsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent + '15',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
+    marginTop: 12,
+  },
+  reviewsButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
   },
   section: {
     marginTop: 12,

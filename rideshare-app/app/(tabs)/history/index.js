@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,18 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../ui/styles/colors';
 import { useAuth } from '../../../src/auth/AuthProvider';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../src/firebase';
+import ReviewSelectionModal from '../../components/ReviewSelectionModal';
+import ReviewFormModal from '../../components/ReviewFormModal';
+import { Alert } from 'react-native';
+import DefaultAvatar from '../../components/DefaultAvatar';
 
 // ── Status config ───────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -43,6 +48,7 @@ const ENDED_STATUSES = ['completed', 'cancelled', 'no_show'];
 
 export default function HistoryPage() {
   const { user } = useAuth();
+  const { returnRideId } = useLocalSearchParams();
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all' | 'hosted' | 'joined'
@@ -52,6 +58,14 @@ export default function HistoryPage() {
   const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [selectedRide, setSelectedRide] = useState(null);
+  
+  // Review modals state
+  const [reviewSelectionVisible, setReviewSelectionVisible] = useState(false);
+  const [reviewFormVisible, setReviewFormVisible] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [reviewRideParticipants, setReviewRideParticipants] = useState([]);
+  const [currentReviewRide, setCurrentReviewRide] = useState(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   // ── load ride history on focus ─────────────────────────────
   useFocusEffect(
@@ -116,6 +130,18 @@ export default function HistoryPage() {
     }
   };
 
+  // Check for returnRideId param and reopen details modal
+  useEffect(() => {
+    if (returnRideId && rides.length > 0 && !loading) {
+      const ride = rides.find(r => r.id === returnRideId);
+      if (ride) {
+        openDetails(ride);
+        // Clear the param to prevent reopening on subsequent navigations
+        router.setParams({ returnRideId: undefined });
+      }
+    }
+  }, [returnRideId, rides, loading]);
+
   // ── helpers ──────────────────────────────────────────────────
   const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
 
@@ -165,8 +191,26 @@ export default function HistoryPage() {
 
   // ── event handlers ─────────────────────────────────────────
   const openDetails = async (ride) => {
-    setSelectedRide({ ...ride, participants: [] });
+    setSelectedRide({ ...ride, participants: [], driver: null });
     setDetailsModalVisible(true);
+
+    // Fetch driver/owner info
+    try {
+      const ownerSnap = await getDoc(doc(db, 'users', ride.ownerId));
+      if (ownerSnap.exists()) {
+        const ownerData = ownerSnap.data();
+        const driver = {
+          id: ride.ownerId,
+          name: ownerData.name || 'Unknown',
+          photoURL: ownerData.photoURL || null,
+          avatarBgColor: ownerData.avatarBgColor || '#4A90E270',
+          avatarPreset: ownerData.avatarPreset || 'default',
+        };
+        setSelectedRide((prev) => (prev ? { ...prev, driver } : prev));
+      }
+    } catch (err) {
+      console.error('Error fetching driver:', err);
+    }
 
     // Fetch participants from joins subcollection
     try {
@@ -174,10 +218,16 @@ export default function HistoryPage() {
       const participants = [];
       for (const joinDoc of joinsSnap.docs) {
         const userSnap = await getDoc(doc(db, 'users', joinDoc.id));
-        participants.push({
-          id: joinDoc.id,
-          name: userSnap.exists() ? (userSnap.data().name || 'Unknown') : 'Unknown',
-        });
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          participants.push({
+            id: joinDoc.id,
+            name: userData.name || 'Unknown',
+            photoURL: userData.photoURL || null,
+            avatarBgColor: userData.avatarBgColor || '#4A90E270',
+            avatarPreset: userData.avatarPreset || 'default',
+          });
+        }
       }
       setSelectedRide((prev) => (prev ? { ...prev, participants } : prev));
     } catch (err) {
@@ -188,6 +238,112 @@ export default function HistoryPage() {
   const closeDetails = () => {
     setDetailsModalVisible(false);
     setSelectedRide(null);
+  };
+
+  // ── review flow handlers ───────────────────────────────────
+  const openReviewFlow = async (ride) => {
+    try {
+      setCurrentReviewRide(ride);
+      
+      // Fetch all participants including the host
+      const allParticipants = [];
+      
+      // Add host
+      const hostSnap = await getDoc(doc(db, 'users', ride.ownerId));
+      if (hostSnap.exists()) {
+        const hostData = hostSnap.data();
+        allParticipants.push({
+          id: ride.ownerId,
+          name: hostData.name || 'Unknown',
+          photoURL: hostData.photoURL || null,
+          avatarBgColor: hostData.avatarBgColor || '#4A90E270',
+          avatarPreset: hostData.avatarPreset || 'default',
+        });
+      }
+      
+      // Add riders from joins subcollection
+      const joinsSnap = await getDocs(collection(db, 'rides', ride.id, 'joins'));
+      for (const joinDoc of joinsSnap.docs) {
+        if (joinDoc.id === user.uid) continue; // Skip current user
+        
+        const userSnap = await getDoc(doc(db, 'users', joinDoc.id));
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          allParticipants.push({
+            id: joinDoc.id,
+            name: userData.name || 'Unknown',
+            photoURL: userData.photoURL || null,
+            avatarBgColor: userData.avatarBgColor || '#4A90E270',
+            avatarPreset: userData.avatarPreset || 'default',
+          });
+        }
+      }
+      
+      // Remove current user from the list
+      const filteredParticipants = allParticipants.filter(p => p.id !== user.uid);
+      
+      setReviewRideParticipants(filteredParticipants);
+      setReviewSelectionVisible(true);
+    } catch (error) {
+      console.error('Error loading participants for review:', error);
+      Alert.alert('Error', 'Failed to load participants');
+    }
+  };
+
+  const handleSelectParticipant = (participant) => {
+    setSelectedParticipant(participant);
+    setReviewSelectionVisible(false);
+    setReviewFormVisible(true);
+  };
+
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      setIsSubmittingReview(true);
+      
+      // Check if user already reviewed this person for this ride
+      const existingReviewQuery = query(
+        collection(db, 'reviews'),
+        where('rideId', '==', currentReviewRide.id),
+        where('reviewerId', '==', user.uid),
+        where('reviewedUserId', '==', selectedParticipant.id)
+      );
+      const existingReviewSnap = await getDocs(existingReviewQuery);
+      
+      if (!existingReviewSnap.empty) {
+        Alert.alert('Already Reviewed', 'You have already reviewed this person for this ride.');
+        setIsSubmittingReview(false);
+        setReviewFormVisible(false);
+        return;
+      }
+      
+      // Save review to Firestore
+      await addDoc(collection(db, 'reviews'), {
+        rideId: currentReviewRide.id,
+        reviewerId: user.uid,
+        reviewedUserId: selectedParticipant.id,
+        rating: reviewData.rating,
+        description: reviewData.description || '',
+        createdAt: serverTimestamp(),
+      });
+      
+      Alert.alert('Success', 'Review submitted successfully!');
+      setReviewFormVisible(false);
+      setSelectedParticipant(null);
+      setCurrentReviewRide(null);
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const closeReviewModals = () => {
+    setReviewSelectionVisible(false);
+    setReviewFormVisible(false);
+    setSelectedParticipant(null);
+    setReviewRideParticipants([]);
+    setCurrentReviewRide(null);
   };
 
   // ── ride card ──────────────────────────────────────────────
@@ -242,7 +398,7 @@ export default function HistoryPage() {
               styles.buttonFlex,
               isReviewExpired(ride) && styles.reviewExpired,
             ]}
-            onPress={() => { /* TODO: review flow */ }}
+            onPress={() => openReviewFlow(ride)}
             disabled={isReviewExpired(ride)}
           >
             <Ionicons
@@ -447,6 +603,15 @@ export default function HistoryPage() {
             <ScrollView style={styles.modalBody}>
               {selectedRide && (
                 <>
+                  {/* Status Badge */}
+                  <View style={styles.modalSection}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(selectedRide.status).color + '18' }]}>
+                      <Ionicons name={getStatusStyle(selectedRide.status).icon} size={18} color={getStatusStyle(selectedRide.status).color} />
+                      <Text style={[styles.statusBadgeText, { color: getStatusStyle(selectedRide.status).color }]}>
+                        {getStatusStyle(selectedRide.status).label}
+                      </Text>
+                    </View>
+                  </View>
                   {/* route */}
                   <View style={styles.modalSection}>
                     <Text style={styles.modalSectionTitle}>Route</Text>
@@ -489,6 +654,39 @@ export default function HistoryPage() {
                     </View>
                   )}
 
+                  {/* Driver */}
+                  {selectedRide.driver && (
+                    <View style={styles.modalSection}>
+                      <Text style={styles.modalSectionTitle}>Driver</Text>
+                      <TouchableOpacity 
+                        style={styles.participantRow}
+                        onPress={() => {
+                          router.push({ 
+                            pathname: '/(tabs)/account/profilepage', 
+                            params: { 
+                              userId: selectedRide.driver.id,
+                              returnRideId: selectedRide.id 
+                            } 
+                          });
+                        }}
+                      >
+                        <View style={styles.participantAvatar}>
+                          {selectedRide.driver.photoURL ? (
+                            <Image source={{ uri: selectedRide.driver.photoURL }} style={styles.participantAvatarImage} />
+                          ) : (
+                            <DefaultAvatar 
+                              size={40} 
+                              bgColor={selectedRide.driver.avatarBgColor} 
+                              avatarType={selectedRide.driver.avatarPreset} 
+                            />
+                          )}
+                        </View>
+                        <Text style={styles.participantName}>{selectedRide.driver.name}</Text>
+                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
                   {/* participants */}
                   {selectedRide.participants?.length > 0 && (
                     <View style={styles.modalSection}>
@@ -496,31 +694,63 @@ export default function HistoryPage() {
                         {selectedRide.type === 'hosted' ? 'Passengers' : 'Riders'}
                       </Text>
                       {selectedRide.participants.map((p) => (
-                        <View key={p.id} style={styles.participantRow}>
+                        <TouchableOpacity
+                          key={p.id}
+                          style={styles.participantRow}
+                          onPress={() => {
+                            router.push({ 
+                              pathname: '/(tabs)/account/profilepage', 
+                              params: { 
+                                userId: p.id,
+                                returnRideId: selectedRide.id 
+                              } 
+                            });
+                          }}
+                        >
                           <View style={styles.participantAvatar}>
-                            <Text style={styles.participantAvatarText}>
-                              {p.name.charAt(0).toUpperCase()}
-                            </Text>
+                            {p.photoURL ? (
+                              <Image source={{ uri: p.photoURL }} style={styles.participantAvatarImage} />
+                            ) : (
+                              <DefaultAvatar 
+                                size={40} 
+                                bgColor={p.avatarBgColor} 
+                                avatarType={p.avatarPreset} 
+                              />
+                            )}
                           </View>
                           <Text style={styles.participantName}>{p.name}</Text>
-                        </View>
+                          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
+                        </TouchableOpacity>
                       ))}
                     </View>
                   )}
-
-                  {/* driver notes */}
-                  {selectedRide.driverNotes ? (
-                    <View style={styles.modalSection}>
-                      <Text style={styles.modalSectionTitle}>Driver Notes</Text>
-                      <Text style={styles.modalText}>{selectedRide.driverNotes}</Text>
-                    </View>
-                  ) : null}
                 </>
               )}
             </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ── Review Selection Modal ──────────────────────────── */}
+      <ReviewSelectionModal
+        visible={reviewSelectionVisible}
+        onClose={closeReviewModals}
+        participants={reviewRideParticipants}
+        hostId={currentReviewRide?.ownerId}
+        onSelectParticipant={handleSelectParticipant}
+      />
+
+      {/* ── Review Form Modal ───────────────────────────────── */}
+      <ReviewFormModal
+        visible={reviewFormVisible}
+        onClose={() => {
+          setReviewFormVisible(false);
+          setSelectedParticipant(null);
+        }}
+        participant={selectedParticipant}
+        onSubmit={handleSubmitReview}
+        isSubmitting={isSubmittingReview}
+      />
     </SafeAreaView>
   );
 }
@@ -861,6 +1091,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     gap: 12,
+    paddingVertical: 4,
   },
   participantAvatar: {
     width: 40,
@@ -869,6 +1100,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  participantAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   participantAvatarText: {
     color: '#FFFFFF',
@@ -879,5 +1116,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
     fontWeight: '500',
+    flex: 1,
   },
 });
