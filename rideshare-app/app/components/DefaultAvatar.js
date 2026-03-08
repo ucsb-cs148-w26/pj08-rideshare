@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 
 const AVATAR_ICONS = {
@@ -17,7 +17,7 @@ const AVATAR_SCALE = {
   scuba: 1.3,
 };
 
-export default function DefaultAvatar({ size = 64, bgColor = '#FFFFFF', avatarType = 'default' }) {
+export default memo(function DefaultAvatar({ size = 64, bgColor = '#FFFFFF', avatarType = 'default' }) {
   const radius = size / 2;
   const scale = AVATAR_SCALE[avatarType] || AVATAR_SCALE.default;
   const iconSize = size * scale;
@@ -42,7 +42,7 @@ export default function DefaultAvatar({ size = 64, bgColor = '#FFFFFF', avatarTy
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   circle: {
