@@ -90,11 +90,16 @@ export default function AddressAutocomplete({
       const data = await res.json();
 
       let fullAddress = suggestion.full_address || suggestion.name || "";
+      let placeName = suggestion.name || "";
       if (
         data.features &&
         data.features.length > 0 &&
         data.features[0].properties
       ) {
+        placeName =
+          data.features[0].properties.name ||
+          suggestion.name ||
+          placeName;
         fullAddress =
           data.features[0].properties.full_address ||
           data.features[0].properties.name ||
@@ -103,12 +108,24 @@ export default function AddressAutocomplete({
 
       setQuery(fullAddress);
       onChangeText(fullAddress);
-      if (onAddressSelected) onAddressSelected(fullAddress);
+      if (onAddressSelected) {
+        onAddressSelected({
+          name: placeName,
+          fullAddress,
+          mapboxId: suggestion.mapbox_id,
+        });
+      }
     } catch {
       const fallback = suggestion.full_address || suggestion.name || "";
       setQuery(fallback);
       onChangeText(fallback);
-      if (onAddressSelected) onAddressSelected(fallback);
+      if (onAddressSelected) {
+        onAddressSelected({
+          name: suggestion.name || fallback,
+          fullAddress: fallback,
+          mapboxId: suggestion.mapbox_id,
+        });
+      }
     }
 
     setSuggestions([]);

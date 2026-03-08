@@ -392,8 +392,18 @@ export default function JoinPage() {
   };
 
   const handleLocationSelected = (selectedAddress) => {
-    setLocationQuery(selectedAddress);
-    setSubmittedLocationQuery(String(selectedAddress || "").trim());
+    const fullAddress = String(
+      selectedAddress?.fullAddress || selectedAddress || ""
+    );
+    setLocationQuery(fullAddress);
+    setSubmittedLocationQuery(fullAddress.trim());
+  };
+
+  const getRideLocationLabel = (ride, field) => {
+    if (field === "to") {
+      return String(ride?.toLabel || ride?.toAddress || "");
+    }
+    return String(ride?.fromLabel || ride?.fromAddress || "");
   };
 
   const getFilteredRides = () => {
@@ -696,13 +706,13 @@ export default function JoinPage() {
             <View style={styles.destinationRow}>
               <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>To:</Text>
               <Text style={[styles.destinationValue, disabled && styles.textDisabled]}>
-                {item.toAddress}
+                {getRideLocationLabel(item, "to")}
               </Text>
             </View>
             <View style={styles.destinationRow}>
               <Text style={[styles.destinationLabel, disabled && styles.textDisabled]}>From:</Text>
               <Text style={[styles.destinationValue, disabled && styles.textDisabled]}>
-                {item.fromAddress}
+                {getRideLocationLabel(item, "from")}
               </Text>
             </View>
           </View>

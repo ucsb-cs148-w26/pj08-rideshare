@@ -58,6 +58,8 @@ export default function HostPage() {
   const [price, setPrice] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromAddress, setFromAddress] = useState("");
+  const [toLabel, setToLabel] = useState("");
+  const [fromLabel, setFromLabel] = useState("");
   const [rideDate, setRideDate] = useState(null);
   const [seats, setSeats] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
@@ -326,6 +328,8 @@ export default function HostPage() {
         price: parsedPrice,
         toAddress: toAddress.trim(),
         fromAddress: fromAddress.trim(),
+        toLabel: (toLabel || toAddress).trim(),
+        fromLabel: (fromLabel || fromAddress).trim(),
         rideDate: rideDate.toISOString(),
         cancellationDeadline: cancellationDeadline
           ? cancellationDeadline.toISOString()
@@ -348,6 +352,8 @@ export default function HostPage() {
       setPrice("");
       setToAddress("");
       setFromAddress("");
+      setToLabel("");
+      setFromLabel("");
       setRideDate(null);
       setCancellationDeadline(null);
       setSeats("");
@@ -422,7 +428,16 @@ export default function HostPage() {
           <Text style={styles.label}>To (destination address)</Text>
           <AddressAutocomplete
             value={toAddress}
-            onChangeText={setToAddress}
+            onChangeText={(value) => {
+              setToAddress(value);
+              setToLabel("");
+            }}
+            onAddressSelected={(selected) => {
+              const address = String(selected?.fullAddress || selected || "");
+              const label = String(selected?.name || address || "");
+              setToAddress(address);
+              setToLabel(label);
+            }}
             placeholder="Where are you going?"
           />
         </View>
@@ -431,7 +446,16 @@ export default function HostPage() {
           <Text style={styles.label}>From (pickup address)</Text>
           <AddressAutocomplete
             value={fromAddress}
-            onChangeText={setFromAddress}
+            onChangeText={(value) => {
+              setFromAddress(value);
+              setFromLabel("");
+            }}
+            onAddressSelected={(selected) => {
+              const address = String(selected?.fullAddress || selected || "");
+              const label = String(selected?.name || address || "");
+              setFromAddress(address);
+              setFromLabel(label);
+            }}
             placeholder="Pickup address"
           />
         </View>
