@@ -41,6 +41,10 @@ const getStatusStyle = (status) => {
 
 const ENDED_STATUSES = ['completed', 'cancelled', 'no_show'];
 
+// Module-level cache — survives tab switches, cleared on user change
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const rideHistoryCache = {}; // { [uid]: { rides, timestamp } }
+
 export default function HistoryPage() {
   const { user } = useAuth();
   const [rides, setRides] = useState([]);
@@ -60,46 +64,63 @@ export default function HistoryPage() {
         setLoading(false);
         return;
       }
-      loadRideHistory();
+      const cached = rideHistoryCache[user.uid];
+      if (cached) {
+        // Show cached data immediately
+        setRides(cached.rides);
+        setLoading(false);
+        // Background-refresh if stale
+        if (Date.now() - cached.timestamp >= CACHE_TTL) {
+          loadRideHistory(user.uid);
+        }
+      } else {
+        loadRideHistory(user.uid);
+      }
     }, [user])
   );
 
-  const loadRideHistory = async () => {
+  const loadRideHistory = async (uid) => {
     try {
       setLoading(true);
 
-      // 1) Rides user hosted with an ended status
-      const hostedQuery = query(
-        collection(db, 'rides'),
-        where('ownerId', '==', user.uid),
-        where('status', 'in', ENDED_STATUSES)
-      );
-      const hostedSnap = await getDocs(hostedQuery);
+      // 1) Fetch hosted rides and all ended rides in parallel
+      const [hostedSnap, allEndedSnap] = await Promise.all([
+        getDocs(query(
+          collection(db, 'rides'),
+          where('ownerId', '==', uid),
+          where('status', 'in', ENDED_STATUSES)
+        )),
+        getDocs(query(
+          collection(db, 'rides'),
+          where('status', 'in', ENDED_STATUSES)
+        )),
+      ]);
+
       const hostedRides = hostedSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
         type: 'hosted',
       }));
 
-      // 2) Rides user joined — check joins subcollection of all ended rides
-      const allEndedQuery = query(
-        collection(db, 'rides'),
-        where('status', 'in', ENDED_STATUSES)
+      // 2) Check join membership for non-owned rides in parallel
+      const otherEndedDocs = allEndedSnap.docs.filter(
+        (d) => d.data().ownerId !== uid
       );
-      const allEndedSnap = await getDocs(allEndedQuery);
-
-      const joinedRides = [];
-      for (const rideDoc of allEndedSnap.docs) {
-        if (rideDoc.data().ownerId === user.uid) continue; // skip own hosted
-        const joinSnap = await getDoc(doc(db, 'rides', rideDoc.id, 'joins', user.uid));
-        if (joinSnap.exists()) {
-          joinedRides.push({
-            id: rideDoc.id,
-            ...rideDoc.data(),
-            type: 'joined',
-          });
-        }
-      }
+      const joinResults = await Promise.all(
+        otherEndedDocs.map((rideDoc) =>
+          getDoc(doc(db, 'rides', rideDoc.id, 'joins', uid)).then((joinSnap) => ({
+            rideDoc,
+            joined: joinSnap.exists(),
+          }))
+        )
+      );
+      const joinedRides = joinResults
+        .filter(({ joined }) => joined)
+        .map(({ rideDoc }) => ({
+          id: rideDoc.id,
+          ...rideDoc.data(),
+          type: 'joined',
+        }));
 
       // Combine & sort newest first
       const all = [...hostedRides, ...joinedRides].sort((a, b) => {
@@ -108,6 +129,7 @@ export default function HistoryPage() {
         return new Date(db2) - new Date(da);
       });
 
+      rideHistoryCache[uid] = { rides: all, timestamp: Date.now() };
       setRides(all);
     } catch (err) {
       console.error('Error loading ride history:', err);
@@ -165,19 +187,36 @@ export default function HistoryPage() {
 
   // ── event handlers ─────────────────────────────────────────
   const openDetails = async (ride) => {
+    // If participants already cached on this ride, show immediately
+    if (ride.participants) {
+      setSelectedRide(ride);
+      setDetailsModalVisible(true);
+      return;
+    }
+
     setSelectedRide({ ...ride, participants: [] });
     setDetailsModalVisible(true);
 
-    // Fetch participants from joins subcollection
+    // Fetch participants from joins subcollection in parallel
     try {
       const joinsSnap = await getDocs(collection(db, 'rides', ride.id, 'joins'));
-      const participants = [];
-      for (const joinDoc of joinsSnap.docs) {
-        const userSnap = await getDoc(doc(db, 'users', joinDoc.id));
-        participants.push({
-          id: joinDoc.id,
-          name: userSnap.exists() ? (userSnap.data().name || 'Unknown') : 'Unknown',
-        });
+      const participants = await Promise.all(
+        joinsSnap.docs.map(async (joinDoc) => {
+          const userSnap = await getDoc(doc(db, 'users', joinDoc.id));
+          return {
+            id: joinDoc.id,
+            name: userSnap.exists() ? (userSnap.data().name || 'Unknown') : 'Unknown',
+          };
+        })
+      );
+      // Cache participants on the ride object in state and in the module-level cache
+      setRides((prev) =>
+        prev.map((r) => (r.id === ride.id ? { ...r, participants } : r))
+      );
+      if (rideHistoryCache[user?.uid]) {
+        rideHistoryCache[user.uid].rides = rideHistoryCache[user.uid].rides.map(
+          (r) => (r.id === ride.id ? { ...r, participants } : r)
+        );
       }
       setSelectedRide((prev) => (prev ? { ...prev, participants } : prev));
     } catch (err) {
