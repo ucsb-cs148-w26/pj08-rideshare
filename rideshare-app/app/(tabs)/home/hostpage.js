@@ -274,9 +274,18 @@ export default function HostPage() {
   };
 
   const handleSubmit = async () => {
+    const missingFields = [];
 
-    if (!price || !toAddress || !fromAddress || !rideDate || !seats || !selectedTag) {
-      Alert.alert("Missing info", "Please fill out all required fields.");
+    if (!price) missingFields.push("Price");
+    if (!toAddress) missingFields.push("Start Address");
+    if (!fromAddress) missingFields.push("End Address");
+    if (!rideDate) missingFields.push("Date");
+    if (!seats) missingFields.push("Number of Seats");
+    if (!selectedTag) missingFields.push("Tag");
+
+    if (missingFields.length > 0) {
+      const fieldList = missingFields.map(field => `• ${field}`).join("\n");
+      Alert.alert("Missing Fields", `Please fill out the following:\n\n${fieldList}`);
       return;
     }
 
