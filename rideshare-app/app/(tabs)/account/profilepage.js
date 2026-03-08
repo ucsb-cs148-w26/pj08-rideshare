@@ -42,6 +42,12 @@ export default function ProfileViewPage() {
         return;
       }
 
+      // Reset state when loading a new profile
+      setProfile(null);
+      setAverageRating(0);
+      setReviewCount(0);
+      setLoading(true);
+
       try {
         const snapshot = await getDoc(doc(db, 'users', userId));
         if (snapshot.exists()) {
@@ -80,6 +86,9 @@ export default function ProfileViewPage() {
           const avg = sum / reviews.length;
           setAverageRating(avg);
           setReviewCount(reviews.length);
+        } else {
+          setAverageRating(0);
+          setReviewCount(0);
         }
       } catch (error) {
         console.error('Error loading profile:', error);

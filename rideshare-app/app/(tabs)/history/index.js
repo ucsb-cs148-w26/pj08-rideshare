@@ -661,13 +661,16 @@ export default function HistoryPage() {
                       <TouchableOpacity 
                         style={styles.participantRow}
                         onPress={() => {
-                          router.push({ 
-                            pathname: '/(tabs)/account/profilepage', 
-                            params: { 
-                              userId: selectedRide.driver.id,
-                              returnRideId: selectedRide.id 
-                            } 
-                          });
+                          setDetailsModalVisible(false);
+                          setTimeout(() => {
+                            router.push({ 
+                              pathname: '/(tabs)/account/profilepage', 
+                              params: { 
+                                userId: selectedRide.driver.id,
+                                returnRideId: selectedRide.id 
+                              } 
+                            });
+                          }, 100);
                         }}
                       >
                         <View style={styles.participantAvatar}>
@@ -698,13 +701,16 @@ export default function HistoryPage() {
                           key={p.id}
                           style={styles.participantRow}
                           onPress={() => {
-                            router.push({ 
-                              pathname: '/(tabs)/account/profilepage', 
-                              params: { 
-                                userId: p.id,
-                                returnRideId: selectedRide.id 
-                              } 
-                            });
+                            setDetailsModalVisible(false);
+                            setTimeout(() => {
+                              router.push({ 
+                                pathname: '/(tabs)/account/profilepage', 
+                                params: { 
+                                  userId: p.id,
+                                  returnRideId: selectedRide.id 
+                                } 
+                              });
+                            }, 100);
                           }}
                         >
                           <View style={styles.participantAvatar}>
