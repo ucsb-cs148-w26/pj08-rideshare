@@ -127,6 +127,11 @@ exports.finalizeJoinRide = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (req
       });
     });
 
+    // Denormalize: add rideId to the rider's user doc for fast client lookups
+    await adminDb.collection("users").doc(userId).update({
+      joinedRideIds: FieldValue.arrayUnion(rideId),
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Finalize Join Error:", error);
@@ -306,6 +311,11 @@ exports.promoteFromWaitlist = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
       tx.delete(rideRef.collection("waitlist").doc(riderId));
     });
 
+    // Denormalize: add rideId to the promoted rider's user doc
+    await adminDb.collection("users").doc(riderId).update({
+      joinedRideIds: FieldValue.arrayUnion(rideId),
+    });
+
     // Create a notification for the promoted rider
     await adminDb.collection("notifications").add({
       userId: riderId,
@@ -376,6 +386,12 @@ exports.leaveRideAndPromote = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
       tx.delete(joinRef);
     });
 
+    // Denormalize: remove rideId from the leaving rider's user doc
+    await adminDb.collection("users").doc(leavingUid).update({
+      joinedRideIds: FieldValue.arrayRemove(rideId),
+      activeRideId: null, // Clear in case ride was active
+    });
+
     // ── Step 2: Promote the first waitlisted rider (if any) ─────────────
     const waitlistSnap = await rideRef
       .collection("waitlist")
@@ -439,6 +455,11 @@ exports.leaveRideAndPromote = onCall({ secrets: ["STRIPE_SECRET_KEY"] }, async (
       });
 
       if (promoted) {
+        // Denormalize: add rideId to the promoted rider's user doc
+        await adminDb.collection("users").doc(promotedRiderId).update({
+          joinedRideIds: FieldValue.arrayUnion(rideId),
+        });
+
         // Add promoted rider to the ride conversation
         const convoRef = adminDb.collection("conversations").doc(rideId);
         try {
