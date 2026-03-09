@@ -6,7 +6,7 @@
 
 ### Summary
 
-Served as the **product owner** for the Rideshare app throughout the quarter. Primary role was defining the app's overall vision, discussing requirements with the team, and providing UI and implementation direction that teammates then drafted into formal user stories and built out. Also contributed to testing, standup documentation, and conducted the team's AI experiment.
+Served as the **product owner** for the Rideshare app throughout the quarter. Primary role was defining the app's overall vision, discussing requirements with the team, and providing UI and implementation direction that teammates then drafted into formal user stories and built out. Also contributed to developing core features, testing, standup documentation, and conducted the team's AI experiment.
 
 ### Product Owner — Vision & Requirements
 
@@ -16,9 +16,10 @@ Led discussions and defined requirements for core features that shaped the direc
 
 - [Issue #22](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/22)
 
-**Home Screen & Navigation** — Outlined the post-login experience: a home screen with clear rider/driver options and a navigation bar for Messages, Profile, and Log Out so users wouldn't get lost.
+**Home Screen & Navigation Bar (Core implementation)** — Outlined the post-login experience: a home screen with clear rider/driver options and a navigation bar for Messages, Profile, and Log Out so users wouldn't get lost.
 
-- [Issue #70](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/70) · [Issue #72](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/72)
+- [Issue #70](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/70) ·
+ [Issue #72](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/72)
 
 **Late Cancellation Notifications** — Specified the two-case notification logic: late cancellations notify only the driver with a warning, while normal departures notify the driver and all remaining riders.
 
@@ -28,19 +29,20 @@ Led discussions and defined requirements for core features that shaped the direc
 
 - [Issue #297](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/297)
 
-### Testing
+### Testing (Larger Contributions)
 
-**Unit Tests — UCSB Email Validation:** Created unit tests verifying that only `@ucsb.edu` emails are accepted, covering valid emails, non-UCSB domains, case insensitivity, and malformed inputs. Tests follow the AAA pattern.
+**Unit Tests — UCSB Email Validation:** Created unit tests verifying that only `@ucsb.edu` emails are accepted, covering valid emails, non-UCSB domains, case insensitivity, and malformed inputs. Ensuring security for students/vulnerabilities from login side.  Tests follow the AAA pattern.
 
 - Closes [#199](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/199) and [#200](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/200)
 
 ### Documentation & Scribe
 
-Maintained standup documentation during team check-ins.
+Maintained standup documentation during team check-ins, AI Experiemnt in a documentation/group setting, compilation of Contributions.
 
 - [PR #191 — Scrums Week 6 Lecture 1](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/191)
 - [PR #205 — Standup Week 6 Lecture 2](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/205)
 - [PR #226 — Completed Scrums](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/226)
+- [PR #350 - Contributions.md](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/350)
 
 ### AI Experiment
 
@@ -48,6 +50,26 @@ Conducted an AI experiment using standup documentation as part of the team's AI 
 
 - Documented in [PR #205](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/205)
 
+
+### Code Reviews and PR Reviews 
+
+## Code Reviews & Teammate PR Merges
+
+Reviewed and merged pull requests from teammates throughout the project:
+- [PR #353 — ride cards show location not address initially for cleaner UI](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/353)
+- [PR #341 — standup for 03/04](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/341)
+- [PR #340 — added custom preset options](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/340)
+- [PR #300 — Created during ride page (UI with minimal functionality)](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/300)
+- [PR #298 — show cancellation policy reminder before user confirms joining ride](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/298)
+- [PR #287 — added forgot password feature plus character cap validation](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/287)
+- [PR #252 — Testing Config Cleanup](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/252)
+- [PR #239 — Ride Cancellation Notifications and Notification Page Improvements](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/239)
+- [PR #234 — Notifications Icon + Notifications Page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/234)
+- [PR #217 — added backend logic to the leave button](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/217)
+- [PR #102 — added in app messaging through firebase](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/102)
+- [PR #81 — Migrate navigation to Expo Router with auth + tabs](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/81)
+- [PR #80 — Changed File Structure to Allow for Easier Routing Between Pages](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/80)
+- [PR #77 — Refactor: extracted common styles and colors into reusable modules](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/77)
 ---
 
 ## Hien Huynh
@@ -300,13 +322,236 @@ In addition to feature development, Tanvi took on a significant share of the tea
 
 ## Joel
 
-*WIP — contributions to be added.*
+## Summary
+
+Throughout the development of the Rideshare app, I worked as a full-stack contributor focused on core backend infrastructure, user-facing features, and payment integration. Starting with foundational Firebase authentication setup in the early sprints, I progressively expanded my work to include complex features like in-app messaging, profile access, and payment processing with Stripe. By the end of the quarter, my commits touched authentication flows, the host page, join page, messaging system, profile pages, and critical backend cloud functions.
+
+Early in the project, I established the Firebase integration for the login system, which became the foundation for all subsequent authentication work. I then focused on the host page, building out features that allowed drivers to create and manage their rides—including displaying driver details, capturing driver notes, saving usernames, and enabling the host page to show all hosted rides on the landing page.
+
+In the middle sprints, I pivoted to expanding the user experience across multiple sections of the app. I implemented the in-app messaging system using Firebase Realtime Database with a typing indicator component, allowing riders and drivers to communicate directly within the app. I then added profile page functionality and extended it across the application—making driver profiles viewable from both the home and join pages when clicking on driver names, and accessible from the chat interface as well.
+
+In later sprints, I tackled one of the most complex integrations: Stripe payment processing for ride joining. This involved backend Cloud Functions setup, Firebase configuration, package management, and updates to the join page UI so riders could securely complete payments before joining a ride.
+
+---
+
+## Frontend Changes
+
+### Firebase Authentication Setup
+Established the foundational Firebase configuration and authentication system for the login flow, enabling user registration and sign-in functionality for the entire application.
+- [PR #68 — Joel firebase](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/68)
+
+### Host Page — Driver Details, Notes & Username Persistence
+Built the initial driver details section on the host page, allowing drivers to see and manage ride information they create. Added the ability for drivers to include notes or special instructions for riders and implemented functionality to save the driver's username to the database when creating a ride.
+- [PR #85 — Added optional driver details to hostpage.js](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/85)
+- [PR #89 — Added userName to be saved to the database from host page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/89)
+- [PR #93 — Added ability to add Driver Notes on hostpage](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/93)
+
+### Display Hosted Rides on Landing Page
+Implemented functionality to display all rides that a driver has hosted on the home/landing page, giving drivers quick visibility into their active listings. Modified home index page and host page to fetch and display hosted rides with styling.
+- [PR #88 — Display hosted rides on landing page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/88)
+
+### In-App Messaging System
+Built a complete real-time messaging feature using Firebase Realtime Database, allowing riders and drivers to communicate within the app. Implemented the chat interface component with message history and real-time updates, created a reusable and memoized typing indicator component, and built messaging utilities with Firebase integration for message operations.
+- [PR #102 — Added in app messaging through firebase](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/102)
+
+### Profile Page Navigation & Cross-Page Profile Access
+Extended the messaging feature by adding the ability to view a driver or rider's profile directly from the chat interface by clicking on their name. Later extended profile accessibility across the entire app by making driver profiles viewable from the home page and join page, updating tab navigation layout for profile routing.
+- [PR #221 — View profile page from chat](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/221)
+- [PR #265 — Click on profiles from home and join page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/265)
+
+### Stripe Payment UI
+Updated join page to integrate Stripe payment flows before ride confirmation. Modified authentication layout for payment context handling.
+- [PR #306 — Add Stripe payment integration for ride joining](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/306)
+
+---
+
+## Backend Changes
+
+### Stripe Payment Integration
+Implemented end-to-end Stripe payment processing for ride joining, allowing riders to securely complete payments before joining a ride. This was one of the most technically complex features delivered, involving both frontend and backend components. Configured and initialized Firebase Cloud Functions (`functions/index.js`), set up the Stripe configuration module (`stripeConfig.js`), managed package dependencies, created `.gitignore` files for sensitive credential protection, and updated Firebase configuration for the payment backend.
+- [PR #306 — Add Stripe payment integration for ride joining](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/306)
+
+### Firebase Authentication Integration
+Set up the foundational Firebase configuration and authentication backend that all subsequent user authentication depends on across the application.
+- [PR #68 — Joel firebase](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/68)
+
+### Real-Time Messaging Backend
+Configured Firebase Realtime Database connections and built messaging utility functions for message operations, typing status, and real-time updates.
+- [PR #102 — Added in app messaging through firebase](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/102)
+
+---
+
+## Documentation & Team Contributions
+
+### Retrospective Documentation
+Led the Sprint 3 retrospective and contributed to sprint retrospective analysis and team reflection documentation for the final sprint.
+- [PR #318 — Retro 3](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/318)
 
 ---
 
 ## Anna
 
-*WIP — contributions to be added.*
+# Contributions — Anna Gornyitzki
+
+## Summary
+
+Throughout the development of the Rideshare app, I contributed as a frontend-focused developer across Sprints 1 through 9. I merged 11 pull requests, made 48 commits, and reviewed/merged PRs from teammates. My work centered on ride lifecycle features, UI improvements, privacy changes, bug fixes, and project documentation.
+
+In the early sprints, I handled repository setup (README, LICENSE, .gitignore), pair-programmed the login page UI, and built the first version of the Join Page. I then iterated on pop-up card layouts, reorganizing information hierarchy, surfacing driver notes, and removing phone/email to address privacy concerns. I also fixed bugs in registration, phone number validation, and post-host redirect behavior.
+
+In mid-project sprints, I implemented the Leave Ride button and confirmation modal, fixed the keyboard overlap issue across all form pages using `KeyboardAvoidingView`, cleaned up text casing and card styling for UI consistency, and added personalized fields (Pay Handle, Role, Years at UCSB, Major, Clubs) to registration and driver info pop-ups with backward compatibility for legacy accounts.
+
+In later sprints, I built the Start Ride button UI with time-based activation, created the During Ride page (status bar, elapsed timer, route card, verify riders card, end ride button) along with `ActiveRideContext` for global state, and delivered the History Tab with filtering by role, status, and time range, View Details modals with participant name resolution, and a review button with 48-hour expiry logic.
+
+Outside of code, I drafted user stories, maintained the Kanban board, recorded the MVP video, wrote user feedback documentation, and contributed to the team CONTRIBS file.
+
+---
+
+## Frontend Changes
+
+### Login Page UI
+Pair-programmed with Tanvi Ladha to create the login page UI.
+- [PR #63 — Created login page UI](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/63)
+
+### Join Page UI
+Built the first and second iterations of the Join Page, establishing the layout for riders browsing available rides.
+- Commits: `6bf7660` (Join Page UI v1), `205cf8b` (Join Page UI v2)
+
+### Driver Notes Visibility & Redirect Fix
+Made driver notes visible across all pop-up cards and fixed a bug where users were not redirected to the home screen after submitting a hosted ride.
+- [PR #99 — Improve driver notes visibility and UI consistency](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/99)
+
+### Pop-Up Card Reorganization
+Restructured pop-up cards on the Join page and Home page — reordered ride info, driver info, and driver notes sections for clearer information hierarchy.
+- [PR #107 — Reorganized pop-up card info](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/107)
+
+### Privacy: Removed Phone & Email from Pop-Ups
+Removed phone number and email from rider-facing pop-up cards to preserve driver privacy.
+- [PR #108 — Removed phone and email from pop-ups](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/108)
+
+### Keyboard Fix Across All Form Pages
+Wrapped forms on the host page, account edit page, and registration page in `KeyboardAvoidingView`. Set `behavior="padding"` on iOS with `"height"` as Android fallback. Added `keyboardVerticalOffset` to account for the bottom nav bar height. Kept forms inside a `ScrollView` with `keyboardShouldPersistTaps="handled"` for input interaction while the keyboard is open.
+- [PR #204 — Keyboard Fix v2](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/204)
+
+### Leave Ride Button & Confirmation Modal
+Added a Leave Ride button in pop-up cards for joined rides. Built a confirmation modal displaying cancellation penalties and waitlist rules, with a placeholder for cancellation deadline logic. Closes issues #124 and #125.
+- [PR #216 — Added Leave Ride button for Riders, and Confirm Leave Ride Pop-up](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/216)
+
+### UI Cleanup: Text Casing & Card Styling
+Converted all uppercase text to normal case on the join and index pages. Made join page card styling consistent with the index page. Adjusted font sizes and weights for hierarchy. Changed tag color indicators from squares to circles.
+- [PR #236 — Clean Up UI: Normal Case Text and Card Styling](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/236)
+
+### Registration & Profile: Additional Fields
+Added Pay Handle, Role (Undergraduate/Graduate/Faculty), Years at UCSB, Major, and Clubs fields to the registration page and driver info pop-up cards. Removed the old "bio" field. Fields are conditionally rendered (hidden if empty). Legacy accounts created before the update display correctly without the new fields.
+- [PR #249 — Added more personal fields for registration/profile](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/249)
+
+### Start Ride Button for Drivers
+Added a "Start Ride" button on host ride cards. Button is grayed out and disabled by default, activating (teal color) when the scheduled ride time is reached. Added an ℹ️ info icon that shows an alert explaining activation timing. Sorted hosted rides by departure time (soonest first). Adjusted card layout so "View Details" and "Start Ride" buttons display side by side. Closes issue #261. UI only — no backend wiring.
+- [PR #269 — Drivers now see a start button (no functionality)](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/269)
+
+### During Ride Page
+Created `rideshare-app/app/(tabs)/home/duringride.js` with the following components:
+- "RIDE IN PROGRESS" status bar with green dot
+- Elapsed timer using `startedAt` timestamp from context
+- Route card showing pickup → destination, scheduled time, and driver name
+- Verify Riders card — pulls riders from Firestore `joins` subcollection, displays each rider's name with a PIN input box and Verify button (UI only)
+- "Drive safely!" card
+- End Ride button — marks ride as `completed` in Firestore
+
+Created `rideshare-app/src/context/ActiveRideContext.js` for global active ride state. Wired the "Start Ride" button on the homepage to set context and navigate to the during-ride page. Added a dynamic "Ride" tab (green car icon) in `nav-bar.js` that only renders when a ride is active. Wrapped app in `ActiveRideProvider` in `_layout.js`. Closes issue #262.
+- [PR #300 — Created during ride page (UI with minimal functionality)](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/300)
+
+### History Tab, End Ride Flow & Review Button Placeholders
+Added a History tab accessible from the bottom nav bar (clock icon). Fetches all past rides (hosted and joined) from Firestore filtered to terminal statuses (`completed`, `cancelled`, `no_show`). Closes issues #335, #336, and #337. Includes:
+- Role filter pills — All / Hosted / Joined
+- Status dropdown filter — All Statuses / Completed / Cancelled / No-Show (with colored icons)
+- Time range dropdown filter — All Time / Past Week / Past Month / Past 3 Months / Past Year
+- Ride cards with colored status badges (green for Completed, red for Cancelled, amber for No-Show)
+- View Details modal — route, date/time, price, seats, participant names resolved from Firestore
+- Review button on each card — grays out and shows "Expired" after 48 hours from ride completion
+- 48-hour review notice banner
+- Loading spinner and empty states per filter combination
+- End Ride confirmation modal with validation on the during-ride page
+- [PR #344 — History Tab + UI Review Button Placeholders + Small UI fixes](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/344)
+
+---
+
+## Backend Changes
+
+### Active Ride Context & State Management
+Created `ActiveRideContext` (`rideshare-app/src/context/ActiveRideContext.js`) to store active ride state globally (ride ID, `startedAt` timestamp). Consumed by the during-ride page, nav bar, and homepage. Wrapped app in `ActiveRideProvider` in `_layout.js`.
+- [PR #300 — Created during ride page (UI with minimal functionality)](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/300)
+
+### End Ride Firestore Updates
+Implemented End Ride logic that sets ride status to `completed` in Firestore and clears active ride context. Added End Ride confirmation modal with validation.
+- [PR #300 — Created during ride page (UI with minimal functionality)](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/300)
+- [PR #344 — History Tab + UI Review Button Placeholders + Small UI fixes](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/344)
+
+### History Tab Firestore Queries
+Built queries to fetch past rides (hosted and joined) filtered to terminal statuses. Resolved participant names from user documents for the View Details modal.
+- [PR #344 — History Tab + UI Review Button Placeholders + Small UI fixes](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/344)
+
+---
+
+## Bug Fixes
+
+### Register Bug Fix
+Fixed a registration flow bug preventing users from completing sign-up.
+- Commit: `2c344df`
+
+### Phone Number Length Bug Fix
+Fixed phone number length validation.
+- Commit: `ab5f333`
+
+### Bio Bug Fix
+Fixed a bug with the bio field after the profile fields refactor.
+- Commit: `7337999`
+
+### History Navigation & Ride Status Lifecycle Fix
+Fixed History tab navigation and UI issues. Implemented ride status lifecycle transitions.
+- Commit: `daf80dc`
+
+---
+
+## Project Setup & Repository Management
+
+### Initial Repository Setup
+Created the README, added the MIT License, set up the .gitignore, and added app type and project details to the README.
+- Commits: `95d70db`, `3b580f6`, `da44a3d`, `7d87456`
+
+---
+
+## Code Reviews & Teammate PR Merges
+
+Reviewed and merged pull requests from teammates throughout the project:
+- [PR #91 — tanvi-displayTags](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/91)
+- [PR #92 — tanviladha](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/92)
+- [PR #93 — updatedHostPageWithDriverDetails](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/93)
+- [PR #106 — tanviladha](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/106)
+- [PR #110 — gcBugFix](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/110)
+- [PR #227 — wyatt](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/227)
+- [PR #245 — k-profile-picture](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/245)
+- [PR #299 — speedUp](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/299)
+- [PR #304 — MoiezFilterCreationHostRides](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/304)
+- [PR #332 — Updates_profile](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/332)
+- [PR #342 — perRiderPinGeneration](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/342)
+
+---
+
+## Documentation
+
+### User Feedback Documentation
+Created and maintained `USER_FEEDBACK_NEEDS.md` to organize feedback received after the MVP presentation.
+- Commits: `b6bd182`, `20b0c2d`
+
+### User Stories & Kanban Board
+Drafted user stories, added them to the Kanban board, and created additional stories based on post-MVP user feedback.
+- Referenced in [week03-lecture02.md](meetings/sprint03/week03-lecture02.md), [week06-lecture01.md](meetings/sprint06/week06-lecture01.md)
+
+### MVP Follow-Up & AI Experiment
+Contributed to MVP_FOLLOWUP.md and conducted an AI experiment as part of the team's exploration of AI-assisted development.
+- Referenced in [week05-lab05.md](meetings/sprint05/week05-lab05.md), [week06-lecture01.md](meetings/sprint06/week06-lecture01.md)
+
 
 ---
 
@@ -314,8 +559,84 @@ In addition to feature development, Tanvi took on a significant share of the tea
 
 *WIP — contributions to be added.*
 
+
 ---
 
 ## Ruben
 
-*WIP — contributions to be added.*
+## Summary
+
+Throughout the development of the Rideshare app, I worked as a core full-stack contributor, participating actively across Sprints 1 through 9. Over the course of the project, I merged over 20 pull requests and made 66 commits, taking ownership of major architectural decisions, core feature implementations, and testing infrastructure.
+
+Early in the project, I focused on system architecture and foundational setup to ensure our codebase could scale. I created a comprehensive architecture diagram to document our system design and component interactions. Alongside this, I implemented major file structure changes to organize the codebase for better maintainability. To ensure visual consistency moving forward, I centralized our common styles and colors by creating shared style modules, and I helped merge the initial pull requests related to our Firebase authentication setup.
+
+As development progressed, I took on several critical full-stack features. I built the complete PIN Generation and Verification system, implementing the backend logic for per-rider secure ride verification and creating the frontend interface to display the PIN to riders. I also implemented the Driver Cancel Ride feature. For this, I developed a soft delete backend process to safely preserve ride history, built the cancel button UI with a driver note overlay, and resolved associated keyboard interaction issues that were breaking the modal experience.
+
+Another major area of my contribution was the application's communication and notification systems. I built the complete notifications page from scratch—including rendering, deletion functionality, and detail modals—and set up the underlying backend infrastructure to support all notification types (such as ride canceled or ride created). Additionally, I implemented the group chat messaging system for ride participants and resolved crucial message routing bugs to ensure proper delivery and display.
+
+In addition to feature development, I heavily prioritized quality assurance and documentation. I overhauled our testing configuration, reorganized the test file structure, and updated `TESTING.md` to establish best practices for the team. I also wrote comprehensive integration tests for critical features like the notifications page.
+---
+
+## Frontend Changes
+
+### Notifications Page & UI Components
+Built the complete notifications page including rendering, deletion functionality, and detail modals. Added the initial notifications button placeholder and later implemented the fully functional UI component.
+- [PR #234 — Notifications Icon + Notifications Page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/234)
+- [PR #239 — Ride Cancellation Notifications and Notification Page Improvements](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/239)
+
+### PIN Display & Verification UI
+Created the frontend interface to display the generated PIN to riders for ride confirmation and built the UI logic to accurately reflect verification status.
+- [PR #343 — Display Pin To Rider](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/343)
+- [PR #347 — Verify Rider Pin Logic + UI](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/347)
+
+### Driver Cancel UI & Keyboard Fixes
+Created the cancel button with a driver note overlay for cancellation messaging. Resolved keyboard interaction issues related to the cancel feature modal to ensure the UI remained usable.
+- [PR #223 — Driver cancellation feature](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/223)
+
+### Group Chat Interface
+Implemented the frontend interface for the group chat messaging system for ride participants and fixed message routing bugs to ensure messages displayed correctly.
+- [PR #109 — Groupchat Feature](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/109)
+- [PR #283 — Routing Fix](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/283)
+
+### Global Styling & UI Improvements
+Centralized common styles and colors by refactoring `App.js` to use shared style modules. Fixed button sizing issues throughout the application for consistent UI and optimized image sizes.
+- [PR #65 — Register Page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/65)
+- [PR #77 — Refactor: extracted common styles and colors into reusable modules](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/77)
+- [PR #80 — Changed File Structure to Allow for Easier Routing Between Pages](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/80)
+- [PR #81 — Migrate navigation to Expo Router with auth + tabs](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/81)
+
+---
+
+## Backend Changes
+
+### PIN Generation & Verification Backend
+Implemented the backend logic for per-rider PIN generation to ensure secure ride verification. Documented all PIN generation and verification functions for developer reference.
+- [PR #342 — Per-rider Pin Generation Upon Joining Ride](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/342)
+
+### Driver Cancel Soft Delete
+Implemented the backend functionality for the driver cancel ride feature, utilizing a soft delete approach to safely preserve ride history in the database.
+- [PR #223 — Driver cancellation feature](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/223)
+
+### Notifications Infrastructure
+Built the backend infrastructure to support all current notification types, ensuring the system could properly handle and route events like ride cancellations and creations.
+- [PR #239 — Ride Cancellation Notifications and Notification Page Improvements](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/239)
+
+### Firebase Authentication Integration
+Assisted with the backend setup and integration of Firebase authentication during the early stages of the project.
+- [PR #65 — Register Page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/65)
+- [PR #81 — Migrate navigation to Expo Router with auth + tabs](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/81)
+
+---
+
+## Architecture, Testing & Team Documentation
+
+### System Architecture & Design
+Created a comprehensive architecture diagram for the rideshare application to document system design and component interactions. Implemented major file structure changes to organize the codebase and updated design documentation with optimized images.
+- [PR #301 — Architecture Overview/Diagram](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/301)
+- [PR #348 — Design Doc Update](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/348)
+
+### Testing Infrastructure
+Fixed the global testing configuration and improved the test file structure for better organization. Updated `TESTING.md` and wrote comprehensive integration and unit tests for critical features.
+- [PR #250 — Integration Test for Notif Page](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/250)
+- [PR #251 — Test.md](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/251)
+- [PR #252 — Testing Config Cleanup](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/252)
