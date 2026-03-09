@@ -398,7 +398,7 @@ export default function Homepage({ user }) {
             <View style={styles.card}>
               <RideList
                 rides={joinedRides}
-                emptyText={"No upcoming rides yet.\nTap Join Ride to find a ride."}
+                emptyText={"No upcoming rides yet.\nTap Available Rides to find a ride."}
                 isHosted={false}
                 onViewDetails={async (ride) => {
                   setSelectedRide(ride);
@@ -485,7 +485,7 @@ export default function Homepage({ user }) {
               style={commonStyles.primaryButton}
               onPress={() => router.push("/(tabs)/home/joinpage")}
             >
-              <Text style={commonStyles.primaryButtonText}>Join Ride</Text>
+              <Text style={commonStyles.primaryButtonText}>Available Rides</Text>
             </TouchableOpacity>
           </View>
 
