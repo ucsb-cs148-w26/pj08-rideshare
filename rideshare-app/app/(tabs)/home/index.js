@@ -50,6 +50,13 @@ function formatDateTime(isoString) {
 }
 
 function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, onViewPin = null, onStartRide = null }) {
+  const getRideLocationLabel = (ride, field) => {
+    if (field === 'to') {
+      return String(ride?.toLabel || ride?.toAddress || '');
+    }
+    return String(ride?.fromLabel || ride?.fromAddress || '');
+  };
+
   if (!rides || rides.length === 0) {
     return (
       <View style={commonStyles.emptyState}>
@@ -76,7 +83,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
             <View style={styles.joinedCardRight}>
               <Text style={styles.joinedCardLabel}>Route</Text>
               <Text style={styles.joinedCardDestination} numberOfLines={2}>
-                {item.fromAddress} → {item.toAddress}
+                {getRideLocationLabel(item, 'from')} → {getRideLocationLabel(item, 'to')}
               </Text>
             </View>
           </View>
