@@ -29,6 +29,27 @@ Led discussions and defined requirements for core features that shaped the direc
 
 - [Issue #297](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/297)
 
+
+
+- [Issue #240](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/240)
+## Bug Fix — Pre-Deadline Leave Ride Notifications Not Sending
+
+- **Issue:** [#355](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/355) — Bug Fix: when rider leaves ride before deadline, notifications are not sent to host or riders ([#240](https://github.com/ucsb-cs148-w26/pj08-rideshare/issues/240))
+- **Reported by:** RubenAlvarezGJ
+- **Location:** `rideshare-app/app/(tabs)/home/index.js` — Case 2 of the notification creating logic
+
+### Summary
+
+When a rider leaves a ride **before** the cancellation deadline, notifications were not being sent to the host or other riders. No notification documents were created in Firestore, and nothing appeared on the Notifications page. This worked correctly when leaving **after** the deadline.
+
+### Root Cause
+
+After calling the `leaveRideAndPromote` Cloud Function, the rider's join document was deleted. This meant the subsequent `getDocs` query on the joins subcollection failed silently due to Firestore security rules — the `list` rule requires the requesting user to either be the ride owner or have an existing join document. Since the join was already removed, the query returned empty and no notifications were created.
+
+### Fix
+
+Moved the `getDocs` query on the joins subcollection to **before** the `leaveRideAndPromote` call. This ensures the rider list is captured while the current user's join document still exists and list permission is still granted.
+
 ### Testing (Larger Contributions)
 
 **Unit Tests — UCSB Email Validation:** Created unit tests verifying that only `@ucsb.edu` emails are accepted, covering valid emails, non-UCSB domains, case insensitivity, and malformed inputs. Ensuring security for students/vulnerabilities from login side.  Tests follow the AAA pattern.
