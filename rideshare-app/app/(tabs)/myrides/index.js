@@ -288,12 +288,17 @@ export default function MyRidesPage() {
     <SafeAreaView style={st.container}>
       <Text style={st.title}>My Rides</Text>
       <View style={st.tabContainer}>
-        {['hosted', 'joined'].map((k) => (<TouchableOpacity key={k} style={[st.tabButton, tab === k && st.tabButtonActive]} onPress={() => setTab(k)}><Text style={[st.tabText, tab === k && st.tabTextActive]}>{k.charAt(0).toUpperCase() + k.slice(1)}</Text></TouchableOpacity>))}
+        <TouchableOpacity style={[st.tabButton, tab === 'hosted' && st.tabDrivingActive]} onPress={() => setTab('hosted')}>
+          <Text style={[st.tabText, tab === 'hosted' && st.tabDrivingTextActive]}>Driving</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[st.tabButton, tab === 'joined' && st.tabRidingActive]} onPress={() => setTab('joined')}>
+          <Text style={[st.tabText, tab === 'joined' && st.tabRidingTextActive]}>Riding</Text>
+        </TouchableOpacity>
       </View>
       {loading ? (<View style={st.loadingContainer}><ActivityIndicator size="large" color={colors.accent} /></View>) : (
-        <ScrollView contentContainerStyle={[st.listContainer, { paddingBottom: Platform.OS === 'ios' ? 108 : 80 }]}>
+        <ScrollView style={st.ridesList} contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 108 : 80 }}>
           {currentRides.length === 0 ? (
-            <View style={st.emptyState}><Ionicons name={tab === 'hosted' ? 'car-outline' : 'people-outline'} size={40} color={colors.border} /><Text style={st.emptyText}>{tab === 'hosted' ? 'No upcoming hosted rides' : 'No upcoming joined rides'}</Text></View>
+            <View style={st.emptyState}><Ionicons name={tab === 'hosted' ? 'car-outline' : 'people-outline'} size={40} color="rgba(255,255,255,0.4)" /><Text style={st.emptyText}>{tab === 'hosted' ? 'No upcoming drives' : 'No upcoming rides'}</Text></View>
           ) : currentRides.map((r) => <RideCard key={r.id} ride={r} isHosted={tab === 'hosted'} />)}
         </ScrollView>
       )}
@@ -383,17 +388,19 @@ function ConfirmOverlay({ title, msg, loading, onBack, onConfirm, confirmLabel }
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  title: { fontSize: 28, fontWeight: 'bold', color: colors.textPrimary, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 12 : 20, paddingBottom: 12, backgroundColor: colors.white },
-  tabContainer: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
-  tabButton: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  tabButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  tabText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
-  tabTextActive: { color: '#fff' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  title: { fontSize: 28, fontWeight: '700', color: colors.primary, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 12 : 20, paddingBottom: 12 },
+  tabContainer: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#E5E5EA', gap: 10 },
+  tabButton: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F5F5F5', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  tabDrivingActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  tabRidingActive: { backgroundColor: colors.secondary, borderColor: colors.secondary },
+  tabText: { fontSize: 15, fontWeight: '600', color: '#8E8E93' },
+  tabDrivingTextActive: { color: '#FFFFFF' },
+  tabRidingTextActive: { color: colors.primary },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContainer: { padding: 16, flexGrow: 1 },
+  ridesList: { flex: 1, backgroundColor: colors.primary, padding: 16 },
   emptyState: { alignItems: 'center', paddingVertical: 50 },
-  emptyText: { marginTop: 12, fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  emptyText: { marginTop: 12, fontSize: 16, fontWeight: '600', color: colors.white },
   rideCard: { backgroundColor: colors.white, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 2, borderColor: colors.border },
   cardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardLeft: { flex: 1 }, cardRight: { flex: 1, marginLeft: 8 },

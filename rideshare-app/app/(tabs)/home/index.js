@@ -215,12 +215,11 @@ export default function Homepage() {
             <Ionicons name="notifications-outline" size={22} color={colors.white} />
           </TouchableOpacity>
           <Image source={require("../../../assets/cs148_logo.png")} style={s.logoImage} resizeMode="contain" />
-          <Text style={s.appName}>GauchoRides</Text>
         </View>
 
         {/* ── VIEW ALL AVAILABLE RIDES ── */}
         <TouchableOpacity style={s.viewAllButton} onPress={() => router.push("/(tabs)/home/joinpage")} activeOpacity={0.85}>
-          <Ionicons name="search-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Ionicons name="search-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
           <Text style={s.viewAllButtonText}>View All Available Rides</Text>
         </TouchableOpacity>
 
@@ -363,13 +362,13 @@ const s = StyleSheet.create({
 
   // ── Header (inside scroll, same navy bg as page) ──────────
   headerSection: { alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 44 : 20, marginBottom: 20 },
-  logoImage: { width: 80, height: 80, marginBottom: 8 },
+  logoImage: { width: 180, height: 180, marginBottom: 8 },
   appName: { fontSize: 28, fontWeight: '900', color: colors.white, letterSpacing: 1.2, fontFamily: Platform.OS === 'ios' ? 'Chalkduster' : 'sans-serif-condensed' },
   bellButton: { position: 'absolute', top: Platform.OS === 'ios' ? 44 : 20, right: 0, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
 
   // ── View All ──────────────────────────────────────────────
-  viewAllButton: { flexDirection: 'row', backgroundColor: colors.accent, paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 0 },
-  viewAllButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  viewAllButton: { flexDirection: 'row', backgroundColor: colors.secondary, paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 0 },
+  viewAllButtonText: { color: colors.primary, fontSize: 17, fontWeight: '700' },
 
   // ── Quick Join label ──────────────────────────────────────
   quickLabel: { fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.6)', marginTop: 10, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
