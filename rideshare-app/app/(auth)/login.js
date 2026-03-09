@@ -117,7 +117,7 @@ export default function Login() {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>UCSB Rideshare</Text>
+          <Text style={styles.title}>GauchoRides</Text>
           <Text style={styles.subtitle}>Your campus ride connection</Text>
         </View>
 

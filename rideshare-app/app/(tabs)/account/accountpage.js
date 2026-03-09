@@ -34,6 +34,7 @@ import { auth, db } from '../../../src/firebase';
 import { Ionicons } from '@expo/vector-icons';
 import DefaultAvatar from '../../components/DefaultAvatar';
 import ColorWheel from '../../components/ColorWheel';
+import ReviewsListModal from '../../components/ReviewsListModal';
 
 const MAX_NAME_LENGTH = 30;
 
@@ -76,6 +77,9 @@ export default function AccountPage() {
   const [showPresets, setShowPresets] = useState(false);
   const [tempPickerColor, setTempPickerColor] = useState('#FFFFFF');
   const [tempAvatarPreset, setTempAvatarPreset] = useState('default');
+  const [reviewsModalVisible, setReviewsModalVisible] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
 
 
   useEffect(() => {
@@ -111,6 +115,24 @@ export default function AccountPage() {
         setAvatarPreset(data.avatarPreset || 'default');
         setSaved(next);
         setDraft(next);
+        
+        // Load reviews and calculate average rating
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          where('reviewedUserId', '==', user.uid)
+        );
+        const reviewsSnap = await getDocs(reviewsQuery);
+        
+        if (!reviewsSnap.empty) {
+          const reviews = reviewsSnap.docs.map(doc => doc.data());
+          const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+          const avg = sum / reviews.length;
+          setAverageRating(avg);
+          setReviewCount(reviews.length);
+        } else {
+          setAverageRating(0);
+          setReviewCount(0);
+        }
       } catch (error) {
         console.error('Error loading profile:', error);
       }
@@ -555,8 +577,27 @@ const handleRemovePhoto = async () => {
             <View style={styles.headerText}>
               <Text style={styles.name}>{saved.name}</Text>
               <Text style={styles.meta}>{saved.email}</Text>
+              {reviewCount > 0 && (
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={16} color="#FBBF24" />
+                  <Text style={styles.ratingText}>
+                    {averageRating.toFixed(1)} ({reviewCount})
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
+          
+          {!isEditing && (
+            <TouchableOpacity 
+              style={styles.viewReviewsButton} 
+              onPress={() => setReviewsModalVisible(true)}
+            >
+              <Ionicons name="star-outline" size={18} color={colors.accent} />
+              <Text style={styles.viewReviewsText}>View My Reviews</Text>
+            </TouchableOpacity>
+          )}
+          
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Info</Text>
             <View style={styles.field}>
@@ -765,6 +806,12 @@ const handleRemovePhoto = async () => {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      <ReviewsListModal
+        visible={reviewsModalVisible}
+        onClose={() => setReviewsModalVisible(false)}
+        userId={user?.uid}
+      />
     </SafeAreaView>
   );
 }
@@ -931,6 +978,34 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontWeight: '700',
     fontSize: 14,
+  },
+  viewReviewsButton: {
+    backgroundColor: '#E0F2FE',
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  viewReviewsText: {
+    color: colors.accent || '#007AFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    color: colors.textSecondary || '#666666',
+    fontWeight: '600',
   },
   avatarImage: {
   width: 64,

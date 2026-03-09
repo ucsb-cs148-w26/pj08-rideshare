@@ -375,7 +375,7 @@ export default function Homepage({ user }) {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.appName}>UCSB Rideshare</Text>
+          <Text style={styles.appName}>GauchoRides</Text>
         </View>
 
         <View 
