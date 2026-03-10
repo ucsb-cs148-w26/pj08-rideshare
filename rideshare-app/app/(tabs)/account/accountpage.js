@@ -4,7 +4,6 @@ import * as Device from 'expo-device';
 import {
   View,
   Text,
-  Image,
   Alert,
   StyleSheet,
   SafeAreaView,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { colors } from '../../../ui/styles/colors';
 import { useAuth } from '../../../src/auth/AuthProvider';
@@ -379,13 +379,6 @@ const handleRemovePhoto = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Preload all raccoon avatar images so they render instantly in the preset picker */}
-      <View style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}>
-        {['default', 'safari', 'spacesuit', 'sporty', 'scuba'].map((key) => (
-          <DefaultAvatar key={key} size={1} bgColor="#FFFFFF" avatarType={key} />
-        ))}
-      </View>
-
       {/* Profile Photo Overlay */}
       {photoModalVisible && (
         <View style={styles.photoModalOverlay} pointerEvents="box-none">

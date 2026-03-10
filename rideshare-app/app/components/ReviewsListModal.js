@@ -8,8 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../ui/styles/colors';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';

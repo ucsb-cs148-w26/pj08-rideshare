@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import {
   collection,
@@ -34,6 +34,7 @@ export default function MessagesScreen() {
   const [userPhotos, setUserPhotos] = useState({});
   const [userBgColors, setUserBgColors] = useState({});
   const [userAvatarPresets, setUserAvatarPresets] = useState({});
+  const userCacheRef = useRef(new Set());
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -59,30 +60,35 @@ export default function MessagesScreen() {
 
     setConversations(convos);
 
-    snapshot.docs.forEach(async (docSnap) => {
-  const data = docSnap.data();
-  
-const avatarUserId = data.hostId || data.driverId || data.ownerId ||
-    data.participants.find(uid => uid !== auth.currentUser?.uid);
-  if (avatarUserId) {
-    const userDoc = await getDoc(doc(db, 'users', avatarUserId));
-    if (userDoc.exists()) {
-      const ud = userDoc.data();
-      setUserPhotos(prev => ({
-        ...prev,
-        [avatarUserId]: ud.photoURL || null,
-      }));
-      setUserBgColors(prev => ({
-        ...prev,
-        [avatarUserId]: ud.avatarBgColor || '#FFFFFF',
-      }));
-      setUserAvatarPresets(prev => ({
-        ...prev,
-        [avatarUserId]: ud.avatarPreset || 'default',
-      }));
+    const avatarUserIds = [...new Set(
+      snapshot.docs
+        .map((docSnap) => {
+          const data = docSnap.data();
+          return data.hostId || data.driverId || data.ownerId ||
+            data.participants?.find(uid => uid !== auth.currentUser?.uid);
+        })
+        .filter(Boolean)
+    )].filter(id => !userCacheRef.current.has(id));
+
+    if (avatarUserIds.length > 0) {
+      avatarUserIds.forEach(id => userCacheRef.current.add(id));
+      Promise.all(avatarUserIds.map(id => getDoc(doc(db, 'users', id)))).then(userDocs => {
+        const newPhotos = {};
+        const newBgColors = {};
+        const newPresets = {};
+        userDocs.forEach((userDoc, i) => {
+          if (userDoc.exists()) {
+            const ud = userDoc.data();
+            newPhotos[avatarUserIds[i]] = ud.photoURL || null;
+            newBgColors[avatarUserIds[i]] = ud.avatarBgColor || '#FFFFFF';
+            newPresets[avatarUserIds[i]] = ud.avatarPreset || 'default';
+          }
+        });
+        setUserPhotos(prev => ({ ...prev, ...newPhotos }));
+        setUserBgColors(prev => ({ ...prev, ...newBgColors }));
+        setUserAvatarPresets(prev => ({ ...prev, ...newPresets }));
+      });
     }
-  }
-});
 
     setLoading(false);
   });

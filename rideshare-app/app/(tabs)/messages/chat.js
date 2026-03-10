@@ -13,8 +13,8 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
   collection,
@@ -67,34 +67,31 @@ export default function ChatScreen() {
                 const hostId = data.hostId || data.driverId || data.ownerId ||
                   data.participants?.find(uid => uid !== auth.currentUser?.uid);
 
-                if (hostId) {
-                  const hostDoc = await getDoc(doc(db, 'users', hostId));
-                  if (hostDoc.exists()) {
-                    const hd = hostDoc.data();
-                    setHostPhoto(hd.photoURL || null);
-                    setHostBgColor(hd.avatarBgColor || '#FFFFFF');
-                    setHostAvatarPreset(hd.avatarPreset || 'default');
-                  }
-                }
+                const allUids = [...new Set([hostId, ...(data.participants || [])].filter(Boolean))];
 
-                if (data.participants) {  
-                  data.participants.forEach(async (uid) => {  
-                    const userDoc = await getDoc(doc(db, 'users', uid));  
-                    if (userDoc.exists()) {
-                      const ud = userDoc.data();
-                      setParticipantPhotos(prev => ({  
-                        ...prev,  
-                        [uid]: ud.photoURL || null,  
-                      }));
-                      setParticipantBgColors(prev => ({
-                        ...prev,
-                        [uid]: ud.avatarBgColor || '#FFFFFF',
-                      }));
-                      setParticipantAvatarPresets(prev => ({
-                        ...prev,
-                        [uid]: ud.avatarPreset || 'default',
-                      }));
+                if (allUids.length > 0) {
+                  Promise.all(allUids.map(uid => getDoc(doc(db, 'users', uid)))).then(userDocs => {
+                    const newPhotos = {};
+                    const newBgColors = {};
+                    const newPresets = {};
+                    userDocs.forEach((userDoc, i) => {
+                      if (userDoc.exists()) {
+                        const ud = userDoc.data();
+                        newPhotos[allUids[i]] = ud.photoURL || null;
+                        newBgColors[allUids[i]] = ud.avatarBgColor || '#FFFFFF';
+                        newPresets[allUids[i]] = ud.avatarPreset || 'default';
+                      }
+                    });
+
+                    if (hostId && newPhotos.hasOwnProperty(hostId)) {
+                      setHostPhoto(newPhotos[hostId]);
+                      setHostBgColor(newBgColors[hostId]);
+                      setHostAvatarPreset(newPresets[hostId]);
                     }
+
+                    setParticipantPhotos(prev => ({ ...prev, ...newPhotos }));
+                    setParticipantBgColors(prev => ({ ...prev, ...newBgColors }));
+                    setParticipantAvatarPresets(prev => ({ ...prev, ...newPresets }));
                   });
                 }
 
