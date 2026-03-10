@@ -89,7 +89,7 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
           </View>
           {isHosted ? (
             <View style={styles.startRideRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.joinedViewDetailsButton}
                 onPress={() => onViewDetails && onViewDetails(item)}
               >
@@ -129,13 +129,13 @@ function RideList({ rides, emptyText, isHosted = false, onViewDetails = null, on
             </View>
           ) : (
             <View style={styles.startRideRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.joinedViewDetailsButton}
                 onPress={() => onViewDetails && onViewDetails(item)}
               >
                 <Text style={styles.joinedViewDetailsText}>View Details</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.secondaryCardButton}
                 onPress={() => onViewPin && onViewPin(item)}
               >
@@ -217,7 +217,7 @@ export default function Homepage({ user }) {
   const [cancelRideModalVisible, setCancelRideModalVisible] = useState(false);
   const [cancellingRide, setCancellingRide] = useState(false);
   const [cancelNote, setCancelNote] = useState('');
-  const [cancelNoteError, setCancelNoteError] = useState(''); 
+  const [cancelNoteError, setCancelNoteError] = useState('');
   const reopenModalRef = useRef(false);
 
   useFocusEffect(
@@ -246,9 +246,9 @@ export default function Homepage({ user }) {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((ride) => 
-          ride.status !== 'cancelled' && 
-          ride.status !== 'canceled' && 
+        .filter((ride) =>
+          ride.status !== 'cancelled' &&
+          ride.status !== 'canceled' &&
           ride.status !== 'completed'
         )
         .sort((a, b) => new Date(a.rideDate) - new Date(b.rideDate));
@@ -288,14 +288,14 @@ export default function Homepage({ user }) {
         );
 
         const joinedRidesData = results.filter(Boolean);
-        
+
         // Filter out cancelled and completed rides
-        const filteredJoinedRides = joinedRidesData.filter((ride) => 
-          ride.status !== 'cancelled' && 
-          ride.status !== 'canceled' && 
+        const filteredJoinedRides = joinedRidesData.filter((ride) =>
+          ride.status !== 'cancelled' &&
+          ride.status !== 'canceled' &&
           ride.status !== 'completed'
         );
-        
+
         filteredJoinedRides.sort((a, b) => {
           const dateA = new Date(a.rideDate || 0);
           const dateB = new Date(b.rideDate || 0);
@@ -335,11 +335,11 @@ export default function Homepage({ user }) {
         const primaryVehicle = vehicles[0] || {};
         const hasVehicle = Boolean(
           primaryVehicle.make &&
-            primaryVehicle.make.trim() &&
-            primaryVehicle.model &&
-            primaryVehicle.model.trim() &&
-            primaryVehicle.plate &&
-            primaryVehicle.plate.trim()
+          primaryVehicle.make.trim() &&
+          primaryVehicle.model &&
+          primaryVehicle.model.trim() &&
+          primaryVehicle.plate &&
+          primaryVehicle.plate.trim()
         );
         setHasVehicleInfo(hasVehicle);
         setLoadingProfile(false);
@@ -385,7 +385,7 @@ export default function Homepage({ user }) {
           <Text style={styles.appName}>GauchoRides</Text>
         </View>
 
-        <View 
+        <View
           style={[
             commonStyles.contentBox,
             { flex: 1 },
@@ -449,8 +449,8 @@ export default function Homepage({ user }) {
                   }
 
                   try {
-                    const currentUserId = auth.currentUser?.uid; 
-                    
+                    const currentUserId = auth.currentUser?.uid;
+
                     if (!currentUserId) {
                       console.error('Authentication Error: No user logged in.');
                       setRidePins(prev => ({ ...prev, [ride.id]: 'ERR' }));
@@ -464,9 +464,9 @@ export default function Homepage({ user }) {
                     if (joinSnap.exists()) {
                       const joinData = joinSnap.data();
                       // Add this specific PIN to our dictionary state
-                      setRidePins(prev => ({ 
-                        ...prev, 
-                        [ride.id]: joinData.pickupPin || 'N/A' 
+                      setRidePins(prev => ({
+                        ...prev,
+                        [ride.id]: joinData.pickupPin || 'N/A'
                       }));
                     } else {
                       console.error('Join record not found.');
@@ -481,7 +481,7 @@ export default function Homepage({ user }) {
               />
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={commonStyles.primaryButton}
               onPress={() => router.push("/(tabs)/home/joinpage")}
             >
@@ -555,7 +555,7 @@ export default function Homepage({ user }) {
               )}
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 commonStyles.primaryButton,
                 { backgroundColor: colors.accent },
@@ -568,7 +568,7 @@ export default function Homepage({ user }) {
               }}
               disabled={!hasVehicleInfo || loadingProfile}
             >
-              <Text 
+              <Text
                 style={[
                   commonStyles.secondaryButtonText,
                   { fontSize: 18 },
@@ -600,8 +600,8 @@ export default function Homepage({ user }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <TouchableOpacity 
-              style={styles.closeButton} 
+            <TouchableOpacity
+              style={styles.closeButton}
               onPress={() => setDetailsModalVisible(false)}
             >
               <Text style={styles.closeButtonText}>✕</Text>
@@ -776,7 +776,7 @@ export default function Homepage({ user }) {
                       </Text>
                     </View>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.leaveRideButton}
                       onPress={() => setLeaveRideModalVisible(true)}
                     >
@@ -858,27 +858,32 @@ export default function Homepage({ user }) {
                     <Text style={{ fontWeight: 'bold' }}>This action cannot be undone.</Text>
                   </Text>
                 )}
-                
+
                 <View style={styles.confirmModalButtons}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.confirmCancelButton}
                     onPress={() => setLeaveRideModalVisible(false)}
                     disabled={leavingRide}
                   >
                     <Text style={styles.confirmCancelButtonText}>Go Back</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={[styles.confirmLeaveButton, leavingRide && styles.buttonDisabled]}
                     onPress={async () => {
                       if (!selectedRide || leavingRide) return;
-                      
+
                       setLeavingRide(true);
                       try {
                         const currentUser = auth.currentUser;
                         if (!currentUser) return;
 
                         await currentUser.getIdToken(true);
+
+                        // Fetch joins BEFORE leaving so we still have list permission
+                        const joinsSnap = await getDocs(
+                          collection(db, "rides", selectedRide.id, "joins")
+                        );
 
                         const leaveRideAndPromote = httpsCallable(functions, 'leaveRideAndPromote');
                         await leaveRideAndPromote({ rideId: selectedRide.id });
@@ -897,7 +902,7 @@ export default function Homepage({ user }) {
                             if (userSnap.exists()) {
                               riderName = userSnap.data().name || riderName;
                             }
-                          } catch (e) {}
+                          } catch (e) { }
 
                           if (isAfterDeadline) {
                             // CASE 1: After deadline → driver only
@@ -917,9 +922,6 @@ export default function Homepage({ user }) {
                             });
                           } else {
                             // CASE 2: Before deadline → driver + all remaining riders
-                            const joinsSnap = await getDocs(
-                              collection(db, "rides", selectedRide.id, "joins")
-                            );
                             const notifyIds = new Set([selectedRide.ownerId]);
                             joinsSnap.forEach((d) => {
                               const rid = d.data().riderId || d.id;
@@ -952,7 +954,7 @@ export default function Homepage({ user }) {
                         // Close both modals
                         setLeaveRideModalVisible(false);
                         setDetailsModalVisible(false);
-                        
+
                         // Reset states
                         setSelectedRide(null);
                         setDriverInfo(null);
@@ -1002,7 +1004,7 @@ export default function Homepage({ user }) {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
               >
                 {/* prevent taps inside the card from dismissing by accident */}
-                <Pressable onPress={() => {}} style={styles.confirmModalContent}>
+                <Pressable onPress={() => { }} style={styles.confirmModalContent}>
                   <ScrollView
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={{ paddingBottom: 12 }}
@@ -1060,7 +1062,7 @@ export default function Homepage({ user }) {
 
                             // collect all refs/docs associated with the ride
                             const rideRef = doc(db, 'rides', selectedRide.id);
-                            const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));                            
+                            const joinsSnapshot = await getDocs(collection(db, 'rides', selectedRide.id, 'joins'));
                             const joinRefs = joinsSnapshot.docs.map((d) => d.ref);
                             const riderUids = joinsSnapshot.docs.map((d) => d.id);
 
@@ -1069,7 +1071,7 @@ export default function Homepage({ user }) {
                               const rideSnap = await tx.get(rideRef);
                               if (!rideSnap.exists()) throw new Error('Ride no longer exists.');
                               if (rideSnap.data().ownerId !== currentUser.uid) throw new Error('Not authorized.');
-                              
+
                               tx.update(rideRef, {
                                 status: 'cancelled',
                                 cancelNote: trimmed,
@@ -1179,8 +1181,8 @@ export default function Homepage({ user }) {
                 <View style={styles.pinDigitsRow}>
                   {String(ridePins[activePinRideId] || '----').split('').map((digit, index) => {
                     return (
-                      <View 
-                        key={index} 
+                      <View
+                        key={index}
                         style={styles.pinBox}
                       >
                         <Text style={styles.pinDigitText}>{digit}</Text>
@@ -1211,7 +1213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
     paddingTop: 70,
-  },  
+  },
   section: {
     marginBottom: 32,
   },
@@ -1688,15 +1690,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cancelRideButton: {
-  backgroundColor: '#ef4444',
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 8,
-  marginTop: 6,
-  alignItems: 'center',
-  alignSelf: 'center',
-  borderWidth: 2,
-  borderColor: '#dc2626',
+    backgroundColor: '#ef4444',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 6,
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderWidth: 2,
+    borderColor: '#dc2626',
   },
   cancelRideButtonText: {
     color: colors.white,
@@ -1732,13 +1734,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
 
     backgroundColor: colors.white,
-    
+
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-  
+
   // Pin Modal Styles
   pinContentContainer: {
     paddingTop: 10,
