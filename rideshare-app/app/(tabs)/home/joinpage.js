@@ -13,8 +13,8 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import {
   collection,
   query,

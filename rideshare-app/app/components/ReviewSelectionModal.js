@@ -7,8 +7,8 @@ import {
   Pressable,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../ui/styles/colors';
 import DefaultAvatar from './DefaultAvatar';

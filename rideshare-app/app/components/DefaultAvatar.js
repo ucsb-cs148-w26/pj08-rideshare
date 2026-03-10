@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 
 const AVATAR_ICONS = {
   default: require('../../assets/defaulticon_grs (1).png'),
@@ -38,7 +39,7 @@ export default memo(function DefaultAvatar({ size = 64, bgColor = '#FFFFFF', ava
       <Image
         source={source}
         style={{ width: iconSize, height: iconSize }}
-        resizeMode="contain"
+        contentFit="contain"
       />
     </View>
   );

@@ -3,8 +3,9 @@ import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   StyleSheet, Text, View, TouchableOpacity, ScrollView,
-  ActivityIndicator, Image, Modal, Platform, RefreshControl, Alert,
+  ActivityIndicator, Modal, Platform, RefreshControl, Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import {
   collection, query, orderBy,
   onSnapshot, doc, getDoc, updateDoc, arrayUnion,
@@ -214,7 +215,7 @@ export default function Homepage() {
           <TouchableOpacity onPress={() => router.push("/(tabs)/home/notificationspage")} style={s.bellButton} hitSlop={10}>
             <Ionicons name="notifications-outline" size={22} color={colors.white} />
           </TouchableOpacity>
-          <Image source={require("../../../assets/cs148_logo.png")} style={s.logoImage} resizeMode="contain" />
+          <Image source={require("../../../assets/cs148_logo.png")} style={s.logoImage} contentFit="contain" />
         </View>
 
         {/* ── VIEW ALL AVAILABLE RIDES ── */}
