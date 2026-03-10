@@ -125,16 +125,24 @@ export default function HistoryPage() {
           getDoc(doc(db, 'rides', rideDoc.id, 'joins', uid)).then((joinSnap) => ({
             rideDoc,
             joined: joinSnap.exists(),
+            joinData: joinSnap.exists() ? joinSnap.data() : null,
           }))
         )
       );
       const joinedRides = joinResults
         .filter(({ joined }) => joined)
-        .map(({ rideDoc }) => ({
-          id: rideDoc.id,
-          ...rideDoc.data(),
-          type: 'joined',
-        }));
+        .map(({ rideDoc, joinData }) => {
+          const rideData = rideDoc.data();
+          // If this rider was marked as no-show, override the displayed status
+          const displayStatus = joinData?.no_show ? 'no_show' : rideData.status;
+          return {
+            id: rideDoc.id,
+            ...rideData,
+            status: displayStatus,
+            actualStatus: rideData.status, // Keep original status for reference
+            type: 'joined',
+          };
+        });
 
       // Combine & sort newest first
       const all = [...hostedRides, ...joinedRides].sort((a, b) => {
