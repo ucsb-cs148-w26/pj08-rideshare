@@ -578,7 +578,128 @@ Contributed to MVP_FOLLOWUP.md and conducted an AI experiment as part of the tea
 
 ## Wyatt
 
-*WIP — contributions to be added.*
+# Contributions - Wyatt Hamabe
+
+## Summary
+
+Throughout the development of the Rideshare app, I contributed primarily as a full stack developer working on authentication, user data storage, chat interface improvements, and input validation across several parts of the application. This was an incredible opportunity for me to expand my fundamental knowledge on software engineering. This is my first full stack project, and I'm glad I was able to contribute meaningfully with such a knowledgeable team to support me.
+
+Early in the project, I helped set up some of the foundational infrastructure for the repository and authentication system. I first added the team directory and my personal team file to the repository ([PR #9](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/9)), helping organize the team structure. I also added the initial `LICENSE.md` and `.gitignore` files ([PR #20](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/20)) to prepare the repository for development. It was mostly just good practice for me, since I hadn't had much experience w/ Git version control and pushing code at this point. 
+
+One of my largest early contributions was implementing Firebase Authentication for the application ([PR #67](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/67)). This included installing and configuring the Firebase SDK, connecting the register screen to Firebase Auth, and enabling email/password account creation. I tested the full registration flow through Expo Go to ensure that newly created users were correctly appearing in the Firebase Authentication console.
+
+After setting up authentication, I extended the registration system so that newly created users would also have their profile information stored in Firestore ([PR #79](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/79)). This involved creating a `users/{uid}` document during registration, storing user profile data such as name, phone number, and vehicle information, and attaching a server timestamp to track account creation.
+
+Later in the project I worked on improving the chat interface used for ride group messaging. I first added sender names above message bubbles for messages from other participants ([PR #220](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/220)). This made group conversations easier to read and behave more like familiar messaging apps such as iMessage. I then fixed a UI issue where the sender name appeared repeatedly when a user sent multiple messages in a row ([PR #227](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/227)). I updated the rendering logic so consecutive messages from the same user are grouped together and the sender name only appears once per sequence.
+
+In addition to messaging improvements, I implemented several validation and consistency features across the application. I added a username length limit and implemented logic to propagate name updates throughout the app so that profile changes update cached names used in conversations and ride displays ([PR #247](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/247)). I also added validation limits for ride creation inputs ([PR #263](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/263)), including maximum ride price and seat limits along with UI feedback to prevent invalid submissions.
+
+I also fixed a UI issue related to group chat titles ([PR #349](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/349)) so that chat headers display correctly and remain consistent across ride conversations.
+
+Finally, I improved the host ride creation experience ([PR #357](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/357)) by updating error messages to provide more specific feedback about which input fields are invalid, helping users quickly understand how to correct their submission.
+
+Overall, my contributions focused on authentication infrastructure, user profile storage, chat interface improvements, and validation logic, helping ensure the app was reliable, readable, and user friendly.
+
+---
+
+## Frontend Changes
+
+### Chat Sender Names (Messaging Page)
+
+Added sender names above message bubbles in group ride chats so users can clearly see who sent each message. Names appear only for messages from other participants.
+
+- [PR #220 - Added names above chat bubbles](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/220)
+
+### Chat Message Grouping Fix
+
+Resolved a UI issue where sender names appeared above every message in a sequence. Messages are now grouped so the sender name only appears once for consecutive messages from the same user.
+
+- [PR #227 - Fix redundant sender names](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/227)
+
+### Group Chat Title Fix
+
+Fixed an issue affecting group chat titles so conversation headers display correctly.
+
+- [PR #349 - Group chat titles fixed](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/349)
+
+---
+
+## Backend & Database Changes
+
+### Firebase Authentication Integration
+
+Implemented Firebase email/password authentication and connected the registration screen to the team Firebase project.
+
+- Installed Firebase SDK
+- Initialized Firebase configuration
+- Connected register screen to create Firebase Auth users
+- Tested full registration flow using Expo Go
+
+- [PR #67 - Add Firebase auth and register flow](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/67)
+
+### Store User Profiles in Firestore
+
+Extended the registration flow so that user profile data is automatically stored in Firestore when a new account is created.
+
+- Created `users/{uid}` Firestore documents
+- Stored profile fields such as name, phone number, and vehicle data
+- Added server timestamp for account creation
+
+- [PR #79 - Store user profiles in Firestore](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/79)
+
+---
+
+## Validation & Input Safety Improvements
+
+### Host Ride ERror Message Improvements
+
+Improved the error messaging displayed when users attempt to submit an invalid ride from the host ride form. Previously the form returned a generic error message, which made it difficult for users to understand what needed to be corrected.
+
+- Provides more specific feedback by indicating which fields are invalid, making the ride creation process clearer and more user friendly.
+
+- [PR #357 - Improved host ride form error message](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/357)
+
+### Username Length Limit
+
+Added a maximum username length of 30 characters and implemented name synchronization logic so profile name changes propagate across the application.
+
+- Enforced character limits during registration and profile edits
+- Updated logic to propagate updated names to conversations and ride displays
+
+- [PR #247 - Name length limit](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/247)
+
+### Ride Input Validation
+
+Added validation rules to prevent invalid ride creation inputs.
+
+- Maximum ride price set to $999.99
+- Maximum seats set to 50
+- Added validation alerts and inline feedback
+- Updated UI to prevent long driver names from breaking the ride card layout
+
+- [PR #263 - Ride input limits and validation](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/263)
+
+---
+
+## Repository & Documentation Setup
+
+### Team Directory Setup
+
+Added the initial team directory and personal team file to the repository.
+
+- [PR #9 - Team folder and wyatt.md](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/9)
+
+### Repository Setup Files
+
+Added initial repository configuration files including `LICENSE.md` and `.gitignore`.
+
+- [PR #20 - Added license.md and .gitignore](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/20)
+
+### Scrum Documentation
+
+Added scrum documentation for Lab 04.
+
+- [PR #105 - Lab04 scrum](https://github.com/ucsb-cs148-w26/pj08-rideshare/pull/105)
 
 
 ---
