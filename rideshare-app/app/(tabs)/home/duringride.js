@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../ui/styles/colors';
-import { doc, getDoc, updateDoc, collection, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs, arrayRemove } from 'firebase/firestore';
 import { db, functions } from '../../../src/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useActiveRide } from '../../../src/context/ActiveRideContext';
@@ -184,6 +184,21 @@ export default function DuringRidePage() {
           completedAt: new Date().toISOString(),
         });
 
+        // Clear denormalized fields on all riders' user docs
+        try {
+          const joinsSnap = await getDocs(collection(db, 'rides', rideId, 'joins'));
+          await Promise.all(
+            joinsSnap.docs.map((joinDoc) =>
+              updateDoc(doc(db, 'users', joinDoc.id), {
+                activeRideId: null,
+                joinedRideIds: arrayRemove(rideId),
+              }).catch((e) => console.warn(`Failed to clear rider ${joinDoc.id}:`, e))
+            )
+          );
+        } catch (cleanupErr) {
+          console.warn('Error cleaning up rider docs:', cleanupErr);
+        }
+
         // Delete the group chat conversation
         try {
           const conversationRef = doc(db, 'conversations', rideId);
@@ -191,7 +206,6 @@ export default function DuringRidePage() {
           console.log('Group chat deleted for ride:', rideId);
         } catch (chatError) {
           console.warn('Error deleting conversation:', chatError);
-          // Continue even if chat deletion fails
         }
       }
       setEndModalVisible(false);

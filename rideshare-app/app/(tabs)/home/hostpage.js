@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
   View,
@@ -31,6 +31,7 @@ import AddressAutocomplete from "../../components/AddressAutocomplete";
 
 export default function HostPage() {
   const router = useRouter();
+  const { prefillTag, prefillSeats, prefillPrice, prefillTo, prefillFrom } = useLocalSearchParams();
   const tagOptions = [
     "Groceries/Shopping",
     "Downtown",
@@ -77,6 +78,15 @@ export default function HostPage() {
 
   const MAX_RIDE_PRICE = 999.99;
   const MAX_SEATS = 50;
+
+  // Apply prefilled values from route params (e.g. Quick Create on home page)
+  useEffect(() => {
+    if (prefillTag) setSelectedTag(prefillTag);
+    if (prefillSeats) setSeats(String(prefillSeats));
+    if (prefillPrice) setPrice(String(prefillPrice));
+    if (prefillTo) setToAddress(String(prefillTo));
+    if (prefillFrom) setFromAddress(String(prefillFrom));
+  }, []); // Run once on mount
 
   // Fetch user profile on mount
   useEffect(() => {

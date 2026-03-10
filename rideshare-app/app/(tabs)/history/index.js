@@ -472,19 +472,24 @@ export default function HistoryPage() {
 
       {/* role filter pills */}
       <View style={styles.filterContainer}>
-        {['all', 'hosted', 'joined'].map((key) => (
-          <TouchableOpacity
-            key={key}
-            style={[styles.filterButton, filter === key && styles.filterButtonActive]}
-            onPress={() => setFilter(key)}
-          >
-            <Text
-              style={[styles.filterText, filter === key && styles.filterTextActive]}
-            >
-              {key.charAt(0).toUpperCase() + key.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
+          onPress={() => setFilter('all')}
+        >
+          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filter === 'hosted' && styles.filterHostedActive]}
+          onPress={() => setFilter('hosted')}
+        >
+          <Text style={[styles.filterText, filter === 'hosted' && styles.filterHostedTextActive]}>Hosted</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, filter === 'joined' && styles.filterJoinedActive]}
+          onPress={() => setFilter('joined')}
+        >
+          <Text style={[styles.filterText, filter === 'joined' && styles.filterJoinedTextActive]}>Joined</Text>
+        </TouchableOpacity>
       </View>
 
       {/* dropdown filters row */}
@@ -839,6 +844,12 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: colors.primary,
   },
+  filterHostedActive: {
+    backgroundColor: colors.accent,
+  },
+  filterJoinedActive: {
+    backgroundColor: colors.secondary,
+  },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
@@ -846,6 +857,12 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: '#FFFFFF',
+  },
+  filterHostedTextActive: {
+    color: '#FFFFFF',
+  },
+  filterJoinedTextActive: {
+    color: colors.primary,
   },
 
   /* dropdown filters */

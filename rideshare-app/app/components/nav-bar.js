@@ -11,7 +11,6 @@ export default function NavBar() {
   const pathname = usePathname();
   const { activeRide } = useActiveRide();
 
-  // ✅ hooks at the top level of the component, NOT inside map
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -43,7 +42,6 @@ export default function NavBar() {
     return () => unsub();
   }, []);
 
-  // ✅ navItems defined after hooks, uses unreadCount
   const navItems = [
     {
       name: 'Messages',
@@ -53,22 +51,19 @@ export default function NavBar() {
       badge: unreadCount,
     },
     {
+      name: 'My Rides',
+      icon: 'car-sport',
+      iconOutline: 'car-sport-outline',
+      route: '/(tabs)/myrides',
+      // Show live badge when a ride is active
+      accentColor: activeRide ? '#22c55e' : undefined,
+    },
+    {
       name: 'Home',
       icon: 'home',
       iconOutline: 'home-outline',
       route: '/(tabs)/home',
     },
-    ...(activeRide
-      ? [
-          {
-            name: 'Ride',
-            icon: 'car-sport',
-            iconOutline: 'car-sport-outline',
-            route: '/(tabs)/home/duringride',
-            accentColor: '#22c55e',
-          },
-        ]
-      : []),
     {
       name: 'History',
       icon: 'time',
@@ -87,8 +82,8 @@ export default function NavBar() {
     if (route === '/(tabs)/messages') {
       return pathname.includes('/messages');
     }
-    if (route === '/(tabs)/home/duringride') {
-      return pathname.includes('duringride');
+    if (route === '/(tabs)/myrides') {
+      return pathname.includes('/myrides');
     }
     if (route === '/(tabs)/home') {
       return (
@@ -111,12 +106,6 @@ export default function NavBar() {
   };
 
   const handlePress = (route) => {
-    if (route === '/(tabs)/home/duringride') {
-      if (!isActive(route) && activeRide) {
-        router.push({ pathname: '/(tabs)/home/duringride', params: activeRide });
-      }
-      return;
-    }
     if (route === '/(tabs)/home') {
       if (!isActive(route)) router.push('/home');
       return;
@@ -145,7 +134,7 @@ export default function NavBar() {
               <Text style={[styles.navLabel, active && { color: activeColor }]}>
                 {item.name}
               </Text>
-              {/* ✅ unread badge for Messages */}
+              {/* Unread badge for Messages */}
               {item.badge > 0 && (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadBadgeText}>
@@ -153,7 +142,7 @@ export default function NavBar() {
                   </Text>
                 </View>
               )}
-              {/* live ride badge */}
+              {/* Live ride badge */}
               {item.accentColor && <View style={styles.liveBadge} />}
             </TouchableOpacity>
           );
@@ -192,7 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#8E8E93',
     marginTop: 4,

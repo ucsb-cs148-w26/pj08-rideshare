@@ -117,7 +117,6 @@ export default function Login() {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>GauchoRides</Text>
           <Text style={styles.subtitle}>Your campus ride connection</Text>
         </View>
 
@@ -229,8 +228,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoImage: {
-    width: 110,
-    height: 110,
+    width: 221,
+    height: 221,
   },
   title: {
     fontSize: 32,
