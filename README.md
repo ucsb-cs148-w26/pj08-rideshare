@@ -1,17 +1,25 @@
-# UCSB Rideshare App
+# Gaucho Ride
 
 ## App Type
 
 **Mobile Application (Campus Ridesharing Platform)**  
-The UCSB Rideshare App is a mobile-first social-utility app designed to help UCSB students, faculty, and staff coordinate shared rides safely and efficiently within their campus community.
+The Gaucho Ride app is an Expo/React Native mobile app for coordinating rides inside the UCSB community. It supports full rider and driver workflows, real-time chat/notifications, payment-backed joining, waitlists, and post-ride reviews.
 
 ---
 
 ## Description
 
-The UCSB Rideshare App is an iOS-based ridesharing service designed exclusively for the UCSB community. It allows users with a valid `@ucsb.edu` email to safely coordinate rides with other students, faculty, and staff.
+Gaucho Ride is restricted to users with `@ucsb.edu` accounts and is built around campus-oriented trips (Downtown, groceries, airports, etc.).
 
-Unlike public rideshare platforms such as Uber or Lyft, this app is restricted to UCSB affiliates only, prioritizing trust, affordability, and campus-specific travel needs (e.g., rides to and from campus, Isla Vista, airports, or nearby cities).
+Current implementation includes:
+- Authenticated account registration/login with Firebase Authentication
+- Ride hosting with destination tags, cancellation deadlines, and driver notes
+- Ride joining with Stripe payment sheet integration
+- Waitlist flow with temporary card holds and automatic promotion when seats open
+- Ride-linked group messaging (conversation created per ride)
+- Driver pickup PIN verification and active-ride status handling
+- Ride history with role/status/time filters
+- 48-hour review window with profile-visible ratings/reviews
 
 ---
 
@@ -19,10 +27,11 @@ Unlike public rideshare platforms such as Uber or Lyft, this app is restricted t
 
 ### Prerequisites
 
-- **Node.js** (v16+) - [Download](https://nodejs.org/)
+- **Node.js** (v20 recommended for Firebase Functions; v18+ for app tooling) - [Download](https://nodejs.org/)
 - **Expo Go App** on your phone:
   - [iOS App Store](https://apps.apple.com/us/app/expo-go/id982107779)
   - [Android Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+- **Firebase project access** (for auth/firestore/functions used by this app)
 
 ### Installation & Running
 ```bash
@@ -37,6 +46,16 @@ npm install
 
 # Start the app
 npx expo start
+
+# Run tests
+npm test
+```
+
+Optional (Cloud Functions local workflow):
+```bash
+cd functions
+npm install
+npm run serve
 ```
 
 ### Testing on Your Phone
@@ -52,7 +71,14 @@ npx expo start
 
 ## Project Plan
 
-This project aims to build a simple, safe, and reliable platform for UCSB community members to coordinate shared transportation. The app will allow users to create ride listings, search for available rides, and communicate ride details in a centralized system. By restricting access to users with a valid `@ucsb.edu` email, the app creates a trusted environment where users feel more comfortable sharing rides with people they know are affiliated with the university. The initial version of the app will focus on core functionality—posting rides, joining rides, and managing ride details—while leaving room for future features such as messaging, ratings, or ride history.
+This project delivers a campus-restricted rideshare platform with the full ride lifecycle implemented:
+- account creation/login
+- ride creation/joining/cancellation
+- payment + waitlist handling
+- ride-time verification and active ride management
+- communication + history + reviews
+
+The near-term engineering direction is to harden production concerns (moderation/reporting, deeper policy/privacy support, and deployment hardening) while maintaining fast feature iteration in Expo/Firebase.
 
 ---
 
@@ -74,43 +100,46 @@ There are **two main user roles**, with a possible third administrative role:
 
 ### 1. Riders
 Users who are primarily looking for rides.
-- Can search for available rides  
-- Can request to join a ride  
-- Can view ride details such as destination, time, and available seats  
+- Can browse full listings or use **Quick Join** from home  
+- Can join available seats through Stripe payment confirmation  
+- Can join/leave waitlists on full rides and track waitlist position  
+- Can view pickup PIN for driver verification at pickup  
+- Can use ride-linked group chat and view post-ride history/review flows  
 
 **Goal:** Find affordable, reliable transportation with people they trust.  
 **How the app helps:**  
 - Filters access to UCSB users only  
-- Provides a searchable list of ride options  
+- Provides searchable/tag-filtered ride discovery and real-time seat updates  
 
 ---
 
 ### 2. Drivers
 Users who offer rides.
-- Can create ride listings  
-- Can edit or cancel their own rides  
-- Can manage how many riders join their ride  
+- Can create rides manually or via **Quick Create** templates  
+- Can set seats, price, tags, cancellation deadline, and driver notes  
+- Can verify riders with PINs before starting a ride  
+- Can cancel hosted rides and trigger rider notifications  
+- Can manage in-progress and completed ride lifecycle  
 
 **Goal:** Share rides, reduce travel costs, and coordinate passengers easily.  
 **How the app helps:**  
-- Allows easy posting of ride details  
-- Lets drivers control participation  
+- Provides one-screen host flow, rider verification tools, and real-time messaging  
 
 ---
 
 ## Roles and Permissions
 
-Because the app is public-facing and allows user-generated content (ride listings), safety and moderation are important.
+Because the app supports user-generated ride data and payments, role-bound access control is enforced at the app and backend levels.
 
 - **Authentication:**  
-  - Only users with a verified `@ucsb.edu` email can create accounts.
+  - Only users with `@ucsb.edu` emails can register.
 - **Permissions:**
-  - Riders can view and join rides.
-  - Drivers can create, edit, and delete their own ride listings.
-  - Admins can delete any ride listing and manage users.
+  - Riders can view/join/leave rides, join waitlists, and access rider-only PIN and history actions.
+  - Drivers can post/cancel rides, verify riders, and control ride start/end transitions.
+  - Users can view other users' profiles (including fun facts and reviews) from supported surfaces.
 - **Content Control:**  
   - Restricting sign-ups to UCSB emails reduces spam and abuse.
-  - Admin role ensures inappropriate content can be removed.
+  - No dedicated in-app admin moderation panel is currently shipped.
 
 ---
 
@@ -120,31 +149,38 @@ Because the app is public-facing and allows user-generated content (ride listing
 
 - **Platform:** Mobile Application (iOS-first, cross-platform capable)
 - **Frontend:** React Native with Expo
-  - Allows a single codebase for mobile platforms  
-  - Modern UI development and fast iteration  
+  - Expo Router for file-based navigation  
+  - React Native Gesture Handler + native UI modules (datetime picker, image picker, etc.)  
 
 - **Backend:** Firebase
   - Cloud Firestore for database
   - Firebase Authentication for secure login
-  - Real-time updates for ride listings
+  - Firebase Cloud Functions for trusted server actions (payments, join finalization, waitlist promotion, PIN verification)
+  - Real-time updates via Firestore listeners
+
+- **Payments:** Stripe
+  - Stripe PaymentSheet (`@stripe/stripe-react-native`)
+  - Payment intent flow for ride joins
+  - Manual-capture hold flow for waitlist entries
 
 - **Authentication:** Firebase Authentication  
-  - Secure login system  
-  - Easy enforcement of `@ucsb.edu` email restriction  
+  - Email/password auth with domain restriction in app flow  
 
 - **Database:** Cloud Firestore (NoSQL)
-  - Stores users, rides, and participation data  
+  - Collections include users, rides, joins, waitlist, conversations/messages, notifications, reviews  
+
+- **Testing:** Jest + `@testing-library/react-native`
+  - Unit and integration coverage for key app flows
 
 ---
 
 ### Why This Tech Stack
 
 This tech stack was chosen to:
-- Support fast development and testing  
-- Work well for mobile-first applications  
-- Provide secure authentication  
-- Allow future expansion to Android or web  
-- Scale as more users join the platform  
+- Support rapid mobile development with real device testing through Expo Go  
+- Enable real-time product behavior (rides, chat, notifications) without custom socket infrastructure  
+- Keep sensitive operations on backend functions (payments, join finalization, waitlist promotion)  
+- Provide an incremental path to production hardening and scale  
 
 ---
 
@@ -162,43 +198,49 @@ This tech stack was chosen to:
 ---
 
 ## Functionality - Usage Instructions 
-After logging in/registering with your information you will find two choices, Passenger (join a ride) and Driver (host a ride). All users have access to both experiences but you cannot host a ride if you don't have a vehicle registered in the app. 
+After authentication, users can operate as both Passenger and Driver in the same account. Hosting is gated on having vehicle information saved in profile. 
 
 ### Passenger Side
 
 **Browse & Book Rides:**
-1. Launch the app and click the **Join Rides** button or view your joined rides
-2. View all available rides listed by drivers in your area
-3. Use **tag filters** associated with common locations UCSB students love (e.g., "Groceries/Shopping," "SBA/LAX," "Downtown SB") to narrow down options
-4. Tap a ride card to view driver profile and route details
-5. Select **"Join Ride"** to join the trip
-6. Find your joined ride on the home page 
-7. To coordinate with your driver and fellow riders, navigate to the messages tab through the home bar to chat with them. 
-8. Rides that are full or rides you have already joined will be grayed out 
+1. Discover rides from either **Quick Join** (home) or **View All Available Rides**.
+2. Filter by tags and destination search to narrow available rides.
+3. Open ride details to inspect route, schedule, cancellation deadline, and driver info.
+4. Join an open ride via payment confirmation.
+5. If a ride is full, optionally **Join Waitlist** (card hold is placed, not immediate final charge).
+6. If promoted from waitlist, seat assignment is finalized and payment hold is captured.
+7. Access ride group chat from Messages for coordination.
+8. Open My Rides to view joined rides and show your pickup PIN at pickup.
+9. Leave a joined ride when needed (cancellation policy and deadline rules apply).
 
 ### Driver Side
 
 **Hosting Rides:**
-1. Click the **Host Rides** button. 
-2. Fill in your **pickup location**, **dropoff location**, and **ride description**
-3. Add **tags** to categorize your ride type to help users find it easily
-4. Submit your ride listing to make it available to passengers
-5. Chat with your passengers in the messages tab to coordinate pickup. 
-6. Once your ride is full, it will gray out and no other riders can join 
+1. Start from **Host Ride** or use **Quick Create** template shortcuts.
+2. Configure route, datetime, seat count, price, cancellation deadline, tags, and optional driver notes.
+3. Submit to publish ride into available listings.
+4. Monitor joins, waitlist activity, and updates via notifications/messages.
+5. At departure time, open hosted ride and verify riders using rider PINs.
+6. Start ride to move the group into active state; end ride on completion.
+7. Cancel hosted rides when required (riders are updated and ride conversation is closed).
 
 ### Key Features
 
-- Real-time ride browsing for passengers
-- Tag-based filtering to find preferred ride types
-- Driver profile ratings and reviews
-- Simple one-tap ride booking
-- Real-time ride request notifications
+- Quick Join and Quick Create home shortcuts
+- Real-time ride browsing with tag + location filtering
+- Stripe-backed join flow and waitlist hold/capture flow
+- Ride-linked group chat and conversation lifecycle management
+- Rider PIN verification before ride start
+- Notifications for join/cancel/waitlist promotion events
+- Ride history filters and 48-hour participant review flow
+- User profiles with fun facts, ratings, and review details
 
 ## Known Problems
- - Search Bar is not supported in the MVP 
- - Only filtering can be done by tags in MVP 
- - Keyboard Blocks Last Fields in Driver Side, simply exit out of keyboard and select lower fields to fill 
- - You cannot leave rides as of now 
+- App currently runs through Expo Go for team/dev workflow; production distribution pipeline is not finalized.
+- Waitlist entry is blocked for rides departing within 24 hours.
+- Notification detail views are functional but some deeper breakdowns are still basic.
+- Moderation/reporting/privacy-policy tooling is not fully implemented yet.
+- The current build does not enforce UCSB SSO/2FA; it uses app-level domain-restricted account creation.
  
  
  
