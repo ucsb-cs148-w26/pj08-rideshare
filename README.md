@@ -1,15 +1,15 @@
-# Gaucho Ride
+# GauchoRides
 
 ## App Type
 
 **Mobile Application (Campus Ridesharing Platform)**  
-The Gaucho Ride app is an Expo/React Native mobile app for coordinating rides inside the UCSB community. It supports full rider and driver workflows, real-time chat/notifications, payment-backed joining, waitlists, and post-ride reviews.
+The GauchoRides app is an Expo/React Native mobile app for coordinating rides inside the UCSB community. It supports full rider and driver workflows, real-time chat/notifications, payment-backed joining, waitlists, and post-ride reviews.
 
 ---
 
 ## Description
 
-Gaucho Ride is restricted to users with `@ucsb.edu` accounts and is built around campus-oriented trips (Downtown, groceries, airports, etc.).
+GauchoRides is restricted to users with `@ucsb.edu` accounts and is built around campus-oriented trips (Downtown, groceries, airports, etc.).
 
 Current implementation includes:
 - Authenticated account registration/login with Firebase Authentication
